@@ -1,0 +1,24 @@
+[
+  {
+    "versionNumber": "1.21.11",
+    "loader": "fabric",
+    "mappings": "placeholder: mappings are not resolved in Vanta 0.1",
+    "compatibleMods": [],
+    "compatibleLibraries": [
+      "placeholder: libraries are not resolved in Vanta 0.1"
+    ],
+    "supported": true,
+    "supportNote": "Only fully supported version in Vanta 0.1"
+  },
+  {
+    "versionNumber": "1.21.10",
+    "loader": "fabric",
+    "mappings": "placeholder: mappings are not resolved in Vanta 0.1",
+    "compatibleMods": [],
+    "compatibleLibraries": [
+      "placeholder: libraries are not resolved in Vanta 0.1"
+    ],
+    "supported": false,
+    "supportNote": "Present in the registry so the UI is not hard-coded to one version. Not supported in 0.1."
+  }
+]

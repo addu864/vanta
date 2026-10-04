@@ -1,0 +1,51 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Launcher runtime / user data
+.vanta-data/
+
+# Accounts, tokens, and passwords
+accounts.json
+*token*
+*password*
+*secret*
+*credential*
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Minecraft game files (not app assets: logo, backgrounds, skins)
+*.jar
+*.jar.disabled
+client.jar
+server.jar
+libraries/
+natives/
+versions/
+.minecraft/
+saves/
+resourcepacks/
+shaderpacks/
+crash-reports/
+*.log
+
+# WebView2 user data
+EBWebView/
+WebView2/
+*.WebView2/
+
+# OS junk
+.DS_Store
+Thumbs.db

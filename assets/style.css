@@ -1,0 +1,676 @@
+/* Vanta home. Original dark panels. Not a copy of another launcher.
+   UI face is the system sans. Not a pixel font and not Mojang's font. */
+:root {
+  color-scheme: dark;
+  --bg: #0b0812;
+  --bg-raise: rgba(18, 12, 30, 0.74);
+  --bg-sink: rgba(12, 8, 20, 0.82);
+  --line: rgba(198, 196, 210, 0.46);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-strong: rgba(176, 140, 230, 0.78);
+  --text: #f6f3fb;
+  --muted: #c8c0d6;
+  --violet: #c9b4ff;
+  --violet-dim: rgba(78, 46, 122, 0.72);
+  --mint: var(--violet);
+  --mint-dim: var(--violet-dim);
+  --warn: #e2b15a;
+  --bad: #ff8d7a;
+  --good: #9be7a8;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #07050e;
+  color: var(--text);
+}
+
+.live-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #0b0814;
+  pointer-events: none;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: #07050e;
+  background-image: linear-gradient(rgba(10, 6, 18, 0.62), rgba(10, 6, 18, 0.74)), url("/assets/backgrounds/default.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.scene.has-image {
+  background-color: #07050e;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.scene-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 35%, rgba(48, 16, 82, 0.14), rgba(6, 2, 14, 0.48));
+}
+
+.scene.has-image + .scene-dim {
+  background: rgba(8, 4, 16, 0.42);
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.app {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px 0;
+  flex-wrap: nowrap;
+}
+
+.wordmark { height: 64px; width: auto; display: block; object-fit: contain; }
+
+.nav-primary, .nav-secondary {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  background: rgba(14, 8, 24, 0.42);
+  border: 1px solid rgba(198, 196, 210, 0.42);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.nav-secondary { background: rgba(14, 8, 24, 0.30); }
+
+.tab {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(198, 196, 210, 0.46);
+  border-radius: 14px;
+  flex: 1 1 0;
+  text-align: center;
+  white-space: nowrap;
+  padding: 8px 10px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #f6f3fb;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.tab.active, .tab:hover {
+  background: rgba(138, 86, 210, 0.46);
+  border-color: rgba(214, 190, 250, 0.82);
+  color: #ffffff;
+}
+
+.account-chip {
+  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(14, 8, 24, 0.44);
+  border: 1px solid rgba(198, 196, 210, 0.46);
+  letter-spacing: 0.03em;
+  font-size: 12px;
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-note { margin: 6px 22px 0; min-height: 1.2em; }
+
+.milestone, .hint, .notes, .meta, label span, .mod {
+  color: var(--muted);
+}
+
+main { padding: 12px 28px 18px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+.panel, .glass {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.home-panel { background: transparent; border: 0; box-shadow: none; padding: 0; }
+
+.scene-picker { margin-bottom: 16px; }
+.scene-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scene-choices button { min-width: 128px; }
+.scene-choice.active {
+  background: rgba(138, 86, 210, 0.86);
+  color: #fbf8ff;
+  text-shadow: none;
+  border-color: rgba(214, 190, 250, 0.82);
+}
+
+.home-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(380px, 1.35fr) minmax(220px, 1fr) minmax(200px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.home-side { display: contents; }
+
+.home-center { text-align: left; }
+
+.eyebrow {
+  margin: 0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+h1 { margin: 4px 0 8px; font-size: 26px; font-weight: 650; letter-spacing: 0; line-height: 1.2; }
+h2 { margin: 0 0 10px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.5; }
+
+.home-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+
+.home-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 10px;
+  text-align: left;
+  width: 100%;
+  background: var(--bg-sink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.home-row span { color: var(--muted); font-size: 11px; line-height: 1.6; }
+.home-go { grid-row: 1 / span 2; align-self: center; letter-spacing: 0.08em; color: var(--mint) !important; }
+
+.home-skin { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
+.skin-mark {
+  width: 72px;
+  height: 96px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  background:
+    linear-gradient(160deg, rgba(168, 110, 230, 0.24), transparent 55%),
+    #14101c;
+  border: 1px solid var(--line);
+}
+.home-skin-texture { width: 64px; height: 64px; object-fit: contain; }
+
+button.action, button.ghost, button.play {
+  border-radius: 14px;
+  border: 1px solid rgba(198, 196, 210, 0.5);
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.45;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+
+button.action {
+  background: rgba(138, 86, 210, 0.86);
+  color: #fbf8ff;
+}
+button.ghost {
+  background: rgba(14, 8, 22, 0.46);
+  color: #f6f3fb;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+}
+button.play {
+  width: 100%;
+  margin: 14px 0 10px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  letter-spacing: 0.08em;
+  font-size: 20px;
+  background: rgba(132, 78, 214, 0.94);
+  color: #fbf8ff;
+  text-shadow: none;
+  border-color: rgba(220, 198, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 0 26px rgba(140, 80, 220, 0.42);
+}
+
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.session-fields { margin-top: 8px; }
+.session-split { grid-template-columns: 1fr 1fr; }
+
+label { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; font-size: 13px; }
+
+input, select {
+  background: var(--bg-sink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+input:focus, select:focus { outline: 2px solid var(--mint); border-color: transparent; }
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row input { flex: 1; min-width: 140px; }
+
+.meta {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 6px 10px;
+  font-size: 12px;
+  margin: 8px 0 0;
+  line-height: 1.7;
+}
+
+.meta b { color: var(--text); font-weight: 600; }
+
+.profile-create { margin: 0 0 14px; }
+.profile-create .row { margin-top: 8px; }
+.profile-create .status { min-height: 0; }
+.profiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-height: 240px; overflow: auto; align-content: start; }
+
+.profile {
+  text-align: left;
+  background: var(--bg-sink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.profile.selected { border-color: var(--mint); box-shadow: inset 0 0 0 1px var(--mint); }
+.profile strong { letter-spacing: 0.03em; }
+.mod { font-size: 13px; }
+.notes { font-size: 11px; line-height: 1.7; }
+
+.status {
+  min-height: 32px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-sink);
+  white-space: pre-wrap;
+}
+
+.status.bad { color: var(--bad); }
+.status.good { color: var(--good); }
+
+.log-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#log {
+  margin: 12px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--bg-sink);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: "IBM Plex Mono", "ui-monospace", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+#copy-note { min-height: 1.2em; font-size: 13px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 18px; }
+
+@media (max-width: 1100px) {
+  .home-layout { grid-template-columns: 1fr 1fr; }
+  .home-center { grid-column: 1 / -1; }
+  .form-grid, .utility-list, .profiles { grid-template-columns: 1fr 1fr; }
+  .session-split { grid-template-columns: 1fr 1fr; }
+}
+
+/* Vanta 0.2 mods browser */
+.mods-toolbar {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 14px;
+  margin: 12px 0;
+  align-items: end;
+}
+
+.mods-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.mod-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+  align-content: start;
+}
+.library-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.skin-category {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+.mod-card {
+  background: var(--bg-sink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mod-card-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mod-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+}
+
+.mod-author, .mod-desc, .mod-meta, .mod-deps {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.mod-desc {
+  margin: 0;
+  line-height: 1.4;
+  max-height: 3.2em;
+  overflow: hidden;
+}
+
+.mod-state {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.state-install { background: var(--mint-dim); color: var(--mint); }
+.state-installed { background: #1d3324; color: var(--good); }
+.state-update { background: #3a3018; color: var(--warn); }
+.state-incompatible { background: #3a221c; color: var(--bad); }
+.state-dependency { background: #3a3018; color: var(--warn); }
+
+.mod-actions { flex-wrap: wrap; }
+.mod-details {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-sink);
+}
+
+@media (max-width: 900px) {
+  .mods-toolbar, .mods-columns, .library-cards, .mod-cards { grid-template-columns: 1fr; }
+}
+
+/* Vanta 0.3 skins */
+.skin-import {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.skin-preview {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.skin-texture {
+  width: 96px;
+  height: auto;
+  image-rendering: pixelated;
+  background:
+    linear-gradient(45deg, #1a1424 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1424 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1424 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1424 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  border: 1px solid var(--line);
+}
+
+.skin-canvas {
+  image-rendering: pixelated;
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.skin-card {
+  cursor: pointer;
+  overflow: hidden;
+}
+.skin-card.selected {
+  border-color: var(--mint);
+  box-shadow: inset 0 0 0 1px var(--mint);
+}
+.skin-preview { max-width: 100%; }
+.skin-canvas { width: 96px; height: auto; max-width: 100%; }
+
+.skin-card select {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+/* Vanta 0.4 local servers */
+textarea {
+  background: var(--bg-sink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 140px;
+  width: 100%;
+  resize: vertical;
+  font-family: "IBM Plex Mono", "ui-monospace", monospace;
+  font-size: 12px;
+}
+
+.check-label {
+  flex-direction: row;
+  align-items: center;
+}
+
+.check-label input { width: auto; }
+
+#server-console {
+  margin: 12px 0;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--bg-sink);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: "IBM Plex Mono", "ui-monospace", monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+#server-detail { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+#server-detail[hidden] { display: none; }
+
+/* Vanta 0.6 HUD editor. Original dark UI. Not a copy of another client. */
+.hud-cats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.hud-cat {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(198, 196, 210, 0.46);
+  border-radius: 14px;
+  flex: 1 1 0;
+  text-align: center;
+  white-space: nowrap;
+  padding: 8px 10px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  font-size: 13px;
+  color: #f6f3fb;
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.hud-cat.active, .hud-cat:hover {
+  background: var(--mint-dim);
+  border-color: var(--line);
+  color: var(--mint);
+}
+
+.hud-editor {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) 1fr;
+  gap: 18px;
+}
+
+.hud-preview {
+  position: relative;
+  height: 260px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(rgba(180, 140, 230, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(180, 140, 230, 0.08) 1px, transparent 1px),
+    var(--bg-sink);
+  background-size: 20px 20px;
+  overflow: hidden;
+}
+
+.hud-chip {
+  position: absolute;
+  transform-origin: top left;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 2px 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hud-chip-bg {
+  background: rgba(16, 10, 26, 0.74);
+  border-radius: 4px;
+}
+
+@media (max-width: 800px) {
+  .hud-editor, .home-layout, .form-grid, .session-split, .utility-list, .profiles { grid-template-columns: 1fr; }
+  .home-center { grid-column: auto; }
+  .account-chip { margin-left: 0; }
+  .topbar, .hud-cats { flex-wrap: wrap; }
+}
+
+/* Vanta 0.7 optional utilities. Original dark UI. Not a new milestone tab. */
+.utility-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.utility {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-sink);
+}
+
+.utility-state {
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.utility-state[data-status="ENABLED"] { color: var(--good); }
+.utility-state[data-status="INCOMPATIBLE"] { color: var(--bad); }
+.utility-state[data-status="OFF"] { color: var(--muted); }
+
+/* Vanta 0.8 resource packs and shader presets. Same dark rows. Not a new tab. */
+.utility-state[data-status="SELECTED"] { color: var(--mint); }
+.utility-state[data-status="NOT_APPLIED"] { color: var(--warn); }
+
+/* Vanta 1.0 controller labels. Same dark rows as the other settings. Not a new tab. */
+.controller-block {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.controller-block select { min-width: 180px; }
+
+.utility-state[data-status="NO_DEVICE"] { color: var(--warn); }
+.utility-state[data-status="PRESENT"] { color: var(--good); }
+.utility-state[data-status="ON"] { color: var(--mint); }

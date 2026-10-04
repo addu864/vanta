@@ -1,0 +1,9 @@
+[project]
+name = "vanta"
+version = "1.0.0"
+description = "Vanta 1.0, an original Minecraft Java launcher with per-profile controller labels"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

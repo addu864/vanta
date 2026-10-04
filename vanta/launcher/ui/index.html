@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VANTA</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <canvas id="live-bg" class="live-bg" aria-hidden="true"></canvas>
+  <div id="scene" class="scene has-image"></div>
+  <div class="scene-dim" aria-hidden="true"></div>
+  <div class="app">
+    <header class="topbar">
+      <img class="wordmark" src="/assets/logo.jpg" alt="VANTA">
+      <p class="milestone">Milestone 1.0</p>
+      <nav class="nav-primary" aria-label="Primary">
+        <button type="button" class="tab active" data-tab="play">PLAY</button>
+        <button type="button" class="tab" data-tab="profiles">PROFILES</button>
+        <button type="button" class="tab" data-tab="mods">MODS</button>
+        <button type="button" class="tab" data-tab="settings">SETTINGS</button>
+      </nav>
+      <nav class="nav-secondary" aria-label="More">
+        <button type="button" class="tab" data-tab="skins">SKINS</button>
+        <button type="button" class="tab" data-tab="servers">SERVERS</button>
+        <button type="button" class="tab" data-tab="hud">HUD</button>
+      </nav>
+      <div class="account-chip" id="nav-account">No local account</div>
+    </header>
+    <p id="background-status" class="hint top-note"></p>
+    <main>
+      <section class="panel home-panel" data-panel="play" id="panel-play">
+        <div class="glass scene-picker">
+          <h2>Background</h2>
+          <p class="hint">One still image, dimmed behind the glass. A custom image stays until Clear, which returns the default.</p>
+          <div class="scene-choices" role="group" aria-label="Background">
+            <button type="button" class="ghost" id="pick-background">Custom image</button>
+            <button type="button" class="ghost" id="clear-background">Clear</button>
+          </div>
+        </div>
+        <div class="home-layout">
+          <div class="glass">
+            <h2>Where you left off</h2>
+            <p class="hint">Local servers opened on this machine. Nothing here is a public server list.</p>
+            <div class="home-list" id="home-recent"></div>
+          </div>
+          <div class="home-center glass">
+            <p class="eyebrow" id="home-account-label">Local account</p>
+            <h1 id="home-account-name">No local account</h1>
+            <p class="hint">PLAY starts Java only when a LOCAL TEST ACCOUNT, a profile, Java, and client.jar are all present. A missing Java or a missing client jar is an error, and launched stays false. The account is not sent to online-mode servers.</p>
+            <button type="button" class="action play" id="play">PLAY</button>
+            <div class="status" id="play-status"></div>
+            <div class="session-fields">
+              <label>Account
+                <select id="account"></select>
+              </label>
+              <div class="row">
+                <input id="username" maxlength="16" placeholder="Username" autocomplete="off">
+                <button type="button" class="action" id="create-account">Create LOCAL TEST ACCOUNT</button>
+              </div>
+              <p class="hint">A LOCAL TEST ACCOUNT is mode=local and is not valid for online-mode servers.</p>
+              <button type="button" class="ghost" id="microsoft">Add Microsoft account</button>
+              <p class="hint">Microsoft sign-in cannot finish in 0.1 without a client id and an interactive login. Vanta will not invent a session.</p>
+              <div class="form-grid session-split">
+                <label>Version
+                  <select id="version"></select>
+                </label>
+                <label>RAM <span id="ram-label"></span>
+                  <input id="ram" type="range" min="2" max="8" step="1" value="4">
+                </label>
+              </div>
+              <div class="meta" id="version-meta"></div>
+            </div>
+          </div>
+          <div class="home-side">
+            <div class="glass">
+              <h2>Saved servers</h2>
+              <p class="hint">Servers stored in the Vanta data folder on this laptop.</p>
+              <div class="home-list" id="home-saved"></div>
+              <button type="button" class="ghost" id="home-open-servers">Open server tools</button>
+            </div>
+            <div class="glass">
+              <h2>Skin</h2>
+              <div id="home-skin" class="home-skin"></div>
+              <button type="button" class="ghost" id="home-open-skins">Open skins</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="profiles" id="panel-profiles" hidden>
+        <h1>PROFILES</h1>
+        <div class="profile-create">
+          <p class="hint">Create a profile here, or add an instance folder you already have. The folder button opens the Windows folder dialog. Nothing is copied or downloaded.</p>
+          <div class="row">
+            <input id="profile-name" maxlength="32" placeholder="New profile name" autocomplete="off">
+            <button type="button" class="action" id="create-profile">Create profile</button>
+          </div>
+          <div class="row">
+            <button type="button" class="action" id="add-instance">Add instance folder</button>
+          </div>
+          <div class="status" id="profile-create-status"></div>
+        </div>
+        <div class="profiles" id="profiles"></div>
+      </section>
+
+      <section class="panel" data-panel="mods" id="panel-mods" hidden>
+        <h1>MODS</h1>
+        <p class="hint">Browse Modrinth for Minecraft 1.21.11 / Fabric. Each profile keeps its own installed and enabled mods.</p>
+        <div class="mods-toolbar">
+          <label class="mods-profile-label">Profile
+            <select id="mods-profile"></select>
+          </label>
+          <div class="row mods-search-row">
+            <input id="mods-query" maxlength="80" placeholder="Search mods" autocomplete="off">
+            <button type="button" class="action" id="mods-search">Search</button>
+          </div>
+        </div>
+        <div class="status" id="mods-status"></div>
+        <div class="mods-columns">
+          <div>
+            <h2>Browse</h2>
+            <div class="mod-cards" id="mod-results"></div>
+          </div>
+          <div>
+            <h2>Installed on this profile</h2>
+            <div class="mod-cards" id="mod-installed"></div>
+          </div>
+        </div>
+        <div class="mod-details" id="mod-details" hidden></div>
+      </section>
+
+      <section class="panel" data-panel="skins" id="panel-skins" hidden>
+        <h1>SKINS</h1>
+        <p class="hint" id="skins-repo-note">Vanta's own skin library is stored in the app. Ely.by and NameMC are not contacted.</p>
+        <p class="hint" id="skins-preview-note">Preview is a 2D image of the skin PNG. A rotating WebGL preview is not in this slice.</p>
+        <div class="mods-toolbar">
+          <label>Show
+            <select id="skins-filter"></select>
+          </label>
+          <div class="row mods-search-row">
+            <input id="skins-query" maxlength="80" placeholder="Filter the Vanta library" autocomplete="off">
+            <button type="button" class="action" id="skins-search">Search</button>
+          </div>
+        </div>
+        <div class="status" id="skins-status"></div>
+        <h2>Vanta library</h2>
+        <div id="skin-results"></div>
+        <div class="mods-columns">
+          <div>
+            <h2>Favorites</h2>
+            <div class="mod-cards" id="skin-favorites"></div>
+          </div>
+          <div>
+            <h2>Recently viewed</h2>
+            <div class="mod-cards" id="skin-recent"></div>
+          </div>
+        </div>
+        <div class="skin-import">
+          <h2>Import a PNG</h2>
+          <p class="hint">64x64 or 64x32 only. Other sizes are rejected.</p>
+          <div class="row">
+            <input id="skin-file" type="file" accept="image/png,.png">
+            <input id="skin-import-name" maxlength="64" placeholder="Skin name" autocomplete="off">
+            <select id="skin-import-model"></select>
+            <button type="button" class="action" id="skin-import">Import</button>
+          </div>
+        </div>
+        <p class="hint" id="skins-microsoft-note">Saving a skin writes it onto the LOCAL TEST ACCOUNT. Online upload needs a Microsoft account, which is not configured. Vanta will not claim a Microsoft upload.</p>
+      </section>
+
+      <section class="panel" data-panel="servers" id="panel-servers" hidden>
+        <h1>SERVERS</h1>
+        <p class="hint">Local servers on this machine only. Vanta does not download Paper, Fabric, or Minecraft. If server.jar is missing, Start fails and the server stays offline. A server crash cannot quit the launcher. An optional tunnel uses a local playit, cloudflared, or bore binary only. Vanta does not download one and does not invent a public address.</p>
+        <div class="mods-columns">
+          <div>
+            <h2>Create</h2>
+            <label>Name
+              <input id="server-name" maxlength="32" placeholder="Server name" autocomplete="off">
+            </label>
+            <label>Minecraft version
+              <input id="server-version" spellcheck="false" autocomplete="off">
+            </label>
+            <label>Software
+              <select id="server-software"></select>
+            </label>
+            <label>RAM (GB)
+              <input id="server-ram-create" type="number" min="2" max="8" step="1" value="2">
+            </label>
+            <label class="check-label">
+              <input id="server-eula" type="checkbox">
+              I accept the Minecraft EULA (https://aka.ms/MinecraftEULA). Required before create.
+            </label>
+            <button type="button" class="action" id="server-create">Create server</button>
+            <div class="status" id="servers-status"></div>
+          </div>
+          <div>
+            <h2>This machine</h2>
+            <div class="profiles" id="server-list"></div>
+          </div>
+        </div>
+        <div id="server-detail" hidden>
+          <h2 id="server-detail-title">Server</h2>
+          <p class="hint" id="server-jar-note"></p>
+          <h2>Friends outside your network</h2>
+          <label class="check-label">
+            <input id="server-tunnel-enabled" type="checkbox">
+            Make this server accessible to friends outside your network?
+          </label>
+          <p class="hint" id="server-tunnel-status">OFFLINE</p>
+          <div class="row" id="server-tunnel-address-row" hidden>
+            <input id="server-tunnel-address" readonly spellcheck="false" autocomplete="off">
+            <button type="button" class="ghost" id="server-tunnel-copy">Copy address</button>
+          </div>
+          <label>Tunnel address (host:port)
+            <input id="server-tunnel-manual" spellcheck="false" autocomplete="off" placeholder="host:port">
+          </label>
+          <div class="row">
+            <button type="button" class="ghost" id="server-tunnel-save">Save tunnel address</button>
+            <button type="button" class="ghost" id="server-tunnel-copy-manual">Copy address</button>
+          </div>
+          <p class="hint" id="server-tunnel-detected"></p>
+          <p class="hint" id="server-players">offline · no players</p>
+          <div class="row mod-actions">
+            <button type="button" class="action" id="server-start">Start</button>
+            <button type="button" class="ghost" id="server-stop">Stop</button>
+            <button type="button" class="ghost" id="server-restart">Restart</button>
+            <button type="button" class="ghost" id="server-backup">Backup</button>
+          </div>
+          <div class="form-grid">
+            <label>Port
+              <input id="server-port" type="number" min="1" max="65535" step="1">
+            </label>
+            <label>RAM (GB)
+              <input id="server-ram" type="number" min="2" max="8" step="1">
+            </label>
+            <label>JVM arguments
+              <input id="server-jvm" type="text" spellcheck="false" placeholder="Stored until start. Not a shell command.">
+            </label>
+          </div>
+          <button type="button" class="action" id="server-save-settings">Save port, RAM, and JVM args</button>
+          <h2>server.properties</h2>
+          <textarea id="server-properties" spellcheck="false"></textarea>
+          <button type="button" class="action" id="server-save-properties">Write server.properties</button>
+          <h2>Console</h2>
+          <pre id="server-console"></pre>
+          <h2>Plugins</h2>
+          <p class="hint">Paper only. Local jars can be listed, enabled, disabled, and removed. Install-from-URL is not supported. Fabric returns "not a Paper server".</p>
+          <div class="row">
+            <input id="server-plugin-path" placeholder="Local path to a .jar" spellcheck="false">
+            <button type="button" class="action" id="server-plugin-install">Install local jar</button>
+          </div>
+          <div class="mod-cards" id="server-plugins"></div>
+        </div>
+      </section>
+
+
+      <section class="panel" data-panel="hud" id="panel-hud" hidden>
+        <h1>HUD</h1>
+        <p class="hint" id="hud-note">HUD layout is saved per profile and would be read by a future client mod. It was not shown in Minecraft.</p>
+        <p class="hint">Launcher preview only. Minecraft is not running, and this page does not draw a HUD inside a world.</p>
+        <label>Profile
+          <select id="hud-profile"></select>
+        </label>
+        <div class="hud-cats" id="hud-categories">
+          <button type="button" class="hud-cat" data-hud-category="PERFORMANCE">PERFORMANCE</button>
+          <button type="button" class="hud-cat" data-hud-category="VISUAL">VISUAL</button>
+          <button type="button" class="hud-cat active" data-hud-category="HUD">HUD</button>
+          <button type="button" class="hud-cat" data-hud-category="QUALITY OF LIFE">QUALITY OF LIFE</button>
+        </div>
+
+        <div data-hud-panel="PERFORMANCE" hidden>
+          <h2>PERFORMANCE</h2>
+          <p class="hint" id="hud-preset-note">Stored settings bundle only. Vanta does not measure or promise a frame rate, and it does not download performance mods.</p>
+          <p class="hint">Presets: MAX FPS, BALANCED, PRETTY, CINEMATIC. Choosing one does not download Sodium or any other mod.</p>
+          <label>Preset
+            <select id="hud-preset"></select>
+          </label>
+          <button type="button" class="action" id="hud-save-preset">Save preset</button>
+          <div class="meta" id="hud-preset-settings"></div>
+        </div>
+
+        <div data-hud-panel="VISUAL" hidden>
+          <h2>VISUAL</h2>
+          <p class="hint">Fullscreen, GUI scale, brightness, and FOV are stored on this profile. They are not applied to a running game. The HUD visual shader flag stays off. Packs and shader presets below are separate and were not tested in Minecraft.</p>
+          <label class="check-label">Fullscreen
+            <input id="hud-fullscreen" type="checkbox">
+          </label>
+          <label>GUI scale (0–4)
+            <input id="hud-gui-scale" type="number" min="0" max="4" step="1">
+          </label>
+          <label>Brightness (0–100)
+            <input id="hud-brightness" type="number" min="0" max="100" step="1">
+          </label>
+          <label>FOV (30–110)
+            <input id="hud-fov" type="number" min="30" max="110" step="1">
+          </label>
+          <button type="button" class="action" id="hud-save-visual">Save visual settings</button>
+          <h2>Resource packs</h2>
+          <p class="hint" id="pack-note">Two original packs for this profile: Vanta Vanilla+ and Vanta Cartoon. The textures were generated for Vanta. They are not a complete Minecraft pack and were not tested in Minecraft. Selecting one copies it into this profile's resourcepacks folder only.</p>
+          <div class="utility-list" id="pack-toggles">
+            <div class="utility" data-pack="vanta-vanilla-plus">
+              <label class="check-label">Vanta Vanilla+
+                <input type="checkbox" data-pack-toggle="vanta-vanilla-plus">
+              </label>
+              <span class="utility-state" data-pack-state="vanta-vanilla-plus" data-status="OFF">OFF</span>
+            </div>
+            <div class="utility" data-pack="vanta-cartoon">
+              <label class="check-label">Vanta Cartoon
+                <input type="checkbox" data-pack-toggle="vanta-cartoon">
+              </label>
+              <span class="utility-state" data-pack-state="vanta-cartoon" data-status="OFF">OFF</span>
+            </div>
+          </div>
+          <h2>Shader presets</h2>
+          <p class="hint" id="shader-note">Shaders are off by default. Vanta Smooth aims at a soft, even grade. Vanta Cinematic aims at deeper shadows. Both are Vanta-owned descriptions with a performance warning, not third-party shader packs. A smooth or cinematic pass can cost frames if a loader ever ran it. If Iris is not installed, the choice is stored and the status stays NOT_APPLIED. Vanta does not claim a shader is running. Not tested in Minecraft. Controller labels are on SETTINGS and were not tested in a game.</p>
+          <div class="utility-list" id="shader-toggles">
+            <div class="utility" data-shader-preset="vanta-smooth">
+              <label class="check-label">Vanta Smooth
+                <input type="checkbox" data-shader-toggle="vanta-smooth">
+              </label>
+              <span class="utility-state" data-shader-state="vanta-smooth" data-status="OFF">OFF</span>
+            </div>
+            <div class="utility" data-shader-preset="vanta-cinematic">
+              <label class="check-label">Vanta Cinematic
+                <input type="checkbox" data-shader-toggle="vanta-cinematic">
+              </label>
+              <span class="utility-state" data-shader-state="vanta-cinematic" data-status="OFF">OFF</span>
+            </div>
+          </div>
+          <p class="hint" id="shader-warning">No preset is running.</p>
+        </div>
+
+        <div data-hud-panel="HUD">
+          <h2>HUD</h2>
+          <p class="hint">Modules: FPS, ping, coordinates, CPS, keystrokes, RAM, sprint, sneak, armor / status. Each can be enabled, moved, scaled, and given a text color and background.</p>
+          <div class="hud-editor">
+            <div>
+              <label>Module
+                <select id="hud-module"></select>
+              </label>
+              <label class="check-label">Enabled
+                <input id="hud-enabled" type="checkbox">
+              </label>
+              <div class="row">
+                <label>X
+                  <input id="hud-x" type="number" step="1">
+                </label>
+                <label>Y
+                  <input id="hud-y" type="number" step="1">
+                </label>
+                <label>Scale
+                  <input id="hud-scale" type="number" min="0.5" max="3" step="0.1">
+                </label>
+              </div>
+              <label>Text color
+                <input id="hud-color" type="color" value="#e7eee9">
+              </label>
+              <label class="check-label">Background
+                <input id="hud-background" type="checkbox">
+              </label>
+              <div class="row">
+                <button type="button" class="action" id="hud-save-module">Save module</button>
+                <button type="button" class="ghost" id="hud-reset">Reset layout</button>
+              </div>
+            </div>
+            <div>
+              <p class="hint">Launcher preview only. Not shown in Minecraft.</p>
+              <div id="hud-preview" class="hud-preview"></div>
+            </div>
+          </div>
+        </div>
+
+        <div data-hud-panel="QUALITY OF LIFE" hidden>
+          <h2>QUALITY OF LIFE</h2>
+          <p class="hint">Toggle sprint, toggle sneak, zoom, a waypoint list (name, x, y, z), and a keybind map. Stored per profile. No freecam, killaura, reach, or x-ray.</p>
+          <label class="check-label">Toggle sprint
+            <input id="hud-toggle-sprint" type="checkbox">
+          </label>
+          <label>Toggle sprint key
+            <input id="hud-key-sprint" maxlength="24" spellcheck="false" autocomplete="off">
+          </label>
+          <label class="check-label">Toggle sneak
+            <input id="hud-toggle-sneak" type="checkbox">
+          </label>
+          <label>Toggle sneak key
+            <input id="hud-key-sneak" maxlength="24" spellcheck="false" autocomplete="off">
+          </label>
+          <label class="check-label">Zoom
+            <input id="hud-zoom" type="checkbox">
+          </label>
+          <label>Zoom key
+            <input id="hud-key-zoom" maxlength="24" spellcheck="false" autocomplete="off">
+          </label>
+          <button type="button" class="action" id="hud-save-qol">Save toggles and keybinds</button>
+          <h2>Waypoints</h2>
+          <div class="row">
+            <input id="hud-wp-name" maxlength="32" placeholder="Name" autocomplete="off">
+            <input id="hud-wp-x" type="number" placeholder="x">
+            <input id="hud-wp-y" type="number" placeholder="y">
+            <input id="hud-wp-z" type="number" placeholder="z">
+            <button type="button" class="action" id="hud-wp-add">Add waypoint</button>
+          </div>
+          <div class="profiles" id="hud-waypoints"></div>
+          <h2>Utilities</h2>
+          <p class="hint" id="utility-note">Optional mods for this profile only: Simple Voice Chat, Xaero's Minimap, and Xaero's World Map. States are OFF, INCOMPATIBLE, or ENABLED. A toggle turns on only after a Modrinth version lists Minecraft 1.21.11 and Fabric. Search hits are not enough. No jar is vendored. These mods were not shown to work in Minecraft. Controller support is not included.</p>
+          <div class="utility-list" id="utility-toggles">
+            <div class="utility" data-utility="simple-voice-chat">
+              <label class="check-label">Simple Voice Chat
+                <input type="checkbox" data-utility-toggle="simple-voice-chat">
+              </label>
+              <span class="utility-state" data-utility-state="simple-voice-chat" data-status="OFF">OFF</span>
+            </div>
+            <div class="utility" data-utility="xaeros-minimap">
+              <label class="check-label">Xaero's Minimap
+                <input type="checkbox" data-utility-toggle="xaeros-minimap">
+              </label>
+              <span class="utility-state" data-utility-state="xaeros-minimap" data-status="OFF">OFF</span>
+            </div>
+            <div class="utility" data-utility="xaeros-world-map">
+              <label class="check-label">Xaero's World Map
+                <input type="checkbox" data-utility-toggle="xaeros-world-map">
+              </label>
+              <span class="utility-state" data-utility-state="xaeros-world-map" data-status="OFF">OFF</span>
+            </div>
+          </div>
+        </div>
+        <div class="status" id="hud-status"></div>
+      </section>
+
+      <section class="panel" data-panel="settings" id="panel-settings" hidden>
+        <h1>SETTINGS</h1>
+        <p class="hint">Language and theme are placeholders. JVM arguments are stored and never executed.</p>
+        <div class="form-grid">
+          <label>Language
+            <select id="language"></select>
+          </label>
+          <label>Theme
+            <select id="theme"></select>
+          </label>
+          <label>Default version
+            <select id="default-version"></select>
+          </label>
+          <label>Default RAM (GB)
+            <input id="default-ram" type="number" min="2" max="8" step="1" value="4">
+          </label>
+          <label>Game directory
+            <input id="game-directory" type="text" spellcheck="false">
+          </label>
+          <label>JVM arguments
+            <input id="jvm-args" type="text" spellcheck="false" placeholder="Stored only, for example -Xmx4G">
+          </label>
+        </div>
+        <button type="button" class="action" id="save-settings">Save settings</button>
+        <div class="status" id="settings-status"></div>
+        <div class="controller-block" id="controller-settings">
+          <h2>Controller</h2>
+          <p class="hint" id="controller-note">Labels only, for the selected profile. Vanta checks pygame, /dev/input/js*, and evdev. If none of those show a pad, the status is NO_DEVICE. Vanta will not invent a controller. These labels are not sent to Minecraft. In-game controller play was not tested.</p>
+          <div class="utility">
+            <span>Device</span>
+            <span class="utility-state" id="controller-device-state" data-status="NO_DEVICE">NO_DEVICE</span>
+          </div>
+          <p class="hint" id="controller-device-detail">No controller check has finished.</p>
+          <p class="hint">Profile: <span id="controller-profile-name">none</span></p>
+          <label>Stick deadzone (0–1)
+            <input id="controller-deadzone" type="number" min="0" max="1" step="0.01" value="0.15">
+          </label>
+          <div class="utility">
+            <label class="check-label">Launcher navigation
+              <input type="checkbox" id="controller-launcher-nav">
+            </label>
+            <span class="utility-state" id="controller-nav-state" data-status="OFF">OFF</span>
+          </div>
+          <div class="utility-list" id="controller-buttons">
+            <div class="utility" data-controller-button="a"><span>A</span><span class="hint">Jump</span><select data-controller-action="a" aria-label="A"></select></div>
+            <div class="utility" data-controller-button="b"><span>B</span><span class="hint">Sneak</span><select data-controller-action="b" aria-label="B"></select></div>
+            <div class="utility" data-controller-button="x"><span>X</span><span class="hint">Inventory</span><select data-controller-action="x" aria-label="X"></select></div>
+            <div class="utility" data-controller-button="y"><span>Y</span><span class="hint">Drop</span><select data-controller-action="y" aria-label="Y"></select></div>
+            <div class="utility" data-controller-button="lb"><span>LB</span><span class="hint">Hotbar previous</span><select data-controller-action="lb" aria-label="LB"></select></div>
+            <div class="utility" data-controller-button="rb"><span>RB</span><span class="hint">Hotbar next</span><select data-controller-action="rb" aria-label="RB"></select></div>
+            <div class="utility" data-controller-button="lt"><span>LT</span><span class="hint">Use</span><select data-controller-action="lt" aria-label="LT"></select></div>
+            <div class="utility" data-controller-button="rt"><span>RT</span><span class="hint">Attack</span><select data-controller-action="rt" aria-label="RT"></select></div>
+            <div class="utility" data-controller-button="start"><span>Start</span><span class="hint">Pause</span><select data-controller-action="start" aria-label="Start"></select></div>
+            <div class="utility" data-controller-button="back"><span>Back</span><span class="hint">Menu</span><select data-controller-action="back" aria-label="Back"></select></div>
+            <div class="utility" data-controller-button="left-stick"><span>Left stick</span><span class="hint">Move</span><select data-controller-action="left-stick" aria-label="Left stick"></select></div>
+            <div class="utility" data-controller-button="right-stick"><span>Right stick</span><span class="hint">Look</span><select data-controller-action="right-stick" aria-label="Right stick"></select></div>
+          </div>
+          <button type="button" class="action" id="save-controller">Save controller</button>
+          <div class="status" id="controller-status"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="log-panel">
+        <div class="log-head">
+          <h2>Log</h2>
+          <button type="button" class="ghost" id="copy-error">Copy last error</button>
+        </div>
+        <pre id="log"></pre>
+        <p id="copy-note" class="hint"></p>
+      </section>
+    </main>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let versions = [];
+    let selectedProfile = "";
+    let localAccounts = [];
+    let appliedSkinId = "";
+
+    function showTab(name) {
+      document.querySelectorAll(".tab").forEach((item) => {
+        item.classList.toggle("active", item.dataset.tab === name);
+      });
+      document.querySelectorAll("[data-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== name;
+      });
+      if (name === "mods") {
+        loadInstalledMods().catch(() => {});
+      }
+      if (name === "skins") {
+        loadSkinLibrary().catch(() => {});
+      }
+      if (name === "servers") {
+        loadServers().catch(() => {});
+      }
+      if (name === "hud") {
+        loadHud().catch(() => {});
+      }
+    }
+
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => showTab(button.dataset.tab));
+    });
+
+    async function api(path, options) {
+      const response = await fetch(path, options);
+      const type = response.headers.get("content-type") || "";
+      if (type.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        return { httpOk: response.ok, data: data };
+      }
+      const text = await response.text();
+      return { httpOk: response.ok, text: text };
+    }
+
+    function post(path, payload) {
+      return api(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+    }
+
+    function setStatus(id, text, kind) {
+      const node = $(id);
+      node.textContent = text || "";
+      node.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function selectedVersionValue() {
+      const parts = ($("version").value || "").split("|");
+      return { versionNumber: parts[0] || "", loader: parts[1] || "" };
+    }
+
+    function fillVersionSelect(select, items, currentNumber, currentLoader, supportedOnly) {
+      select.replaceChildren();
+      items.forEach((version) => {
+        if (supportedOnly && version.supported !== true) {
+          return;
+        }
+        const option = document.createElement("option");
+        option.value = version.versionNumber + "|" + version.loader;
+        const mark = version.supported ? "" : " (not supported in 0.1)";
+        option.textContent = version.versionNumber + " / " + version.loader + mark;
+        if (version.versionNumber === currentNumber && version.loader === currentLoader) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+
+    function findVersion(number, loader) {
+      return versions.find((item) => item.versionNumber === number && item.loader === loader) || null;
+    }
+
+    function showVersionDetails() {
+      const chosen = selectedVersionValue();
+      const version = findVersion(chosen.versionNumber, chosen.loader);
+      const host = $("version-meta");
+      host.replaceChildren();
+      if (!version) {
+        return;
+      }
+      const rows = [
+        ["versionNumber", version.versionNumber],
+        ["loader", version.loader],
+        ["mappings", version.mappings],
+        ["gameDirectory", version.gameDirectory],
+        ["compatibleMods", (version.compatibleMods || []).length ? "see registry" : "none — not compatibility-tested"],
+        ["compatibleLibraries", (version.compatibleLibraries || []).join(", ")],
+        ["supported", version.supported ? "yes" : "no"]
+      ];
+      rows.forEach((row) => {
+        const key = document.createElement("span");
+        key.textContent = row[0];
+        const value = document.createElement("b");
+        value.textContent = String(row[1]);
+        host.appendChild(key);
+        host.appendChild(value);
+      });
+    }
+
+    function renderAccounts(accounts, selectedId) {
+      localAccounts = accounts || [];
+      const select = $("account");
+      select.replaceChildren();
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = "No account selected";
+      select.appendChild(empty);
+      let selected = null;
+      (accounts || []).forEach((account) => {
+        const option = document.createElement("option");
+        option.value = account.id;
+        option.textContent = account.username + " · " + account.label;
+        if (account.id === selectedId) {
+          option.selected = true;
+          selected = account;
+        }
+        select.appendChild(option);
+      });
+      const name = selected ? selected.username : "No local account";
+      $("home-account-name").textContent = name;
+      $("nav-account").textContent = name;
+      $("home-account-label").textContent = selected ? selected.label : "Local account";
+    }
+
+    function renderProfiles(profiles, selected) {
+      selectedProfile = selected || "";
+      const host = $("profiles");
+      host.replaceChildren();
+      (profiles || []).forEach((profile) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "profile" + (profile.name === selectedProfile ? " selected" : "");
+        const title = document.createElement("strong");
+        title.textContent = profile.name;
+        const intent = document.createElement("span");
+        intent.textContent = profile.intent + " · " + profile.ramGb + " GB · shaders off";
+        card.appendChild(title);
+        card.appendChild(intent);
+        (profile.modsIntent || []).forEach((mod) => {
+          const line = document.createElement("span");
+          line.className = "mod";
+          line.textContent = mod.name + " — " + mod.status;
+          card.appendChild(line);
+        });
+        if (profile.instanceDirectory) {
+          const folder = document.createElement("span");
+          folder.className = "notes";
+          folder.textContent = "Instance folder: " + profile.instanceDirectory;
+          card.appendChild(folder);
+        }
+        if (profile.notes) {
+          const notes = document.createElement("span");
+          notes.className = "notes";
+          notes.textContent = profile.notes;
+          card.appendChild(notes);
+        }
+        card.addEventListener("click", () => chooseProfile(profile.name, profile.ramGb));
+        host.appendChild(card);
+      });
+    }
+
+    function setRam(value) {
+      const number = String(value || 4);
+      $("ram").value = number;
+      $("ram-label").textContent = number + " GB";
+    }
+
+    async function refreshLogs() {
+      const result = await api("/api/logs");
+      $("log").textContent = ((result.data && result.data.lines) || []).join("\n");
+    }
+
+    async function refresh() {
+      const status = await api("/api/status");
+      const versionResult = await api("/api/versions");
+      const accountResult = await api("/api/accounts");
+      const profileResult = await api("/api/profiles");
+      const settingsResult = await api("/api/settings");
+      versions = (versionResult.data && versionResult.data.versions) || [];
+      const settings = (settingsResult.data && settingsResult.data.settings) || {};
+      const profiles = (profileResult.data && profileResult.data.profiles) || [];
+      const selectedName = (profileResult.data && profileResult.data.selectedProfileName) || settings.selectedProfileName || "";
+      fillVersionSelect($("version"), versions, settings.defaultVersion, settings.defaultLoader, false);
+      fillVersionSelect($("default-version"), versions, settings.defaultVersion, settings.defaultLoader, true);
+      renderAccounts((accountResult.data && accountResult.data.accounts) || [], accountResult.data && accountResult.data.selectedAccountId);
+      renderProfiles(profiles, selectedName);
+      const active = profiles.find((item) => item.name === selectedName);
+      setRam(active ? active.ramGb : settings.defaultRamGb || 4);
+      showVersionDetails();
+      fillPlaceholderSelect($("language"), ["en"], settings.language || "en", "English");
+      fillPlaceholderSelect($("theme"), ["dark"], settings.theme || "dark", "Dark");
+      $("default-ram").value = settings.defaultRamGb || 4;
+      $("game-directory").value = settings.gameDirectory || "";
+      $("jvm-args").value = settings.jvmArgs || "";
+      if (status.data && status.data.name !== "Vanta") {
+        setStatus("play-status", "Launcher status did not identify itself as Vanta.", "bad");
+      }
+      renderModsProfileSelect(profiles, selectedName);
+      renderHudProfileSelect(profiles, selectedName);
+      fillSkinSelects();
+      fillServerSoftware();
+      if (!$("server-version").value && settings.defaultVersion) {
+        $("server-version").value = settings.defaultVersion;
+      }
+      if (!$("server-ram-create").value) {
+        $("server-ram-create").value = "2";
+      }
+      await loadInstalledMods();
+      await loadServers();
+      await loadHud();
+      await loadController();
+      await loadHome();
+      await loadBackground();
+      await refreshLogs();
+    }
+
+    function fillPlaceholderSelect(select, values, current, labelForSingle) {
+      select.replaceChildren();
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = values.length === 1 ? labelForSingle : value;
+        option.selected = value === current;
+        select.appendChild(option);
+      });
+    }
+
+    async function chooseProfile(name, ramGb) {
+      const result = await post("/api/profiles/select", { name: name });
+      if (!result.data.ok) {
+        setStatus("play-status", result.data.error || "Could not select that profile.", "bad");
+      }
+      setRam(ramGb);
+      await refresh();
+    }
+
+    function paintHomeServers(hostId, servers, emptyText) {
+      const host = $(hostId);
+      host.replaceChildren();
+      if (!servers || !servers.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = emptyText;
+        host.appendChild(empty);
+        return;
+      }
+      servers.slice(0, 4).forEach((server) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "home-row";
+        const title = document.createElement("strong");
+        title.textContent = server.name || "Server";
+        const meta = document.createElement("span");
+        meta.textContent = (server.running ? "process online" : "offline") + " · " + (server.software || "") + " · port " + server.port;
+        const go = document.createElement("span");
+        go.className = "home-go";
+        go.textContent = "Continue";
+        row.appendChild(title);
+        row.appendChild(meta);
+        row.appendChild(go);
+        row.addEventListener("click", () => {
+          openSavedServer(server.id);
+        });
+        host.appendChild(row);
+      });
+    }
+
+    async function openSavedServer(id) {
+      showTab("servers");
+      try {
+        await post("/api/home/visit", { serverId: id });
+      } catch (err) {}
+      await selectServer(id);
+    }
+
+    async function loadHome() {
+      const result = await api("/api/home");
+      const data = result.data || {};
+      if (!data.ok) {
+        return;
+      }
+      paintHomeServers("home-recent", data.recent || [], "No local server has been opened yet.");
+      paintHomeServers("home-saved", data.saved || [], "No saved servers yet. Create one under SERVERS.");
+      const skins = await api("/api/skins/state");
+      paintHomeSkin((skins.data && skins.data.applied) || null);
+    }
+
+    function paintHomeSkin(applied) {
+      const host = $("home-skin");
+      host.replaceChildren();
+      const mark = document.createElement("div");
+      mark.className = "skin-mark";
+      const name = ($("home-account-name").textContent || "V").trim();
+      mark.textContent = (name && name !== "No local account" ? name.charAt(0) : "V").toUpperCase();
+      host.appendChild(mark);
+      const note = document.createElement("p");
+      note.className = "hint";
+      if (applied && applied.skinId) {
+        const img = document.createElement("img");
+        img.className = "skin-texture home-skin-texture";
+        img.alt = "Saved local skin texture";
+        img.src = "/api/skins/texture?id=" + encodeURIComponent(applied.skinId);
+        host.insertBefore(img, mark);
+        note.textContent = "Saved on " + (applied.username || "the local account") + ". Not uploaded to Microsoft.";
+      } else {
+        note.textContent = "No skin saved on this local account yet.";
+      }
+      host.appendChild(note);
+    }
+
+    const DEFAULT_BACKGROUND = "/assets/backgrounds/default.png";
+
+    function stillBackground(url) {
+      return "linear-gradient(rgba(5,6,8,0.62), rgba(5,6,8,0.74)), url('" + url + "')";
+    }
+
+    function applyBackground(data) {
+      const sceneEl = $("scene");
+      const custom = !!(data && data.custom && data.url);
+      const url = custom ? data.url + "?t=" + Date.now() : DEFAULT_BACKGROUND;
+      sceneEl.style.backgroundImage = stillBackground(url);
+      sceneEl.classList.add("has-image");
+      if (custom) {
+        $("background-status").textContent = "Custom background is saved in the Vanta data folder.";
+      } else {
+        $("background-status").textContent = "Default background.";
+      }
+    }
+
+    async function loadBackground() {
+      const result = await api("/api/background");
+      applyBackground(result.data || {});
+    }
+
+    async function saveBackgroundPath(path) {
+      const result = await post("/api/background", { path: path });
+      const data = result.data || {};
+      if (!data.ok) {
+        $("background-status").textContent = data.error || "That image was not saved.";
+        return;
+      }
+      applyBackground(data);
+    }
+
+    $("home-open-servers").addEventListener("click", () => showTab("servers"));
+    $("home-open-skins").addEventListener("click", () => showTab("skins"));
+
+    $("pick-background").addEventListener("click", async () => {
+      const host = window.chrome && window.chrome.webview;
+      if (host) {
+        $("background-status").textContent = "Choose an image in the Windows dialog.";
+        host.postMessage("browse-background");
+        return;
+      }
+      $("background-status").textContent = "Opening the image dialog...";
+      const result = await post("/api/background/browse", {});
+      const data = result.data || {};
+      if (!data.ok) {
+        $("background-status").textContent = data.error || "No image was selected.";
+        return;
+      }
+      applyBackground(data);
+    });
+
+    $("clear-background").addEventListener("click", async () => {
+      const result = await post("/api/background/clear", {});
+      applyBackground(result.data || { custom: false, url: DEFAULT_BACKGROUND });
+    });
+
+    $("version").addEventListener("change", showVersionDetails);
+    $("ram").addEventListener("input", () => setRam($("ram").value));
+
+    $("account").addEventListener("change", async () => {
+      const accountId = $("account").value;
+      if (!accountId) {
+        return;
+      }
+      const result = await post("/api/accounts/select", { accountId: accountId });
+      if (!result.data.ok) {
+        setStatus("play-status", result.data.error, "bad");
+      }
+      await refreshLogs();
+    });
+
+    $("create-account").addEventListener("click", async () => {
+      const result = await post("/api/accounts/local", { username: $("username").value });
+      if (!result.data.ok) {
+        setStatus("play-status", result.data.error, "bad");
+      } else {
+        setStatus("play-status", "Saved LOCAL TEST ACCOUNT " + result.data.account.username + ". It is not valid for online-mode servers.", "good");
+        $("username").value = "";
+      }
+      await refresh();
+    });
+
+    $("microsoft").addEventListener("click", async () => {
+      const result = await post("/api/accounts/microsoft", {});
+      const message = (result.data && result.data.error) || "Microsoft sign-in is not completed in 0.1 (no client id / interactive login).";
+      setStatus("play-status", message, "bad");
+      await refresh();
+    });
+
+    $("create-profile").addEventListener("click", async () => {
+      const result = await post("/api/profiles", { name: $("profile-name").value, ramGb: Number($("ram").value) });
+      if (!result.data.ok) {
+        setStatus("profile-create-status", result.data.error, "bad");
+      } else {
+        setStatus("profile-create-status", "Created profile " + result.data.profile.name + ".", "good");
+        $("profile-name").value = "";
+      }
+      await refresh();
+    });
+
+    async function saveInstanceFolder(path) {
+      const result = await post("/api/instances/add", {
+        name: $("profile-name").value,
+        path: path,
+        ramGb: Number($("ram").value)
+      });
+      if (!result.data.ok) {
+        setStatus("profile-create-status", result.data.error || "That folder was not added.", "bad");
+      } else {
+        const saved = result.data.profile || {};
+        setStatus("profile-create-status", "Added instance profile " + saved.name + ". " + (saved.instanceDirectory || ""), "good");
+        $("profile-name").value = "";
+      }
+      await refresh();
+    }
+
+    if (window.chrome && window.chrome.webview) {
+      window.chrome.webview.addEventListener("message", async (event) => {
+        let data = event.data;
+        if (typeof data === "string") {
+          try { data = JSON.parse(data); } catch (err) { return; }
+        }
+        if (!data || !data.path) {
+          return;
+        }
+        if (data.type === "instance-folder") {
+          await saveInstanceFolder(data.path);
+          return;
+        }
+        if (data.type === "background-file") {
+          await saveBackgroundPath(data.path);
+        }
+      });
+    }
+
+    $("add-instance").addEventListener("click", async () => {
+      const host = window.chrome && window.chrome.webview;
+      if (host) {
+        setStatus("profile-create-status", "Choose the instance folder in the Windows dialog.", "good");
+        host.postMessage("browse-instance");
+        return;
+      }
+      setStatus("profile-create-status", "Opening the folder dialog...", "good");
+      const result = await post("/api/instances/browse", {});
+      if (!result.data.ok || !result.data.path) {
+        setStatus("profile-create-status", result.data.error || "No folder was selected.", "bad");
+        return;
+      }
+      await saveInstanceFolder(result.data.path);
+    });
+
+    $("play").addEventListener("click", async () => {
+      $("play").disabled = true;
+      const chosen = selectedVersionValue();
+      const result = await post("/api/play", {
+        accountId: $("account").value || null,
+        versionNumber: chosen.versionNumber,
+        loader: chosen.loader,
+        ramGb: Number($("ram").value),
+        profileName: selectedProfile,
+        targetMode: "local"
+      });
+      const data = result.data || {};
+      if (data.launched === true && data.pid) {
+        const kind = data.minecraftClient ? "Minecraft client" : "Java process";
+        setStatus("play-status", "Started a local " + kind + ". pid " + data.pid + ". LOCAL TEST ACCOUNT was not sent to an online-mode server.", "good");
+      } else if (data.status === "Ready" && data.launched === false && data.dryRun === true) {
+        const javaMessage = data.plan && data.plan.java ? data.plan.java.message : "";
+        setStatus("play-status", "Ready. Dry-run launch plan written. The game was not started. " + javaMessage, "good");
+      } else {
+        setStatus("play-status", data.error || (data.errors || []).join("\n") || "Play failed.", "bad");
+      }
+      $("play").disabled = false;
+      await refresh();
+    });
+
+    function paintController(data) {
+      const state = $("controller-device-state");
+      const status = (data && data.status) || "NO_DEVICE";
+      state.textContent = status;
+      state.setAttribute("data-status", status);
+      $("controller-device-detail").textContent = (data && data.checkSummary) || "No controller check has finished.";
+      $("controller-profile-name").textContent = (data && data.profileName) || selectedProfile || "none";
+      if (data && typeof data.deadzone === "number") {
+        $("controller-deadzone").value = String(data.deadzone);
+      }
+      const navOn = !!(data && data.launcherNavigation === true);
+      $("controller-launcher-nav").checked = navOn;
+      const nav = $("controller-nav-state");
+      nav.textContent = navOn ? "ON" : "OFF";
+      nav.setAttribute("data-status", navOn ? "ON" : "OFF");
+      const actions = (data && data.actions) || [];
+      const rows = (data && data.buttons) || [];
+      document.querySelectorAll("[data-controller-action]").forEach((select) => {
+        const id = select.getAttribute("data-controller-action");
+        const current = rows.find((item) => item.id === id);
+        const selectedAction = current ? current.action : "";
+        select.replaceChildren();
+        actions.forEach((action) => {
+          const option = document.createElement("option");
+          option.value = action.id;
+          option.textContent = action.label;
+          option.selected = action.id === selectedAction;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    async function loadController() {
+      const profile = selectedProfile || "";
+      const query = profile ? ("?profile=" + encodeURIComponent(profile)) : "";
+      try {
+        const result = await api("/api/controller" + query);
+        paintController(result.data || {});
+        if (result.data && result.data.ok === false && result.data.error) {
+          setStatus("controller-status", result.data.error, "bad");
+        }
+      } catch (err) {
+        setStatus("controller-status", "Could not read controller settings.", "bad");
+      }
+    }
+
+    $("save-controller").addEventListener("click", async () => {
+      const buttons = {};
+      document.querySelectorAll("[data-controller-action]").forEach((select) => {
+        buttons[select.getAttribute("data-controller-action")] = select.value;
+      });
+      const result = await post("/api/controller", {
+        profileName: selectedProfile,
+        deadzone: Number($("controller-deadzone").value),
+        launcherNavigation: $("controller-launcher-nav").checked === true,
+        buttons: buttons
+      });
+      const data = result.data || {};
+      if (data.buttons || data.deadzone !== undefined) {
+        paintController(data);
+      }
+      if (data.ok) {
+        const device = data.status || "NO_DEVICE";
+        setStatus("controller-status", "Saved controller labels for this profile. Status " + device + ". Not tested in Minecraft.", "good");
+      } else {
+        setStatus("controller-status", data.error || "Could not save controller settings.", "bad");
+      }
+    });
+
+    $("save-settings").addEventListener("click", async () => {
+      const chosen = ($("default-version").value || "").split("|");
+      const result = await post("/api/settings", {
+        language: $("language").value,
+        theme: $("theme").value,
+        defaultVersion: chosen[0],
+        defaultLoader: chosen[1],
+        defaultRamGb: Number($("default-ram").value),
+        gameDirectory: $("game-directory").value,
+        jvmArgs: $("jvm-args").value
+      });
+      if (result.data.ok) {
+        setStatus("settings-status", "Settings saved. JVM arguments were stored and not executed.", "good");
+      } else {
+        setStatus("settings-status", result.data.error, "bad");
+      }
+      await refresh();
+    });
+
+    $("copy-error").addEventListener("click", async () => {
+      const result = await api("/api/last-error");
+      const text = result.text || "";
+      if (!text) {
+        $("copy-note").textContent = "No error yet.";
+        return;
+      }
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (err) {
+        copied = false;
+      }
+      $("copy-note").textContent = copied ? "Copied last error: " + text : "Last error: " + text;
+    });
+
+
+    function currentModsProfile() {
+      return $("mods-profile").value || selectedProfile || "";
+    }
+
+    function renderModsProfileSelect(profiles, selected) {
+      const select = $("mods-profile");
+      select.replaceChildren();
+      (profiles || []).forEach((profile) => {
+        const option = document.createElement("option");
+        option.value = profile.name;
+        option.textContent = profile.name;
+        if (profile.name === selected) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+
+    function stateClass(state) {
+      if (state === "INSTALLED") return "state-installed";
+      if (state === "UPDATE") return "state-update";
+      if (state === "INCOMPATIBLE") return "state-incompatible";
+      if (state === "DEPENDENCY REQUIRED") return "state-dependency";
+      return "state-install";
+    }
+
+    function renderModCard(mod, opts) {
+      opts = opts || {};
+      const card = document.createElement("article");
+      card.className = "mod-card";
+      const head = document.createElement("div");
+      head.className = "mod-card-head";
+      if (mod.iconUrl) {
+        const img = document.createElement("img");
+        img.src = mod.iconUrl;
+        img.alt = "";
+        img.className = "mod-icon";
+        img.referrerPolicy = "no-referrer";
+        head.appendChild(img);
+      }
+      const titles = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = mod.title || mod.name || "Mod";
+      const author = document.createElement("span");
+      author.className = "mod-author";
+      author.textContent = mod.author ? ("by " + mod.author) : "";
+      titles.appendChild(title);
+      titles.appendChild(author);
+      head.appendChild(titles);
+      card.appendChild(head);
+
+      const desc = document.createElement("p");
+      desc.className = "mod-desc";
+      desc.textContent = mod.description || "";
+      card.appendChild(desc);
+
+      const meta = document.createElement("div");
+      meta.className = "mod-meta";
+      meta.textContent = "MC " + (mod.supportedMcVersion || "?") + " · " + (mod.loader || "?");
+      card.appendChild(meta);
+
+      const state = document.createElement("div");
+      state.className = "mod-state " + stateClass(mod.installState || (opts.installed ? "INSTALLED" : "INSTALL"));
+      state.textContent = mod.installState || (opts.installed ? "INSTALLED" : "INSTALL");
+      card.appendChild(state);
+
+      if (mod.requiredDependencies && mod.requiredDependencies.length) {
+        const deps = document.createElement("p");
+        deps.className = "mod-deps hint";
+        deps.textContent = "Required deps: " + mod.requiredDependencies.map(function (d) {
+          return d.project_id || d.projectId || d.version_id || d.versionId || "?";
+        }).join(", ");
+        card.appendChild(deps);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "row mod-actions";
+      if (opts.installed) {
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "ghost";
+        toggle.textContent = mod.enabled === false ? "Enable" : "Disable";
+        toggle.addEventListener("click", function () {
+          setModEnabled(mod.projectId || mod.id, mod.enabled === false);
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "ghost";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", function () {
+          removeMod(mod.projectId || mod.id);
+        });
+        actions.appendChild(toggle);
+        actions.appendChild(remove);
+      } else {
+        const details = document.createElement("button");
+        details.type = "button";
+        details.className = "ghost";
+        details.textContent = "Details";
+        details.addEventListener("click", function () {
+          showModDetails(mod.id || mod.projectId || mod.slug);
+        });
+        actions.appendChild(details);
+        if (mod.installState === "INCOMPATIBLE") {
+          const bad = document.createElement("button");
+          bad.type = "button";
+          bad.className = "ghost";
+          bad.disabled = true;
+          bad.textContent = "INCOMPATIBLE";
+          actions.appendChild(bad);
+        } else if (mod.installState === "INSTALLED") {
+          const done = document.createElement("button");
+          done.type = "button";
+          done.className = "ghost";
+          done.disabled = true;
+          done.textContent = "INSTALLED";
+          actions.appendChild(done);
+        } else {
+          const install = document.createElement("button");
+          install.type = "button";
+          install.className = "action";
+          install.textContent = mod.installState === "UPDATE" ? "UPDATE" : "Install";
+          install.addEventListener("click", function () {
+            installMod(mod.id || mod.projectId, mod.compatibleVersion && mod.compatibleVersion.id);
+          });
+          actions.appendChild(install);
+        }
+      }
+      card.appendChild(actions);
+      return card;
+    }
+
+    async function loadInstalledMods() {
+      const profileName = currentModsProfile();
+      const host = $("mod-installed");
+      host.replaceChildren();
+      if (!profileName) {
+        host.textContent = "Select a profile first.";
+        return;
+      }
+      const result = await post("/api/mods/installed", { profileName: profileName });
+      if (!result.data || !result.data.ok) {
+        setStatus("mods-status", (result.data && result.data.error) || "Could not load installed mods.", "bad");
+        return;
+      }
+      const mods = result.data.mods || [];
+      if (!mods.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = "No mods installed on this profile yet.";
+        host.appendChild(empty);
+        return;
+      }
+      mods.forEach(function (mod) {
+        host.appendChild(renderModCard(mod, { installed: true }));
+      });
+    }
+
+    async function runModSearch() {
+      const profileName = currentModsProfile();
+      const query = $("mods-query").value || "";
+      setStatus("mods-status", "Searching Modrinth…", "");
+      $("mod-results").replaceChildren();
+      const result = await post("/api/mods/search", {
+        query: query,
+        profileName: profileName,
+        limit: 12
+      });
+      if (!result.data || !result.data.ok) {
+        setStatus("mods-status", (result.data && result.data.error) || "Mod search failed.", "bad");
+        return;
+      }
+      const results = result.data.results || [];
+      if (!results.length) {
+        setStatus("mods-status", "No mods matched that search for 1.21.11 / Fabric.", "");
+        return;
+      }
+      setStatus("mods-status", "Showing " + results.length + " result(s) for Minecraft 1.21.11 / Fabric.", "good");
+      results.forEach(function (mod) {
+        $("mod-results").appendChild(renderModCard(mod, { installed: false }));
+      });
+    }
+
+    async function showModDetails(projectId) {
+      const panel = $("mod-details");
+      panel.hidden = false;
+      panel.textContent = "Loading details…";
+      const result = await post("/api/mods/details", {
+        projectId: projectId,
+        profileName: currentModsProfile()
+      });
+      panel.replaceChildren();
+      if (!result.data || !result.data.ok) {
+        panel.textContent = (result.data && result.data.error) || "Could not load mod details.";
+        return;
+      }
+      const mod = result.data.mod;
+      const title = document.createElement("h2");
+      title.textContent = mod.title;
+      const body = document.createElement("p");
+      body.textContent = mod.description || "";
+      const meta = document.createElement("p");
+      meta.className = "hint";
+      meta.textContent = "State: " + mod.installState + " · MC " + mod.supportedMcVersion + " · " + mod.loader;
+      panel.appendChild(title);
+      panel.appendChild(body);
+      panel.appendChild(meta);
+      if (mod.requiredDependencies && mod.requiredDependencies.length) {
+        const deps = document.createElement("p");
+        deps.className = "hint";
+        deps.textContent = "Required dependencies: " + JSON.stringify(mod.requiredDependencies);
+        panel.appendChild(deps);
+      }
+      panel.appendChild(renderModCard(mod, { installed: !!mod.installed }));
+    }
+
+    async function installMod(projectId, versionId) {
+      setStatus("mods-status", "Installing…", "");
+      const result = await post("/api/mods/install", {
+        projectId: projectId,
+        versionId: versionId || null,
+        profileName: currentModsProfile(),
+        autoDeps: true
+      });
+      if (!result.data || !result.data.ok) {
+        setStatus("mods-status", (result.data && result.data.error) || "Install failed.", "bad");
+      } else {
+        setStatus("mods-status", "Installed " + ((result.data.mod && result.data.mod.title) || "mod") + ".", "good");
+      }
+      await loadInstalledMods();
+      await runModSearch();
+    }
+
+    async function removeMod(projectId) {
+      const result = await post("/api/mods/remove", {
+        projectId: projectId,
+        profileName: currentModsProfile()
+      });
+      if (!result.data || !result.data.ok) {
+        setStatus("mods-status", (result.data && result.data.error) || "Remove failed.", "bad");
+      } else {
+        setStatus("mods-status", "Removed mod.", "good");
+      }
+      await loadInstalledMods();
+    }
+
+    async function setModEnabled(projectId, enabled) {
+      const path = enabled ? "/api/mods/enable" : "/api/mods/disable";
+      const result = await post(path, {
+        projectId: projectId,
+        profileName: currentModsProfile()
+      });
+      if (!result.data || !result.data.ok) {
+        setStatus("mods-status", (result.data && result.data.error) || "Could not change mod.", "bad");
+      }
+      await loadInstalledMods();
+    }
+
+    $("mods-search").addEventListener("click", function () {
+      runModSearch().catch(function () {
+        setStatus("mods-status", "Mod search failed.", "bad");
+      });
+    });
+    $("mods-query").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        runModSearch();
+      }
+    });
+    $("mods-profile").addEventListener("change", async function () {
+      const name = $("mods-profile").value;
+      if (name) {
+        await post("/api/profiles/select", { name: name });
+        selectedProfile = name;
+      }
+      await loadInstalledMods();
+      $("mod-results").replaceChildren();
+      $("mod-details").hidden = true;
+    });
+
+
+
+    let skinCategories = [];
+
+    function fillSkinSelects() {
+      const current = $("skins-filter").value || "all";
+      const values = ["all", "favorites", "steve", "alex"].concat(skinCategories);
+      fillPlaceholderSelect($("skins-filter"), values, values.indexOf(current) >= 0 ? current : "all", "");
+      const filterLabels = { all: "All skins", favorites: "Favorites", steve: "Steve arms", alex: "Alex arms" };
+      Array.from($("skins-filter").options).forEach((option) => {
+        option.textContent = filterLabels[option.value] || option.value;
+      });
+      fillPlaceholderSelect($("skin-import-model"), ["steve", "alex"], $("skin-import-model").value || "steve", "");
+      const modelLabels = { steve: "Steve", alex: "Alex" };
+      Array.from($("skin-import-model").options).forEach((option) => {
+        option.textContent = modelLabels[option.value] || option.value;
+      });
+    }
+
+    function skinModelLabel(model) {
+      return model === "alex" ? "Alex" : "Steve";
+    }
+
+    function paintSkinPreview(canvas, image, model) {
+      const slim = model === "alex";
+      const armW = slim ? 3 : 4;
+      const scale = 6;
+      const tall = image.naturalHeight >= 64;
+      const width = (armW + 8 + armW) * scale;
+      const height = (8 + 12 + 12) * scale;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        return;
+      }
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, width, height);
+      const headX = armW * scale;
+      const bodyY = 8 * scale;
+      const legY = (8 + 12) * scale;
+      const blit = (sx, sy, sw, sh, dx, dy) => {
+        ctx.drawImage(image, sx, sy, sw, sh, dx, dy, sw * scale, sh * scale);
+      };
+      blit(8, 8, 8, 8, headX, 0);
+      blit(40, 8, 8, 8, headX, 0);
+      blit(20, 20, 8, 12, headX, bodyY);
+      blit(44, 20, armW, 12, 0, bodyY);
+      blit(4, 20, 4, 12, headX, legY);
+      if (tall) {
+        blit(36, 52, armW, 12, (armW + 8) * scale, bodyY);
+        blit(20, 52, 4, 12, headX + 4 * scale, legY);
+      } else {
+        ctx.save();
+        ctx.translate((armW + 8 + armW) * scale, bodyY);
+        ctx.scale(-1, 1);
+        blit(44, 20, armW, 12, 0, 0);
+        ctx.restore();
+        ctx.save();
+        ctx.translate(headX + 8 * scale, legY);
+        ctx.scale(-1, 1);
+        blit(4, 20, 4, 12, 0, 0);
+        ctx.restore();
+      }
+    }
+
+    function localAccountForSkin() {
+      const selectedId = $("account").value;
+      const selected = localAccounts.find((item) => item.id === selectedId);
+      if (selected && selected.username) {
+        return selected;
+      }
+      return localAccounts.find((item) => item.username === "itz_alone10") || null;
+    }
+
+    function renderSkinCard(skin) {
+      const card = document.createElement("article");
+      card.className = "mod-card skin-card" + (skin.id === appliedSkinId ? " selected" : "");
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", "Select and apply " + (skin.name || "skin"));
+      const title = document.createElement("strong");
+      title.textContent = skin.name || skin.username || "Skin";
+      const meta = document.createElement("p");
+      meta.className = "hint";
+      const bits = [];
+      if (skin.category) bits.push(skin.category);
+      bits.push(skinModelLabel(skin.model));
+      if (skin.sourceNote) bits.push(skin.sourceNote);
+      if (skin.favorite) bits.push("favorite");
+      meta.textContent = bits.join(" · ");
+      card.appendChild(title);
+      card.appendChild(meta);
+      const preview = document.createElement("div");
+      preview.className = "skin-preview";
+      const texture = document.createElement("img");
+      texture.className = "skin-texture";
+      texture.alt = "2D skin texture";
+      texture.src = skin.previewPath || "";
+      const canvas = document.createElement("canvas");
+      canvas.className = "skin-canvas";
+      canvas.width = 96;
+      canvas.height = 192;
+      texture.addEventListener("load", () => paintSkinPreview(canvas, texture, skin.model));
+      texture.addEventListener("error", () => {
+        setStatus("skins-status", "Could not load the skin preview.", "bad");
+      });
+      preview.appendChild(canvas);
+      preview.appendChild(texture);
+      card.appendChild(preview);
+      const actions = document.createElement("div");
+      actions.className = "row mod-actions";
+      const model = document.createElement("select");
+      ["steve", "alex"].forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = skinModelLabel(value);
+        option.selected = skin.model === value;
+        model.appendChild(option);
+      });
+      model.addEventListener("change", () => {
+        setSkinModel(skin.id, model.value);
+      });
+      const fav = document.createElement("button");
+      fav.type = "button";
+      fav.className = "ghost";
+      fav.textContent = skin.favorite ? "Unfavorite" : "Favorite";
+      fav.addEventListener("click", () => favoriteSkin(skin.id, !skin.favorite));
+      const view = document.createElement("button");
+      view.type = "button";
+      view.className = "ghost";
+      view.textContent = "View";
+      view.addEventListener("click", () => viewSkin(skin.id));
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "action";
+      apply.textContent = "Save on local account";
+      apply.addEventListener("click", (event) => {
+        event.stopPropagation();
+        applySkin(skin.id, model.value);
+      });
+      fav.addEventListener("click", (event) => event.stopPropagation(), true);
+      view.addEventListener("click", (event) => event.stopPropagation(), true);
+      model.addEventListener("click", (event) => event.stopPropagation());
+      const choose = () => applySkin(skin.id, model.value);
+      card.addEventListener("click", (event) => {
+        if (event.target.closest("button, select, option")) {
+          return;
+        }
+        choose();
+      });
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        if (event.target.closest("button, select, option")) {
+          return;
+        }
+        event.preventDefault();
+        choose();
+      });
+      actions.appendChild(model);
+      actions.appendChild(fav);
+      actions.appendChild(view);
+      actions.appendChild(apply);
+      card.appendChild(actions);
+      return card;
+    }
+
+    function fillSkinHost(id, skins, emptyText) {
+      const host = $(id);
+      host.replaceChildren();
+      if (!skins || !skins.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = emptyText;
+        host.appendChild(empty);
+        return;
+      }
+      if (id === "skin-results") {
+        const groups = new Map();
+        skins.forEach((skin) => {
+          const cat = skin.category || "Library";
+          if (!groups.has(cat)) groups.set(cat, []);
+          groups.get(cat).push(skin);
+        });
+        groups.forEach((items, cat) => {
+          const heading = document.createElement("h3");
+          heading.className = "skin-category";
+          heading.textContent = cat;
+          const grid = document.createElement("div");
+          grid.className = "mod-cards library-cards";
+          items.forEach((skin) => grid.appendChild(renderSkinCard(skin)));
+          host.appendChild(heading);
+          host.appendChild(grid);
+        });
+        return;
+      }
+      skins.forEach((skin) => host.appendChild(renderSkinCard(skin)));
+    }
+
+    async function loadSkinLibrary() {
+      const result = await api("/api/skins/state");
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("skins-status", data.error || "Could not load skins.", "bad");
+        return;
+      }
+      const repo = data.repository || {};
+      $("skins-repo-note").textContent = repo.limitation || "Search uses the configured skin repository.";
+      if (data.previewNote) {
+        $("skins-preview-note").textContent = data.previewNote;
+      }
+      if (data.note) {
+        $("skins-microsoft-note").textContent = data.note;
+      }
+      skinCategories = [];
+      const seenCats = {};
+      (data.catalog || []).forEach((skin) => {
+        if (skin.category && !seenCats[skin.category]) {
+          seenCats[skin.category] = true;
+          skinCategories.push(skin.category);
+        }
+      });
+      appliedSkinId = (data.applied && data.applied.skinId) || "";
+      fillSkinSelects();
+      fillSkinHost("skin-favorites", data.favorites || [], "No favorite skins yet.");
+      fillSkinHost("skin-recent", data.recent || [], "No recently viewed skins yet.");
+      if (!$("skins-query").value && data.catalog && data.catalog.length) {
+        fillSkinHost("skin-results", data.catalog, "");
+        if (!$("skins-status").textContent) {
+          setStatus("skins-status", "Showing " + data.catalog.length + " skins from Vanta's library.", "good");
+        }
+      }
+      if (data.applied && data.applied.skinId) {
+        setStatus("skins-status", "Local account skin: " + data.applied.model + ". " + (data.applied.note || ""), "good");
+      }
+    }
+
+    async function runSkinSearch() {
+      setStatus("skins-status", "Searching skins…", "");
+      $("skin-results").replaceChildren();
+      const result = await post("/api/skins/search", {
+        query: $("skins-query").value || "",
+        filter: $("skins-filter").value || "all",
+        limit: 400
+      });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("skins-status", data.error || "Skin search failed.", "bad");
+        return;
+      }
+      const results = data.results || [];
+      if (!results.length) {
+        setStatus("skins-status", data.message || "No skins matched.", "");
+        fillSkinHost("skin-results", [], data.message || "No skins matched.");
+        return;
+      }
+      setStatus("skins-status", "Showing " + results.length + " skin(s).", "good");
+      fillSkinHost("skin-results", results, "");
+    }
+
+    async function favoriteSkin(skinId, favorite) {
+      const result = await post("/api/skins/favorite", { skinId: skinId, favorite: favorite });
+      if (!result.data || !result.data.ok) {
+        setStatus("skins-status", (result.data && result.data.error) || "Could not update favorites.", "bad");
+        return;
+      }
+      await loadSkinLibrary();
+      await runSkinSearch();
+    }
+
+    async function viewSkin(skinId) {
+      const result = await post("/api/skins/view", { skinId: skinId });
+      if (!result.data || !result.data.ok) {
+        setStatus("skins-status", (result.data && result.data.error) || "Could not record that view.", "bad");
+        return;
+      }
+      setStatus("skins-status", "Added to recently viewed.", "good");
+      await loadSkinLibrary();
+    }
+
+    async function setSkinModel(skinId, model) {
+      const result = await post("/api/skins/model", { skinId: skinId, model: model });
+      if (!result.data || !result.data.ok) {
+        setStatus("skins-status", (result.data && result.data.error) || "Could not save the model.", "bad");
+        return;
+      }
+      setStatus("skins-status", "Model set to " + skinModelLabel(model) + ".", "good");
+      await loadSkinLibrary();
+    }
+
+    async function applySkin(skinId, model) {
+      setStatus("skins-status", "Saving skin on the local account…", "");
+      const account = localAccountForSkin();
+      const result = await post("/api/skins/apply", {
+        skinId: skinId,
+        model: model,
+        accountId: account ? account.id : null,
+        username: account ? account.username : "itz_alone10"
+      });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("skins-status", data.error || "Could not save that skin.", "bad");
+        return;
+      }
+      setStatus("skins-status", data.note || "Saved locally. Not uploaded to Microsoft.", "good");
+      await loadSkinLibrary();
+    }
+
+    $("skins-search").addEventListener("click", () => {
+      runSkinSearch().catch(() => setStatus("skins-status", "Skin search failed.", "bad"));
+    });
+    $("skins-query").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        runSkinSearch().catch(() => setStatus("skins-status", "Skin search failed.", "bad"));
+      }
+    });
+    $("skins-filter").addEventListener("change", () => {
+      runSkinSearch().catch(() => setStatus("skins-status", "Skin search failed.", "bad"));
+    });
+    $("skin-import").addEventListener("click", () => {
+      const fileInput = $("skin-file");
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        setStatus("skins-status", "Choose a PNG skin first.", "bad");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const result = await post("/api/skins/import", {
+          name: $("skin-import-name").value || file.name,
+          model: $("skin-import-model").value,
+          pngBase64: String(reader.result || "")
+        });
+        const data = result.data || {};
+        if (!data.ok) {
+          setStatus("skins-status", data.error || "Import failed.", "bad");
+          return;
+        }
+        setStatus("skins-status", "Imported " + data.skin.name + ". It was not uploaded to Microsoft.", "good");
+        fillSkinHost("skin-results", [data.skin], "");
+        await loadSkinLibrary();
+      };
+      reader.onerror = () => setStatus("skins-status", "Could not read that file.", "bad");
+      reader.readAsDataURL(file);
+    });
+
+
+
+    function fillServerSoftware() {
+      const select = $("server-software");
+      if (select.options.length) {
+        return;
+      }
+      [["", "Choose Paper or Fabric"], ["paper", "Paper"], ["fabric", "Fabric"]].forEach((pair) => {
+        const option = document.createElement("option");
+        option.value = pair[0];
+        option.textContent = pair[1];
+        select.appendChild(option);
+      });
+    }
+
+    let selectedServerId = "";
+
+    async function loadServers() {
+      const result = await api("/api/servers");
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not list servers.", "bad");
+        return;
+      }
+      renderServerList(data.servers || []);
+      const selected = (data.servers || []).find((item) => item.id === selectedServerId);
+      if (selected) {
+        fillServerDetail(selected);
+      }
+    }
+
+    function renderServerList(servers) {
+      const host = $("server-list");
+      host.replaceChildren();
+      if (!servers.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = "No local servers yet.";
+        host.appendChild(empty);
+        return;
+      }
+      servers.forEach((server) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "profile" + (server.id === selectedServerId ? " selected" : "");
+        const title = document.createElement("strong");
+        title.textContent = server.name;
+        const meta = document.createElement("span");
+        meta.textContent = server.software + " · " + server.version + " · port " + server.port + " · " + server.ram + " GB · " + (server.running ? "process online" : "offline");
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.addEventListener("click", () => {
+          selectServer(server.id).catch(() => setStatus("servers-status", "Could not open that server.", "bad"));
+        });
+        host.appendChild(card);
+      });
+    }
+
+    function fillServerDetail(server) {
+      $("server-detail").hidden = false;
+      $("server-port").value = server.port;
+      $("server-ram").value = server.ram;
+      $("server-jvm").value = server.jvmArgs || "";
+      $("server-detail-title").textContent = server.name + " (" + (server.running ? "process online" : "offline") + ")";
+      $("server-jar-note").textContent = server.jarInstalled
+        ? "server.jar is present. Start runs it as a separate process."
+        : "Server jar is not installed. Start will fail until you place server.jar in this server folder. Vanta will not download one.";
+      applyTunnel(server.tunnel);
+    }
+
+    function applyTunnel(tunnel) {
+      const info = tunnel || { enabled: false, status: "OFFLINE", address: null };
+      const status = info.status || "OFFLINE";
+      $("server-tunnel-enabled").checked = info.enabled === true;
+      const detail = info.error || info.notice || "";
+      $("server-tunnel-status").textContent = detail ? (status + " — " + detail) : status;
+      const row = $("server-tunnel-address-row");
+      const address = typeof info.address === "string" ? info.address : "";
+      const show = status === "ONLINE" && address.length > 0;
+      row.hidden = !show;
+      $("server-tunnel-address").value = show ? address : "";
+      const saved = typeof info.savedAddress === "string" ? info.savedAddress : "";
+      const detected = typeof info.detectedAddress === "string" ? info.detectedAddress : "";
+      const manual = $("server-tunnel-manual");
+      if (manual && document.activeElement !== manual) {
+        manual.value = saved || detected || "";
+      }
+      const note = $("server-tunnel-detected");
+      if (note) {
+        if (detected && detected !== (saved || detected)) {
+          note.textContent = "Playit address: " + detected;
+        } else if (detected) {
+          note.textContent = "Playit address: " + detected;
+        } else if (info.notice && status !== "ONLINE") {
+          note.textContent = info.notice;
+        } else {
+          note.textContent = "";
+        }
+      }
+    }
+
+    async function selectServer(id) {
+      selectedServerId = id;
+      await loadServers();
+      await loadServerProperties();
+      await loadServerConsole();
+      await loadServerPlugins();
+      await loadServerPlayers();
+    }
+
+    async function loadServerProperties() {
+      if (!selectedServerId) return;
+      const result = await api("/api/servers/properties?id=" + encodeURIComponent(selectedServerId));
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not read server.properties.", "bad");
+        return;
+      }
+      $("server-properties").value = data.text || "";
+    }
+
+    async function loadServerConsole() {
+      if (!selectedServerId) return;
+      const result = await api("/api/servers/console?id=" + encodeURIComponent(selectedServerId));
+      const data = result.data || {};
+      $("server-console").textContent = data.ok ? (data.log || "") : (data.error || "");
+    }
+
+    async function loadServerPlayers() {
+      if (!selectedServerId) return;
+      const result = await api("/api/servers/players?id=" + encodeURIComponent(selectedServerId));
+      const data = result.data || {};
+      const host = $("server-players");
+      if (!data.ok) {
+        host.textContent = data.error || "Could not read players.";
+        return;
+      }
+      if (data.status !== "online") {
+        host.textContent = "offline · no players";
+        return;
+      }
+      if (!data.playersKnown) {
+        host.textContent = "process online · player list is not queried (none invented)";
+        return;
+      }
+      host.textContent = "online · " + ((data.players || []).join(", ") || "no players");
+    }
+
+    async function loadServerPlugins() {
+      const host = $("server-plugins");
+      host.replaceChildren();
+      if (!selectedServerId) return;
+      const result = await api("/api/servers/plugins?id=" + encodeURIComponent(selectedServerId));
+      const data = result.data || {};
+      if (!data.ok) {
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = data.error || "Could not list plugins.";
+        host.appendChild(note);
+        return;
+      }
+      const plugins = data.plugins || [];
+      if (!plugins.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = "No plugin jars in plugins/.";
+        host.appendChild(empty);
+        return;
+      }
+      plugins.forEach((plugin) => host.appendChild(renderPluginRow(plugin)));
+    }
+
+    function renderPluginRow(plugin) {
+      const card = document.createElement("article");
+      card.className = "mod-card";
+      const title = document.createElement("strong");
+      title.textContent = plugin.name + (plugin.enabled ? " · enabled" : " · disabled");
+      card.appendChild(title);
+      const actions = document.createElement("div");
+      actions.className = "row mod-actions";
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "ghost";
+      toggle.textContent = plugin.enabled ? "Disable" : "Enable";
+      toggle.addEventListener("click", () => setServerPluginEnabled(plugin.name, !plugin.enabled));
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "ghost";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => removeServerPlugin(plugin.name));
+      actions.appendChild(toggle);
+      actions.appendChild(remove);
+      card.appendChild(actions);
+      return card;
+    }
+
+    async function createServer() {
+      const result = await post("/api/servers/create", {
+        name: $("server-name").value,
+        version: $("server-version").value,
+        software: $("server-software").value,
+        ram: Number($("server-ram-create").value),
+        eulaAccepted: $("server-eula").checked === true
+      });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not create that server.", "bad");
+        return;
+      }
+      setStatus("servers-status", "Created " + data.server.name + ". No server jar was downloaded.", "good");
+      $("server-name").value = "";
+      $("server-eula").checked = false;
+      selectedServerId = data.server.id;
+      await selectServer(selectedServerId);
+    }
+
+    async function serverAction(path) {
+      if (!selectedServerId) {
+        setStatus("servers-status", "Select a server first.", "bad");
+        return;
+      }
+      const result = await post(path, { serverId: selectedServerId });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "That server action failed.", "bad");
+      } else if (path.indexOf("backup") !== -1) {
+        setStatus("servers-status", "Backup written: " + (data.name || data.path), "good");
+      } else if (data.running) {
+        setStatus("servers-status", "Server process is alive.", "good");
+      } else {
+        setStatus("servers-status", "Server process is offline.", "good");
+      }
+      await selectServer(selectedServerId);
+    }
+
+    async function setServerPluginEnabled(name, enabled) {
+      const path = enabled ? "/api/servers/plugins/enable" : "/api/servers/plugins/disable";
+      const result = await post(path, { serverId: selectedServerId, name: name });
+      const data = result.data || {};
+      if (!data.ok) setStatus("servers-status", data.error || "Could not change that plugin.", "bad");
+      await loadServerPlugins();
+    }
+
+    async function removeServerPlugin(name) {
+      const result = await post("/api/servers/plugins/remove", { serverId: selectedServerId, name: name });
+      const data = result.data || {};
+      if (!data.ok) setStatus("servers-status", data.error || "Could not remove that plugin.", "bad");
+      await loadServerPlugins();
+    }
+
+    $("server-create").addEventListener("click", () => {
+      createServer().catch(() => setStatus("servers-status", "Could not create that server.", "bad"));
+    });
+    $("server-start").addEventListener("click", () => serverAction("/api/servers/start"));
+    $("server-stop").addEventListener("click", () => serverAction("/api/servers/stop"));
+    $("server-restart").addEventListener("click", () => serverAction("/api/servers/restart"));
+    $("server-backup").addEventListener("click", () => serverAction("/api/servers/backup"));
+    $("server-save-settings").addEventListener("click", async () => {
+      const result = await post("/api/servers/settings", {
+        serverId: selectedServerId,
+        port: Number($("server-port").value),
+        ram: Number($("server-ram").value),
+        jvmArgs: $("server-jvm").value
+      });
+      const data = result.data || {};
+      setStatus("servers-status", data.ok ? "Stored port, RAM, and JVM arguments. They were not executed by saving." : (data.error || "Could not save settings."), data.ok ? "good" : "bad");
+      if (data.ok) await selectServer(selectedServerId);
+    });
+    $("server-save-properties").addEventListener("click", async () => {
+      const result = await post("/api/servers/properties", {
+        serverId: selectedServerId,
+        text: $("server-properties").value
+      });
+      const data = result.data || {};
+      setStatus("servers-status", data.ok ? "Wrote server.properties. A running process is not reloaded." : (data.error || "Could not write server.properties."), data.ok ? "good" : "bad");
+    });
+    $("server-tunnel-enabled").addEventListener("change", async () => {
+      if (!selectedServerId) {
+        $("server-tunnel-enabled").checked = false;
+        setStatus("servers-status", "Select a server first.", "bad");
+        return;
+      }
+      const enabled = $("server-tunnel-enabled").checked === true;
+      const result = await post("/api/servers/tunnel", { serverId: selectedServerId, enabled: enabled });
+      const data = result.data || {};
+      applyTunnel(data);
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not change the tunnel.", "bad");
+      } else if (data.status === "ONLINE" && data.address) {
+        setStatus("servers-status", "Tunnel online.", "good");
+      } else if (!enabled) {
+        setStatus("servers-status", "Tunnel is off. No tunnel process was started.", "good");
+      } else {
+        setStatus("servers-status", "Tunnel " + (data.status || "OFFLINE") + ".", data.status === "FAILED" ? "bad" : "good");
+      }
+      await loadServers();
+    });
+    async function copyTunnelAddress(field) {
+      if (!field || !field.value) return;
+      try {
+        await navigator.clipboard.writeText(field.value);
+        setStatus("servers-status", "Copied tunnel address.", "good");
+      } catch (err) {
+        field.focus();
+        field.select();
+        setStatus("servers-status", "Select the address and copy it.", "bad");
+      }
+    }
+    $("server-tunnel-copy").addEventListener("click", async () => {
+      const row = $("server-tunnel-address-row");
+      const field = $("server-tunnel-address");
+      if (row.hidden || !field.value) return;
+      await copyTunnelAddress(field);
+    });
+    $("server-tunnel-copy-manual").addEventListener("click", () => {
+      copyTunnelAddress($("server-tunnel-manual"));
+    });
+    $("server-tunnel-save").addEventListener("click", async () => {
+      if (!selectedServerId) {
+        setStatus("servers-status", "Select a server first.", "bad");
+        return;
+      }
+      const result = await post("/api/servers/tunnel", {
+        serverId: selectedServerId,
+        savedAddress: $("server-tunnel-manual").value
+      });
+      const data = result.data || {};
+      applyTunnel(data);
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not save that tunnel address.", "bad");
+      } else if (data.savedAddress) {
+        setStatus("servers-status", "Saved tunnel address.", "good");
+      } else {
+        setStatus("servers-status", "Cleared the saved tunnel address.", "good");
+      }
+    });
+    $("server-plugin-install").addEventListener("click", async () => {
+      const result = await post("/api/servers/plugins/install", {
+        serverId: selectedServerId,
+        sourcePath: $("server-plugin-path").value
+      });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not install that plugin.", "bad");
+      } else {
+        setStatus("servers-status", "Copied local plugin jar.", "good");
+        $("server-plugin-path").value = "";
+      }
+      await loadServerPlugins();
+    });
+
+
+    let hudState = null;
+
+    function hudProfileName() {
+      const select = $("hud-profile");
+      return (select && select.value) || selectedProfile || "";
+    }
+
+    function renderHudProfileSelect(profiles, selected) {
+      const select = $("hud-profile");
+      const previous = select.value;
+      const want = previous || selected || "";
+      select.replaceChildren();
+      (profiles || []).forEach((profile) => {
+        const option = document.createElement("option");
+        option.value = profile.name;
+        option.textContent = profile.name;
+        if (profile.name === want) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+      if (!select.value && select.options.length) {
+        select.selectedIndex = 0;
+      }
+    }
+
+    function showHudCategory(name) {
+      document.querySelectorAll("[data-hud-panel]").forEach((panel) => {
+        panel.hidden = panel.getAttribute("data-hud-panel") !== name;
+      });
+      document.querySelectorAll("[data-hud-category]").forEach((button) => {
+        button.classList.toggle("active", button.getAttribute("data-hud-category") === name);
+      });
+    }
+
+    function fillNamedSelect(select, names, current) {
+      select.replaceChildren();
+      (names || []).forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        if (name === current) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+
+    function paintHud(data) {
+      hudState = data;
+      $("hud-note").textContent = data.note || "";
+      const performance = data.performance || {};
+      fillNamedSelect($("hud-preset"), performance.availablePresets || [], performance.preset || "");
+      const host = $("hud-preset-settings");
+      host.replaceChildren();
+      const settings = performance.settings || {};
+      Object.keys(settings).forEach((key) => {
+        const label = document.createElement("span");
+        label.textContent = key;
+        const value = document.createElement("b");
+        value.textContent = String(settings[key]);
+        host.appendChild(label);
+        host.appendChild(value);
+      });
+      const note = document.createElement("span");
+      note.textContent = "fpsGainClaimed";
+      const flag = document.createElement("b");
+      flag.textContent = performance.fpsGainClaimed === true ? "yes" : "no";
+      host.appendChild(note);
+      host.appendChild(flag);
+      const visual = data.visual || {};
+      $("hud-fullscreen").checked = visual.fullscreen === true;
+      $("hud-gui-scale").value = visual.guiScale == null ? "" : String(visual.guiScale);
+      $("hud-brightness").value = visual.brightness == null ? "" : String(visual.brightness);
+      $("hud-fov").value = visual.fov == null ? "" : String(visual.fov);
+      const qol = data.qualityOfLife || {};
+      $("hud-toggle-sprint").checked = qol.toggleSprint === true;
+      $("hud-toggle-sneak").checked = qol.toggleSneak === true;
+      $("hud-zoom").checked = qol.zoom === true;
+      const keys = qol.keybinds || {};
+      $("hud-key-sprint").value = keys.toggleSprint || "";
+      $("hud-key-sneak").value = keys.toggleSneak || "";
+      $("hud-key-zoom").value = keys.zoom || "";
+      renderWaypoints(qol.waypoints || []);
+      const editor = data.editor || {};
+      showHudCategory(editor.category || "HUD");
+      const modules = data.modules || [];
+      fillNamedSelect(
+        $("hud-module"),
+        modules.map((item) => item.id),
+        editor.selectedModule || (modules[0] && modules[0].id) || ""
+      );
+      const moduleSelect = $("hud-module");
+      Array.from(moduleSelect.options).forEach((option) => {
+        const found = modules.find((item) => item.id === option.value);
+        if (found) {
+          option.textContent = found.label;
+        }
+      });
+      paintModuleForm(moduleSelect.value);
+      paintHudPreview(modules);
+    }
+
+    function paintModuleForm(id) {
+      const modules = (hudState && hudState.modules) || [];
+      const module = modules.find((item) => item.id === id);
+      if (!module) {
+        return;
+      }
+      $("hud-enabled").checked = module.enabled === true;
+      $("hud-x").value = String(module.x);
+      $("hud-y").value = String(module.y);
+      $("hud-scale").value = String(module.scale);
+      $("hud-color").value = String(module.textColor || "#e7eee9").toLowerCase();
+      $("hud-background").checked = module.background === true;
+    }
+
+    function paintHudPreview(modules) {
+      const host = $("hud-preview");
+      host.replaceChildren();
+      (modules || []).forEach((module) => {
+        if (module.enabled !== true) {
+          return;
+        }
+        const chip = document.createElement("div");
+        chip.className = "hud-chip" + (module.background ? " hud-chip-bg" : "");
+        const x = Math.max(0, Math.min(430, Number(module.x) || 0));
+        const y = Math.max(0, Math.min(220, Number(module.y) || 0));
+        chip.style.left = x + "px";
+        chip.style.top = y + "px";
+        chip.style.color = module.textColor || "#e7eee9";
+        const scale = Number(module.scale);
+        chip.style.transform = "scale(" + (Number.isFinite(scale) ? scale : 1) + ")";
+        chip.textContent = module.label;
+        host.appendChild(chip);
+      });
+    }
+
+    function renderWaypoints(items) {
+      const host = $("hud-waypoints");
+      host.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "hint";
+        empty.textContent = "No waypoints on this profile.";
+        host.appendChild(empty);
+        return;
+      }
+      items.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "profile";
+        const title = document.createElement("strong");
+        title.textContent = item.name;
+        const coords = document.createElement("span");
+        coords.textContent = item.x + ", " + item.y + ", " + item.z;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "ghost";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", () => {
+          removeWaypoint(item.name).catch(() => setStatus("hud-status", "Could not update waypoints.", "bad"));
+        });
+        row.appendChild(title);
+        row.appendChild(coords);
+        row.appendChild(remove);
+        host.appendChild(row);
+      });
+    }
+
+    function applyHudResult(result, okText) {
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("hud-status", data.error || "Could not save that HUD change.", "bad");
+        return false;
+      }
+      paintHud(data);
+      setStatus("hud-status", okText, "good");
+      return true;
+    }
+
+
+    function paintAppearance(data) {
+      const pack = data.resourcePack || {};
+      document.querySelectorAll("[data-pack-toggle]").forEach((input) => {
+        const id = input.getAttribute("data-pack-toggle");
+        input.checked = pack.status === "SELECTED" && pack.id === id;
+      });
+      document.querySelectorAll("[data-pack-state]").forEach((badge) => {
+        const id = badge.getAttribute("data-pack-state");
+        const on = pack.status === "SELECTED" && pack.id === id;
+        const status = on ? "SELECTED" : "OFF";
+        badge.textContent = status;
+        badge.setAttribute("data-status", status);
+      });
+      const shader = data.shader || {};
+      document.querySelectorAll("[data-shader-toggle]").forEach((input) => {
+        const id = input.getAttribute("data-shader-toggle");
+        input.checked = shader.status && shader.status !== "OFF" && shader.id === id;
+      });
+      document.querySelectorAll("[data-shader-state]").forEach((badge) => {
+        const id = badge.getAttribute("data-shader-state");
+        const on = shader.id === id && shader.status && shader.status !== "OFF";
+        const status = on ? shader.status : "OFF";
+        badge.textContent = status;
+        badge.setAttribute("data-status", status);
+      });
+      const warning = $("shader-warning");
+      if (shader.warning) {
+        warning.textContent = shader.warning;
+      } else if (shader.performanceWarning) {
+        warning.textContent = shader.performanceWarning + " Not running.";
+      } else {
+        warning.textContent = "Shaders are off. A saved preset is not a running shader.";
+      }
+    }
+
+    async function loadAppearance() {
+      const name = hudProfileName();
+      if (!name) {
+        return;
+      }
+      const result = await api("/api/appearance?profile=" + encodeURIComponent(name));
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("hud-status", data.error || "Could not load packs and shader presets.", "bad");
+        return;
+      }
+      paintAppearance(data);
+    }
+
+    async function loadHud() {
+      const name = hudProfileName();
+      if (!name) {
+        setStatus("hud-status", "Choose a profile. HUD layout is saved per profile.", "bad");
+        return;
+      }
+      const result = await api("/api/hud?profile=" + encodeURIComponent(name));
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("hud-status", data.error || "Could not load the HUD layout.", "bad");
+        return;
+      }
+      paintHud(data);
+      setStatus("hud-status", "Loaded HUD layout for " + data.profileName + ". Not shown in Minecraft.", "good");
+      await loadUtilities();
+      await loadAppearance();
+    }
+
+    async function saveHudModule() {
+      const result = await post("/api/hud/module", {
+        profileName: hudProfileName(),
+        id: $("hud-module").value,
+        enabled: $("hud-enabled").checked === true,
+        x: Number($("hud-x").value),
+        y: Number($("hud-y").value),
+        scale: Number($("hud-scale").value),
+        textColor: $("hud-color").value,
+        background: $("hud-background").checked === true
+      });
+      applyHudResult(result, "Saved module. The layout was not drawn in Minecraft.");
+    }
+
+    async function selectHudCategory(name) {
+      const result = await post("/api/hud/editor", {
+        profileName: hudProfileName(),
+        category: name,
+        selectedModule: $("hud-module").value || "fps"
+      });
+      applyHudResult(result, "Editor is on " + name + ".");
+    }
+
+    async function removeWaypoint(name) {
+      const current = (hudState && hudState.qualityOfLife && hudState.qualityOfLife.waypoints) || [];
+      const waypoints = current
+        .filter((item) => item.name !== name)
+        .map((item) => ({ name: item.name, x: item.x, y: item.y, z: item.z }));
+      const result = await post("/api/hud/qol", { profileName: hudProfileName(), waypoints: waypoints });
+      applyHudResult(result, "Removed waypoint " + name + ".");
+    }
+
+    document.querySelectorAll("[data-hud-category]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const name = button.getAttribute("data-hud-category");
+        selectHudCategory(name).catch(() => setStatus("hud-status", "Could not save the editor category.", "bad"));
+      });
+    });
+    $("hud-profile").addEventListener("change", () => {
+      loadHud().catch(() => setStatus("hud-status", "Could not load the HUD layout.", "bad"));
+    });
+    $("hud-module").addEventListener("change", () => {
+      paintModuleForm($("hud-module").value);
+      post("/api/hud/editor", {
+        profileName: hudProfileName(),
+        selectedModule: $("hud-module").value
+      }).then((result) => {
+        if (result.data && result.data.ok) {
+          hudState = result.data;
+        }
+      }).catch(() => {});
+    });
+    $("hud-save-module").addEventListener("click", () => {
+      saveHudModule().catch(() => setStatus("hud-status", "Could not save that module.", "bad"));
+    });
+    $("hud-reset").addEventListener("click", () => {
+      post("/api/hud/reset", { profileName: hudProfileName() })
+        .then((result) => applyHudResult(result, "Reset this profile's HUD layout. Other profiles were left alone."))
+        .catch(() => setStatus("hud-status", "Could not reset the layout.", "bad"));
+    });
+    $("hud-save-preset").addEventListener("click", () => {
+      post("/api/hud/preset", { profileName: hudProfileName(), preset: $("hud-preset").value })
+        .then((result) => applyHudResult(result, "Stored the preset bundle. No frame rate was measured and no mods were downloaded."))
+        .catch(() => setStatus("hud-status", "Could not store that preset.", "bad"));
+    });
+    $("hud-save-visual").addEventListener("click", () => {
+      post("/api/hud/visual", {
+        profileName: hudProfileName(),
+        fullscreen: $("hud-fullscreen").checked === true,
+        guiScale: Number($("hud-gui-scale").value),
+        brightness: Number($("hud-brightness").value),
+        fov: Number($("hud-fov").value)
+      }).then((result) => applyHudResult(result, "Stored visual settings. They were not applied in a game."))
+        .catch(() => setStatus("hud-status", "Could not store visual settings.", "bad"));
+    });
+    $("hud-save-qol").addEventListener("click", () => {
+      post("/api/hud/qol", {
+        profileName: hudProfileName(),
+        toggleSprint: $("hud-toggle-sprint").checked === true,
+        toggleSneak: $("hud-toggle-sneak").checked === true,
+        zoom: $("hud-zoom").checked === true,
+        keybinds: {
+          toggleSprint: $("hud-key-sprint").value,
+          toggleSneak: $("hud-key-sneak").value,
+          zoom: $("hud-key-zoom").value
+        }
+      }).then((result) => applyHudResult(result, "Stored toggles and keybinds. They were not applied in a game."))
+        .catch(() => setStatus("hud-status", "Could not store those toggles.", "bad"));
+    });
+    function paintUtilities(data) {
+      const rows = (data && data.utilities) || [];
+      rows.forEach((item) => {
+        const box = document.querySelector('[data-utility-toggle="' + item.id + '"]');
+        const badge = document.querySelector('[data-utility-state="' + item.id + '"]');
+        if (!box || !badge) {
+          return;
+        }
+        box.checked = item.enabled === true;
+        const status = item.status || "OFF";
+        badge.textContent = status;
+        badge.setAttribute("data-status", status);
+      });
+    }
+
+    async function loadUtilities() {
+      const name = hudProfileName();
+      if (!name) {
+        return;
+      }
+      const result = await api("/api/utilities?profile=" + encodeURIComponent(name));
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("hud-status", data.error || "Could not load utility toggles.", "bad");
+        return;
+      }
+      paintUtilities(data);
+    }
+
+    document.querySelectorAll("[data-utility-toggle]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const id = input.getAttribute("data-utility-toggle");
+        post("/api/utilities", {
+          profileName: hudProfileName(),
+          id: id,
+          enabled: input.checked === true
+        }).then((result) => {
+          const data = result.data || {};
+          if (data.utilities) {
+            paintUtilities(data);
+          }
+          if (!data.ok) {
+            setStatus("hud-status", data.error || "That utility stays off.", "bad");
+            return;
+          }
+          const item = (data.utilities || []).find((row) => row.id === id);
+          if (item && item.status === "ENABLED") {
+            setStatus("hud-status", "Resolved a Minecraft 1.21.11 Fabric file for " + item.title + ". It was not launched and was not shown to work in game.", "good");
+          } else {
+            setStatus("hud-status", (item ? item.title : "Utility") + " is off for this profile.", "good");
+          }
+        }).catch(() => setStatus("hud-status", "Could not update that utility.", "bad"));
+      });
+    });
+
+
+    document.querySelectorAll("[data-pack-toggle]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const id = input.getAttribute("data-pack-toggle");
+        const chosen = input.checked === true ? id : "off";
+        post("/api/appearance/pack", { profileName: hudProfileName(), id: chosen }).then((result) => {
+          const data = result.data || {};
+          if (data.resourcePack || data.shader) {
+            paintAppearance(data);
+          }
+          if (!data.ok) {
+            setStatus("hud-status", data.error || "Could not store that resource pack.", "bad");
+            return;
+          }
+          if (data.resourcePack && data.resourcePack.status === "SELECTED") {
+            setStatus("hud-status", "Copied " + data.resourcePack.name + " into this profile. It was not tested in Minecraft.", "good");
+          } else {
+            setStatus("hud-status", "Resource pack is off for this profile.", "good");
+          }
+        }).catch(() => setStatus("hud-status", "Could not store that resource pack.", "bad"));
+      });
+    });
+    document.querySelectorAll("[data-shader-toggle]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const id = input.getAttribute("data-shader-toggle");
+        const chosen = input.checked === true ? id : "off";
+        post("/api/appearance/shader", { profileName: hudProfileName(), id: chosen }).then((result) => {
+          const data = result.data || {};
+          if (data.resourcePack || data.shader) {
+            paintAppearance(data);
+          }
+          if (!data.ok) {
+            setStatus("hud-status", data.error || "Could not store that shader preset.", "bad");
+            return;
+          }
+          if (data.shader && data.shader.status === "NOT_APPLIED") {
+            setStatus("hud-status", data.shader.warning || "No shader loader is installed. Not applied.", "bad");
+            return;
+          }
+          setStatus("hud-status", "Shader preset is off. Nothing is running.", "good");
+        }).catch(() => setStatus("hud-status", "Could not store that shader preset.", "bad"));
+      });
+    });
+
+    $("hud-wp-add").addEventListener("click", () => {
+      const current = (hudState && hudState.qualityOfLife && hudState.qualityOfLife.waypoints) || [];
+      const waypoints = current.map((item) => ({ name: item.name, x: item.x, y: item.y, z: item.z }));
+      waypoints.push({
+        name: $("hud-wp-name").value,
+        x: Number($("hud-wp-x").value),
+        y: Number($("hud-wp-y").value),
+        z: Number($("hud-wp-z").value)
+      });
+      post("/api/hud/qol", { profileName: hudProfileName(), waypoints: waypoints })
+        .then((result) => {
+          if (applyHudResult(result, "Stored waypoint. It was not shown in Minecraft.")) {
+            $("hud-wp-name").value = "";
+          }
+        })
+        .catch(() => setStatus("hud-status", "Could not store that waypoint.", "bad"));
+    });
+
+    applyBackground({ custom: false, url: DEFAULT_BACKGROUND });
+    refresh().catch((err) => {
+      setStatus("play-status", "The launcher UI could not load its data.", "bad");
+    });
+  </script>
+</body>
+</html>
