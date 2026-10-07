@@ -1,0 +1,5 @@
+/login ilovegames@123
+/spawn
+/skin
+/skin clear
+/skin history

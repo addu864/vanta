@@ -10,10 +10,14 @@ __pycache__/
 dist/
 build/
 
-# Launcher runtime / user data
-.vanta-data/
+# Launcher runtime / user data. The installed client under .vanta-data/game
+# is tracked (jars, libraries, assets, mods). Everything else in .vanta-data stays out.
+.vanta-data/*
+!.vanta-data/game/
 
-# Accounts, tokens, and passwords
+# Accounts, tokens, and passwords (still ignored inside the game tree)
+.vanta-data/accounts/
+.vanta-data/accounts/**
 accounts.json
 *token*
 *password*
@@ -26,22 +30,12 @@ accounts.json
 *.pfx
 *.p12
 
-# Minecraft game files (not app assets: logo, backgrounds, skins)
-*.jar
-*.jar.disabled
-client.jar
-server.jar
-libraries/
-natives/
-versions/
-.minecraft/
-saves/
-resourcepacks/
-shaderpacks/
-crash-reports/
+# Logs and crash dumps (can contain session details)
 *.log
+crash-reports/
 
 # WebView2 user data
+.vanta-data/webview2/
 EBWebView/
 WebView2/
 *.WebView2/
@@ -49,3 +43,7 @@ WebView2/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Game runtime logs (may include session details); keep jars/assets/mods
+.vanta-data/game/**/logs/
+*.log.gz
