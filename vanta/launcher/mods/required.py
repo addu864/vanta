@@ -39,6 +39,15 @@ CHEAT_MARKERS = (
 )
 
 
+# Mods Vanta used to install and now replaces. If the last manifest lists one,
+# its jar is moved (not deleted) to <instance>/mods-retired so only one
+# fullbright mod is loaded.
+RETIRED_MODS: dict[str, str] = {
+    "fullbright": "Replaced by Gamma Utils (night vision works with shaders).",
+}
+RETIRED_DIR = "mods-retired"
+
+
 @dataclass(frozen=True)
 class RequiredMod:
     id: str
@@ -75,7 +84,10 @@ REQUIRED_MODS: tuple[RequiredMod, ...] = (
     RequiredMod("iris", "iris", "Iris Shaders", "display"),
     RequiredMod("not-enough-animations", "not-enough-animations", "Not Enough Animations", "display"),
     RequiredMod("visuality", "visuality", "Visuality", "display"),
-    RequiredMod("fullbright", "fullbright", "Fullbright", "display"),
+    # Fullbright that works with shaders: Gamma Utils' Night Vision mode (H) feeds
+    # the night-vision value Iris passes to shader packs. Gamma-only fullbright
+    # (the old "fullbright" mod) is ignored by Complementary, so it is retired.
+    RequiredMod("gamma-utils", "gamma-utils", "Gamma Utils", "display"),
     RequiredMod("overflowing-bars", "overflowing-bars", "Overflowing Bars", "display"),
     RequiredMod("health-indicators", "health-indicators", "Health Indicators", "display"),
 )
@@ -153,12 +165,14 @@ def install_required_mods(
             previous=previous,
         )
 
+    retired = retire_old_mods(folder)
     _write_manifest(folder, installed, kept)
     return {
         "ok": True,
         "installed": installed,
         "kept": kept,
         "skipped": skipped,
+        "retired": retired,
         "minecraftLaunched": False,
     }
 
@@ -374,6 +388,36 @@ def _previous_files(folder: Path) -> dict[str, str]:
             if isinstance(key, str) and key:
                 mapping[key] = name
     return mapping
+
+
+def retire_old_mods(folder: Path) -> list[dict[str, str]]:
+    """Move jars of RETIRED_MODS that Vanta installed earlier into ../mods-retired."""
+    path = folder / MANIFEST_NAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    moved: list[dict[str, str]] = []
+    for item in [*(data.get("kept") or []), *(data.get("installed") or [])]:
+        if not isinstance(item, dict):
+            continue
+        slug = str(item.get("slug") or item.get("id") or "")
+        name = str(item.get("filename") or "")
+        if slug not in RETIRED_MODS or not name or name != Path(name).name or not name.endswith(".jar"):
+            continue
+        source = folder / name
+        if not source.is_file():
+            continue
+        target_dir = folder.parent / RETIRED_DIR
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / name
+        if target.exists():
+            target.unlink()
+        source.replace(target)
+        moved.append({"slug": slug, "filename": name, "movedTo": str(target), "reason": RETIRED_MODS[slug]})
+    return moved
 
 
 def _write_manifest(folder: Path, installed: list[dict[str, Any]], kept: list[dict[str, Any]]) -> None:

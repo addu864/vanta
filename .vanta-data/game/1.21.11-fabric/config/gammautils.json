@@ -1,0 +1,7 @@
+{
+  "nightVision": {
+    "enabled": true,
+    "value": 100.0,
+    "toggledNightVision": 100
+  }
+}

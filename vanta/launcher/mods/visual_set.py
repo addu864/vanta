@@ -92,6 +92,7 @@ def install_visual_set(
     options_changed = enable_resource_packs(instance / "options.txt", order)
     shader = placed.get(DEFAULT_SHADER)
     iris_changed = set_iris_shader(instance / "config" / "iris.properties", shader["filename"]) if shader else False
+    gamma_seeded = seed_gamma_utils(instance / "config" / "gammautils.json")
     (instance / "resourcepacks").mkdir(parents=True, exist_ok=True)
     (instance / "resourcepacks" / MANIFEST_NAME).write_text(
         json.dumps({"placed": placed, "skipped": skipped}, indent=2), encoding="utf-8"
@@ -102,7 +103,23 @@ def install_visual_set(
         "skipped": skipped,
         "optionsUpdated": options_changed,
         "irisUpdated": iris_changed,
+        "gammaUtilsSeeded": gamma_seeded,
     }
+
+
+def seed_gamma_utils(path: Path) -> bool:
+    """First run only: start Gamma Utils with Night Vision on at 100%.
+
+    Shaders ignore gamma, but Iris passes the night-vision strength to the
+    shader pack, so this is the fullbright that works with Complementary.
+    An existing gammautils.json (the player's own settings) is never touched.
+    """
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"nightVision": {"enabled": True, "value": 100.0, "toggledNightVision": 100}}
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return True
 
 
 def enable_resource_packs(options: Path, filenames: list[str]) -> bool:

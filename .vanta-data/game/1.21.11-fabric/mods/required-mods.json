@@ -17,7 +17,6 @@
     "modmenu-17.0.1.jar",
     "cloth-config-21.11.153-fabric.jar",
     "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
-    "fullbright-3.1.0_1.21.11.jar",
     "OverflowingBars-v21.11.0-mc1.21.11-Fabric.jar",
     "HealthIndicators-21.11.1.jar",
     "fabric-api-0.141.6_1.21.11.jar",
@@ -29,7 +28,8 @@
     "architectury-19.0.1-fabric.jar",
     "iris-fabric-1.10.8_mc1.21.11.jar",
     "notenoughanimations-fabric-1.12.6-mc1.21.11.jar",
-    "visuality-0.7.13_1.21.11.jar"
+    "visuality-0.7.13_1.21.11.jar",
+    "Gamma-Utils-2.5.10_mc1.21.11.jar"
   ],
   "installed": [
     {
@@ -63,6 +63,17 @@
       "versionNumber": "0.7.13+1.21.11",
       "filename": "visuality-0.7.13_1.21.11.jar",
       "sha1": "1b40880769e72a419562bc072ac1bccf152275e6",
+      "kept": false
+    },
+    {
+      "id": "gamma-utils",
+      "slug": "gamma-utils",
+      "title": "Gamma Utils",
+      "projectId": "wdLuzzEP",
+      "versionId": "aVJkWMQl",
+      "versionNumber": "2.5.10",
+      "filename": "Gamma-Utils-2.5.10_mc1.21.11.jar",
+      "sha1": "3f06271ea2c87634c23a37c97608b38fb78e015d",
       "kept": false
     }
   ],
@@ -252,17 +263,6 @@
       "versionNumber": "3.8.2+1.21.11-fabric",
       "filename": "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
       "sha1": "f99cda70903f16dd6927a276150b2762b4d5ab66",
-      "kept": true
-    },
-    {
-      "id": "fullbright",
-      "slug": "fullbright",
-      "title": "Fullbright",
-      "projectId": "VyxkIxCd",
-      "versionId": "wpeogqRv",
-      "versionNumber": "3.1.0",
-      "filename": "fullbright-3.1.0_1.21.11.jar",
-      "sha1": "665adeaefbbd55ada6749efe6194858de9e1496b",
       "kept": true
     },
     {

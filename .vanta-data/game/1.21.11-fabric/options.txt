@@ -169,7 +169,6 @@ key_key.dynamic_fps.toggle_forced:key.keyboard.unknown
 key_key.dynamic_fps.toggle_disabled:key.keyboard.unknown
 key_key.entityculling.toggle:key.keyboard.unknown
 key_key.entityculling.toggleBoxes:key.keyboard.unknown
-key_key.fullbright.toggle:key.keyboard.b
 key_key.healthindicators.renderingEnabled:key.keyboard.left
 key_key.healthindicators.armorRenderingEnabled:key.keyboard.right.shift
 key_key.healthindicators.overrideAllFilters:key.keyboard.right
@@ -195,3 +194,5 @@ modelPart_right_sleeve:true
 modelPart_left_pants_leg:true
 modelPart_right_pants_leg:true
 modelPart_hat:true
+key_key.gammautils.nightVisionToggle:key.keyboard.b
+key_key.gammautils.gammaToggle:key.keyboard.unknown

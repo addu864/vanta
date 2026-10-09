@@ -176,3 +176,40 @@ def test_newer_build_replaces_the_old_jar_vanta_installed(tmp_path: Path, monkey
     assert "user-mod.jar" in names
     replaced = {item["slug"]: item.get("replaced") for item in result["installed"]}
     assert replaced["sodium"] == "sodium-old.jar"
+
+
+def test_gamma_utils_replaces_gamma_only_fullbright() -> None:
+    from vanta.launcher.mods.required import REQUIRED_MODS, RETIRED_MODS
+
+    slugs = {item.slug for item in REQUIRED_MODS}
+    assert "gamma-utils" in slugs
+    assert "fullbright" not in slugs
+    assert "fullbright" in RETIRED_MODS
+
+
+def test_retired_fullbright_jar_is_moved_not_deleted(tmp_path: Path) -> None:
+    import json
+
+    from vanta.launcher.mods.required import MANIFEST_NAME, RETIRED_DIR, retire_old_mods
+
+    mods = tmp_path / "mods"
+    mods.mkdir()
+    (mods / "fullbright-3.1.0_1.21.11.jar").write_bytes(b"old")
+    (mods / "sodium.jar").write_bytes(b"keep")
+    (mods / MANIFEST_NAME).write_text(
+        json.dumps(
+            {
+                "kept": [
+                    {"slug": "fullbright", "filename": "fullbright-3.1.0_1.21.11.jar"},
+                    {"slug": "sodium", "filename": "sodium.jar"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    moved = retire_old_mods(mods)
+    assert [item["slug"] for item in moved] == ["fullbright"]
+    assert not (mods / "fullbright-3.1.0_1.21.11.jar").exists()
+    assert (tmp_path / RETIRED_DIR / "fullbright-3.1.0_1.21.11.jar").read_bytes() == b"old"
+    assert (mods / "sodium.jar").exists()
+    assert retire_old_mods(mods) == []

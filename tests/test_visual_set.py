@@ -69,3 +69,18 @@ def test_missing_build_is_reported_not_guessed(tmp_path: Path) -> None:
 def test_visual_mods_are_in_the_default_set() -> None:
     slugs = {m.slug for m in REQUIRED_MODS}
     assert {"iris", "sodium", "entity-model-features", "entitytexturefeatures", "not-enough-animations", "visuality"} <= slugs
+
+
+def test_gamma_utils_night_vision_is_seeded_once(tmp_path: Path) -> None:
+    import json
+
+    from vanta.launcher.mods.visual_set import seed_gamma_utils
+
+    path = tmp_path / "config" / "gammautils.json"
+    assert seed_gamma_utils(path) is True
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["nightVision"]["enabled"] is True
+    assert data["nightVision"]["value"] == 100.0
+    path.write_text('{"nightVision": {"enabled": false}}', encoding="utf-8")
+    assert seed_gamma_utils(path) is False
+    assert json.loads(path.read_text(encoding="utf-8"))["nightVision"]["enabled"] is False
