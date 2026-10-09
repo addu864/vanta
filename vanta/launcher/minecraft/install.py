@@ -107,16 +107,24 @@ def install_client(
             asset_count = len(objects)
 
     required_mods = None
+    visual_set = None
     # Only instances this installer creates. Linking an existing folder does not call this.
     if version == GAME_VERSION:
         from vanta.launcher.mods.required import install_required_mods
 
         required_mods = install_required_mods(instance / "mods")
+        from vanta.launcher.mods.visual_set import install_visual_set
+
+        try:
+            visual_set = install_visual_set(instance)
+        except Exception as exc:  # packs are optional; never fail the install
+            visual_set = {"ok": False, "error": str(exc)}
 
     return {
         "ok": True,
         "instance": str(instance),
         "requiredMods": required_mods,
+        "visualSet": visual_set,
         "clientJar": str(client_jar),
         "vanillaLibraries": kept,
         "fabricLibraries": fabric_count,

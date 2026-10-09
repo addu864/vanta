@@ -13,6 +13,7 @@
     "entity_texture_features-7.2.5-1.21.11-fabric.jar",
     "entity_model_features-3.3.11-1.21.11-fabric.jar",
     "CraftPresence-2.7.1_1.21.11-fabric.jar",
+    "e4all-fabric-2.2.0.jar",
     "modmenu-17.0.1.jar",
     "cloth-config-21.11.153-fabric.jar",
     "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
@@ -26,18 +27,42 @@
     "PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
     "ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar",
     "architectury-19.0.1-fabric.jar",
-    "e4all-fabric-2.2.0.jar"
+    "iris-fabric-1.10.8_mc1.21.11.jar",
+    "notenoughanimations-fabric-1.12.6-mc1.21.11.jar",
+    "visuality-0.7.13_1.21.11.jar"
   ],
   "installed": [
     {
-      "id": "e4all",
-      "slug": "e4all",
-      "title": "e4all",
-      "projectId": "fB1gJLGX",
-      "versionId": "WREwnZGP",
-      "versionNumber": "2.2.0-fabric",
-      "filename": "e4all-fabric-2.2.0.jar",
-      "sha1": "b62a38dc1b20fd9ca9e00f65eb11fb23bf9b6ea5",
+      "id": "iris",
+      "slug": "iris",
+      "title": "Iris Shaders",
+      "projectId": "YL57xq9U",
+      "versionId": "ka9PDlsN",
+      "versionNumber": "1.10.8+1.21.11-fabric",
+      "filename": "iris-fabric-1.10.8_mc1.21.11.jar",
+      "sha1": "acfbe6d065b6c35d85c14da04d35e073363f3acf",
+      "kept": false
+    },
+    {
+      "id": "not-enough-animations",
+      "slug": "not-enough-animations",
+      "title": "Not Enough Animations",
+      "projectId": "MPCX6s5C",
+      "versionId": "rs2DhiV9",
+      "versionNumber": "1.12.6",
+      "filename": "notenoughanimations-fabric-1.12.6-mc1.21.11.jar",
+      "sha1": "89baeec73c79a16539cfd341a307bcd3182b5b34",
+      "kept": false
+    },
+    {
+      "id": "visuality",
+      "slug": "visuality",
+      "title": "Visuality",
+      "projectId": "rI0hvYcd",
+      "versionId": "6vzUj4RD",
+      "versionNumber": "0.7.13+1.21.11",
+      "filename": "visuality-0.7.13_1.21.11.jar",
+      "sha1": "1b40880769e72a419562bc072ac1bccf152275e6",
       "kept": false
     }
   ],
@@ -183,6 +208,17 @@
       "versionNumber": "2.7.1+1.21.11-fabric",
       "filename": "CraftPresence-2.7.1_1.21.11-fabric.jar",
       "sha1": "9696e3080486bdf85e7d83a287cf913845c89de3",
+      "kept": true
+    },
+    {
+      "id": "e4all",
+      "slug": "e4all",
+      "title": "e4all",
+      "projectId": "fB1gJLGX",
+      "versionId": "WREwnZGP",
+      "versionNumber": "2.2.0-fabric",
+      "filename": "e4all-fabric-2.2.0.jar",
+      "sha1": "b62a38dc1b20fd9ca9e00f65eb11fb23bf9b6ea5",
       "kept": true
     },
     {

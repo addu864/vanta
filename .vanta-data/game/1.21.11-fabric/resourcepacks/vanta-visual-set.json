@@ -1,0 +1,35 @@
+{
+  "placed": {
+    "bare-bones": {
+      "title": "Bare Bones",
+      "kind": "resourcepack",
+      "versionNumber": "1.4.12",
+      "filename": "Bare Bones 1.21.11.zip"
+    },
+    "fresh-animations": {
+      "title": "Fresh Animations",
+      "kind": "resourcepack",
+      "versionNumber": "1.10.4",
+      "filename": "FreshAnimations_v1.10.4.zip"
+    },
+    "bare-bones-x-fresh-animations": {
+      "title": "Bare Bones x Fresh Animations",
+      "kind": "resourcepack",
+      "versionNumber": "1.10.4",
+      "filename": "Bare Bones x Fresh Animations 1.10.4.zip"
+    },
+    "complementary-reimagined": {
+      "title": "Complementary Reimagined",
+      "kind": "shader",
+      "versionNumber": "r5.9.3",
+      "filename": "ComplementaryReimagined_r5.9.3.zip"
+    },
+    "complementary-unbound": {
+      "title": "Complementary Unbound",
+      "kind": "shader",
+      "versionNumber": "r5.9.3",
+      "filename": "ComplementaryUnbound_r5.9.3.zip"
+    }
+  },
+  "skipped": []
+}

@@ -71,6 +71,10 @@ REQUIRED_MODS: tuple[RequiredMod, ...] = (
     RequiredMod("modmenu", "modmenu", "Mod Menu", "utility"),
     RequiredMod("cloth-config", "cloth-config", "Cloth Config API", "utility"),
     RequiredMod("yacl", "yacl", "YetAnotherConfigLib", "utility"),
+    # Trailer-look visual set (resource/shader packs live in visual_set.py).
+    RequiredMod("iris", "iris", "Iris Shaders", "display"),
+    RequiredMod("not-enough-animations", "not-enough-animations", "Not Enough Animations", "display"),
+    RequiredMod("visuality", "visuality", "Visuality", "display"),
     RequiredMod("fullbright", "fullbright", "Fullbright", "display"),
     RequiredMod("overflowing-bars", "overflowing-bars", "Overflowing Bars", "display"),
     RequiredMod("health-indicators", "health-indicators", "Health Indicators", "display"),

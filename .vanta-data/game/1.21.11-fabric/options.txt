@@ -63,7 +63,7 @@ damageTiltStrength:1.0
 highContrast:false
 highContrastBlockOutline:false
 narratorHotkey:true
-resourcePacks:["vanilla"]
+resourcePacks:["vanilla","file/Bare Bones 1.21.11.zip","file/FreshAnimations_v1.10.4.zip","file/Bare Bones x Fresh Animations 1.10.4.zip"]
 incompatibleResourcePacks:[]
 lastServer:
 lang:en_us
