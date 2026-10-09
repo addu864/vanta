@@ -3,6 +3,7 @@
     "sodium-fabric-0.8.15-beta.1_mc1.21.11.jar",
     "lithium-fabric-0.21.4_mc1.21.11.jar",
     "ImmediatelyFast-Fabric-1.14.3_1.21.11.jar",
+    "entityculling-fabric-1.11.3-mc1.21.11.jar",
     "ferritecore-8.2.0-fabric.jar",
     "dynamic-fps-3.11.6_minecraft-1.21.11-fabric.jar",
     "bobby-5.2.11.1_mc1.21.11.jar",
@@ -10,7 +11,9 @@
     "MouseTweaks-fabric-mc1.21.11-2.30.jar",
     "appleskin-fabric-mc1.21.11-3.0.8.jar",
     "entity_texture_features-7.2.5-1.21.11-fabric.jar",
+    "entity_model_features-3.3.11-1.21.11-fabric.jar",
     "CraftPresence-2.7.1_1.21.11-fabric.jar",
+    "modmenu-17.0.1.jar",
     "cloth-config-21.11.153-fabric.jar",
     "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
     "fullbright-3.1.0_1.21.11.jar",
@@ -18,85 +21,24 @@
     "HealthIndicators-21.11.1.jar",
     "fabric-api-0.141.6_1.21.11.jar",
     "UniLib-1.2.1_1.21.11-fabric.jar",
+    "placeholder-api-2.8.2_1.21.10.jar",
+    "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar",
     "PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
     "ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar",
     "architectury-19.0.1-fabric.jar",
-    "entityculling-fabric-1.11.3-mc1.21.11.jar",
-    "entity_model_features-3.3.11-1.21.11-fabric.jar",
-    "e4mc-fabric-6.2.3.jar",
-    "modmenu-17.0.1.jar",
-    "placeholder-api-2.8.2_1.21.10.jar",
-    "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar"
+    "e4all-fabric-2.2.0.jar"
   ],
   "installed": [
     {
-      "id": "entityculling",
-      "slug": "entityculling",
-      "title": "Entity Culling",
-      "projectId": "NNAgCjsB",
-      "versionId": "CTabrwB1",
-      "versionNumber": "1.11.3",
-      "filename": "entityculling-fabric-1.11.3-mc1.21.11.jar",
-      "sha1": "ce2e1cf7e343a625d184c80ccea582d468686a2e",
-      "kept": false,
-      "replaced": "entityculling-fabric-1.11.2-mc1.21.11.jar"
-    },
-    {
-      "id": "entity-model-features",
-      "slug": "entity-model-features",
-      "title": "[EMF] Entity Model Features",
-      "projectId": "4I1XuqiY",
-      "versionId": "cHODxPoi",
-      "versionNumber": "3.3.11-fabric-1.21.11",
-      "filename": "entity_model_features-3.3.11-1.21.11-fabric.jar",
-      "sha1": "a2a6da03cff24c95cdc52a311a87326aae6ff82a",
-      "kept": false,
-      "replaced": "entity_model_features-3.3.10-1.21.11-fabric.jar"
-    },
-    {
-      "id": "e4mc",
-      "slug": "e4mc",
-      "title": "e4mc",
-      "projectId": "qANg5Jrr",
-      "versionId": "8wsUJ306",
-      "versionNumber": "6.2.3-fabric",
-      "filename": "e4mc-fabric-6.2.3.jar",
-      "sha1": "5420209f8560df548625f1defc24ebb94682f0fd",
+      "id": "e4all",
+      "slug": "e4all",
+      "title": "e4all",
+      "projectId": "fB1gJLGX",
+      "versionId": "WREwnZGP",
+      "versionNumber": "2.2.0-fabric",
+      "filename": "e4all-fabric-2.2.0.jar",
+      "sha1": "b62a38dc1b20fd9ca9e00f65eb11fb23bf9b6ea5",
       "kept": false
-    },
-    {
-      "id": "modmenu",
-      "slug": "modmenu",
-      "title": "Mod Menu",
-      "projectId": "mOgUt4GM",
-      "versionId": "cLkYaVuL",
-      "versionNumber": "17.0.1",
-      "filename": "modmenu-17.0.1.jar",
-      "sha1": "d5612d70bda58e0179b177ca9990e57471e67d19",
-      "kept": false
-    },
-    {
-      "id": "placeholder-api",
-      "slug": "placeholder-api",
-      "title": "Text Placeholder API",
-      "projectId": "eXts2L7r",
-      "versionId": "qxjzQ9xY",
-      "versionNumber": "2.8.2+1.21.10",
-      "filename": "placeholder-api-2.8.2_1.21.10.jar",
-      "sha1": "bbdc920ecff993148cd6e81a208536132245ce40",
-      "kept": false
-    },
-    {
-      "id": "fabric-language-kotlin",
-      "slug": "fabric-language-kotlin",
-      "title": "Fabric Language Kotlin",
-      "projectId": "Ha28R6CL",
-      "versionId": "SKW1BTL3",
-      "versionNumber": "1.14.2+kotlin.2.4.21",
-      "filename": "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar",
-      "sha1": "f1d4ab6ecd54d9782521333a87eb50724ecb03e0",
-      "kept": false,
-      "replaced": "fabric-language-kotlin-1.14.1_kotlin.2.4.20.jar"
     }
   ],
   "kept": [
@@ -131,6 +73,17 @@
       "versionNumber": "1.14.3+1.21.11-fabric",
       "filename": "ImmediatelyFast-Fabric-1.14.3_1.21.11.jar",
       "sha1": "43e451464f979bdf9ff4ac288b358a2f91b79ed8",
+      "kept": true
+    },
+    {
+      "id": "entityculling",
+      "slug": "entityculling",
+      "title": "Entity Culling",
+      "projectId": "NNAgCjsB",
+      "versionId": "CTabrwB1",
+      "versionNumber": "1.11.3",
+      "filename": "entityculling-fabric-1.11.3-mc1.21.11.jar",
+      "sha1": "ce2e1cf7e343a625d184c80ccea582d468686a2e",
       "kept": true
     },
     {
@@ -211,6 +164,17 @@
       "kept": true
     },
     {
+      "id": "entity-model-features",
+      "slug": "entity-model-features",
+      "title": "[EMF] Entity Model Features",
+      "projectId": "4I1XuqiY",
+      "versionId": "cHODxPoi",
+      "versionNumber": "3.3.11-fabric-1.21.11",
+      "filename": "entity_model_features-3.3.11-1.21.11-fabric.jar",
+      "sha1": "a2a6da03cff24c95cdc52a311a87326aae6ff82a",
+      "kept": true
+    },
+    {
       "id": "craftpresence",
       "slug": "craftpresence",
       "title": "CraftPresence",
@@ -219,6 +183,17 @@
       "versionNumber": "2.7.1+1.21.11-fabric",
       "filename": "CraftPresence-2.7.1_1.21.11-fabric.jar",
       "sha1": "9696e3080486bdf85e7d83a287cf913845c89de3",
+      "kept": true
+    },
+    {
+      "id": "modmenu",
+      "slug": "modmenu",
+      "title": "Mod Menu",
+      "projectId": "mOgUt4GM",
+      "versionId": "cLkYaVuL",
+      "versionNumber": "17.0.1",
+      "filename": "modmenu-17.0.1.jar",
+      "sha1": "d5612d70bda58e0179b177ca9990e57471e67d19",
       "kept": true
     },
     {
@@ -296,6 +271,28 @@
       "versionNumber": "1.2.1+1.21.11-fabric",
       "filename": "UniLib-1.2.1_1.21.11-fabric.jar",
       "sha1": "74f50874b3e9551f0df33c272ce62f5856acdd7d",
+      "kept": true
+    },
+    {
+      "id": "placeholder-api",
+      "slug": "placeholder-api",
+      "title": "Text Placeholder API",
+      "projectId": "eXts2L7r",
+      "versionId": "qxjzQ9xY",
+      "versionNumber": "2.8.2+1.21.10",
+      "filename": "placeholder-api-2.8.2_1.21.10.jar",
+      "sha1": "bbdc920ecff993148cd6e81a208536132245ce40",
+      "kept": true
+    },
+    {
+      "id": "fabric-language-kotlin",
+      "slug": "fabric-language-kotlin",
+      "title": "Fabric Language Kotlin",
+      "projectId": "Ha28R6CL",
+      "versionId": "SKW1BTL3",
+      "versionNumber": "1.14.2+kotlin.2.4.21",
+      "filename": "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar",
+      "sha1": "f1d4ab6ecd54d9782521333a87eb50724ecb03e0",
       "kept": true
     },
     {

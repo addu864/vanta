@@ -64,8 +64,9 @@ REQUIRED_MODS: tuple[RequiredMod, ...] = (
     RequiredMod("entitytexturefeatures", "entitytexturefeatures", "Entity Texture Features", "utility"),
     RequiredMod("entity-model-features", "entity-model-features", "Entity Model Features", "utility"),
     RequiredMod("craftpresence", "craftpresence", "CraftPresence", "utility"),
-    # Open to LAN -> public join domain via e4mc, no port forwarding.
-    RequiredMod("e4mc", "e4mc", "e4mc", "utility"),
+    # Open to LAN -> public join address, no port forwarding. e4mc fork that
+    # also lets offline/local accounts join (Online Mode toggle on the LAN screen).
+    RequiredMod("e4all", "e4all", "e4all", "utility"),
     # In-game Mods screen with config buttons (uses Cloth Config / YACL screens).
     RequiredMod("modmenu", "modmenu", "Mod Menu", "utility"),
     RequiredMod("cloth-config", "cloth-config", "Cloth Config API", "utility"),
@@ -288,6 +289,9 @@ def _compatible(
 ) -> tuple[ModVersion, ModFile] | None:
     for version in versions:
         if not is_compatible(version, game_version=game_version, loader=loader):
+            continue
+        # Desktop launcher: skip Android-only builds (e.g. e4all "2.2.0-fabric-android").
+        if "android" in str(version.version_number or "").lower():
             continue
         mod_file = _official_file(version)
         if mod_file is not None:

@@ -131,11 +131,24 @@ def test_profile_sync_keeps_required_jars(tmp_path: Path) -> None:
     assert not (mods / "old-synced.jar").exists()
 
 
-def test_default_set_includes_e4mc_and_mod_menu_with_config_libraries() -> None:
+def test_default_set_includes_e4all_and_mod_menu_with_config_libraries() -> None:
     from vanta.launcher.mods.required import REQUIRED_MODS
 
     slugs = {item.slug for item in REQUIRED_MODS}
-    assert {"e4mc", "modmenu", "cloth-config", "yacl"} <= slugs
+    assert {"e4all", "modmenu", "cloth-config", "yacl"} <= slugs
+    assert "e4mc" not in slugs  # e4all is an e4mc fork; both together would clash.
+
+
+def test_android_only_builds_are_skipped() -> None:
+    from vanta.launcher.mods.required import _compatible
+
+    android = _version("a", "p", "e4all-fabric-2.2.0-android.jar", "https://cdn.modrinth.com/data/a.jar")
+    android.version_number = "2.2.0-fabric-android"
+    desktop = _version("d", "p", "e4all-fabric-2.2.0.jar", "https://cdn.modrinth.com/data/d.jar")
+    desktop.version_number = "2.2.0-fabric"
+    chosen = _compatible([android, desktop], "1.21.11", "fabric")
+    assert chosen is not None
+    assert chosen[1].filename == "e4all-fabric-2.2.0.jar"
 
 
 def test_newer_build_replaces_the_old_jar_vanta_installed(tmp_path: Path, monkeypatch) -> None:
