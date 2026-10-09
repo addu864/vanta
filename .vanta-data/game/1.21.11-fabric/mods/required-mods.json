@@ -3,7 +3,6 @@
     "sodium-fabric-0.8.15-beta.1_mc1.21.11.jar",
     "lithium-fabric-0.21.4_mc1.21.11.jar",
     "ImmediatelyFast-Fabric-1.14.3_1.21.11.jar",
-    "entityculling-fabric-1.11.2-mc1.21.11.jar",
     "ferritecore-8.2.0-fabric.jar",
     "dynamic-fps-3.11.6_minecraft-1.21.11-fabric.jar",
     "bobby-5.2.11.1_mc1.21.11.jar",
@@ -11,21 +10,96 @@
     "MouseTweaks-fabric-mc1.21.11-2.30.jar",
     "appleskin-fabric-mc1.21.11-3.0.8.jar",
     "entity_texture_features-7.2.5-1.21.11-fabric.jar",
-    "entity_model_features-3.3.10-1.21.11-fabric.jar",
     "CraftPresence-2.7.1_1.21.11-fabric.jar",
+    "cloth-config-21.11.153-fabric.jar",
+    "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
     "fullbright-3.1.0_1.21.11.jar",
     "OverflowingBars-v21.11.0-mc1.21.11-Fabric.jar",
     "HealthIndicators-21.11.1.jar",
     "fabric-api-0.141.6_1.21.11.jar",
-    "cloth-config-21.11.153-fabric.jar",
     "UniLib-1.2.1_1.21.11-fabric.jar",
-    "fabric-language-kotlin-1.14.1_kotlin.2.4.20.jar",
     "PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
     "ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar",
     "architectury-19.0.1-fabric.jar",
-    "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar"
+    "entityculling-fabric-1.11.3-mc1.21.11.jar",
+    "entity_model_features-3.3.11-1.21.11-fabric.jar",
+    "e4mc-fabric-6.2.3.jar",
+    "modmenu-17.0.1.jar",
+    "placeholder-api-2.8.2_1.21.10.jar",
+    "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar"
   ],
   "installed": [
+    {
+      "id": "entityculling",
+      "slug": "entityculling",
+      "title": "Entity Culling",
+      "projectId": "NNAgCjsB",
+      "versionId": "CTabrwB1",
+      "versionNumber": "1.11.3",
+      "filename": "entityculling-fabric-1.11.3-mc1.21.11.jar",
+      "sha1": "ce2e1cf7e343a625d184c80ccea582d468686a2e",
+      "kept": false,
+      "replaced": "entityculling-fabric-1.11.2-mc1.21.11.jar"
+    },
+    {
+      "id": "entity-model-features",
+      "slug": "entity-model-features",
+      "title": "[EMF] Entity Model Features",
+      "projectId": "4I1XuqiY",
+      "versionId": "cHODxPoi",
+      "versionNumber": "3.3.11-fabric-1.21.11",
+      "filename": "entity_model_features-3.3.11-1.21.11-fabric.jar",
+      "sha1": "a2a6da03cff24c95cdc52a311a87326aae6ff82a",
+      "kept": false,
+      "replaced": "entity_model_features-3.3.10-1.21.11-fabric.jar"
+    },
+    {
+      "id": "e4mc",
+      "slug": "e4mc",
+      "title": "e4mc",
+      "projectId": "qANg5Jrr",
+      "versionId": "8wsUJ306",
+      "versionNumber": "6.2.3-fabric",
+      "filename": "e4mc-fabric-6.2.3.jar",
+      "sha1": "5420209f8560df548625f1defc24ebb94682f0fd",
+      "kept": false
+    },
+    {
+      "id": "modmenu",
+      "slug": "modmenu",
+      "title": "Mod Menu",
+      "projectId": "mOgUt4GM",
+      "versionId": "cLkYaVuL",
+      "versionNumber": "17.0.1",
+      "filename": "modmenu-17.0.1.jar",
+      "sha1": "d5612d70bda58e0179b177ca9990e57471e67d19",
+      "kept": false
+    },
+    {
+      "id": "placeholder-api",
+      "slug": "placeholder-api",
+      "title": "Text Placeholder API",
+      "projectId": "eXts2L7r",
+      "versionId": "qxjzQ9xY",
+      "versionNumber": "2.8.2+1.21.10",
+      "filename": "placeholder-api-2.8.2_1.21.10.jar",
+      "sha1": "bbdc920ecff993148cd6e81a208536132245ce40",
+      "kept": false
+    },
+    {
+      "id": "fabric-language-kotlin",
+      "slug": "fabric-language-kotlin",
+      "title": "Fabric Language Kotlin",
+      "projectId": "Ha28R6CL",
+      "versionId": "SKW1BTL3",
+      "versionNumber": "1.14.2+kotlin.2.4.21",
+      "filename": "fabric-language-kotlin-1.14.2_kotlin.2.4.21.jar",
+      "sha1": "f1d4ab6ecd54d9782521333a87eb50724ecb03e0",
+      "kept": false,
+      "replaced": "fabric-language-kotlin-1.14.1_kotlin.2.4.20.jar"
+    }
+  ],
+  "kept": [
     {
       "id": "sodium",
       "slug": "sodium",
@@ -35,7 +109,7 @@
       "versionNumber": "mc1.21.11-0.8.15-beta.1-fabric",
       "filename": "sodium-fabric-0.8.15-beta.1_mc1.21.11.jar",
       "sha1": "5469cef6f5dddd72a1216d9a15393c90d8eb5f33",
-      "kept": false
+      "kept": true
     },
     {
       "id": "lithium",
@@ -46,7 +120,7 @@
       "versionNumber": "mc1.21.11-0.21.4-fabric",
       "filename": "lithium-fabric-0.21.4_mc1.21.11.jar",
       "sha1": "203bdcb26e97b3217b045e1182651a7d7b6462ec",
-      "kept": false
+      "kept": true
     },
     {
       "id": "immediatelyfast",
@@ -57,18 +131,7 @@
       "versionNumber": "1.14.3+1.21.11-fabric",
       "filename": "ImmediatelyFast-Fabric-1.14.3_1.21.11.jar",
       "sha1": "43e451464f979bdf9ff4ac288b358a2f91b79ed8",
-      "kept": false
-    },
-    {
-      "id": "entityculling",
-      "slug": "entityculling",
-      "title": "Entity Culling",
-      "projectId": "NNAgCjsB",
-      "versionId": "CFBkR8Vm",
-      "versionNumber": "1.11.2",
-      "filename": "entityculling-fabric-1.11.2-mc1.21.11.jar",
-      "sha1": "95055aca69fedd76967f75957fc93762fbe73874",
-      "kept": false
+      "kept": true
     },
     {
       "id": "ferrite-core",
@@ -79,7 +142,7 @@
       "versionNumber": "8.2.0-fabric",
       "filename": "ferritecore-8.2.0-fabric.jar",
       "sha1": "c2e2f5e008f5bc9f401dfad8ca94909917006b65",
-      "kept": false
+      "kept": true
     },
     {
       "id": "dynamic-fps",
@@ -90,7 +153,7 @@
       "versionNumber": "3.11.6",
       "filename": "dynamic-fps-3.11.6_minecraft-1.21.11-fabric.jar",
       "sha1": "2e5ab45e69b43812491cfa34f8f7a4ce7623c233",
-      "kept": false
+      "kept": true
     },
     {
       "id": "bobby",
@@ -101,7 +164,7 @@
       "versionNumber": "5.2.11.1+mc1.21.11",
       "filename": "bobby-5.2.11.1_mc1.21.11.jar",
       "sha1": "cce5a11090510e4d81e9954e5e53d1e05cc4540c",
-      "kept": false
+      "kept": true
     },
     {
       "id": "fastquit",
@@ -112,7 +175,7 @@
       "versionNumber": "3.1.3+mc1.21.11",
       "filename": "fastquit-3.1.3_mc1.21.11.jar",
       "sha1": "9ba127357e1fc9ff800496250fb510f70f394714",
-      "kept": false
+      "kept": true
     },
     {
       "id": "mouse-tweaks",
@@ -123,7 +186,7 @@
       "versionNumber": "1.21.11-2.30-fabric",
       "filename": "MouseTweaks-fabric-mc1.21.11-2.30.jar",
       "sha1": "86515de45fe960bd717deea0954055106e857b81",
-      "kept": false
+      "kept": true
     },
     {
       "id": "appleskin",
@@ -134,7 +197,7 @@
       "versionNumber": "3.0.8+mc1.21.11",
       "filename": "appleskin-fabric-mc1.21.11-3.0.8.jar",
       "sha1": "441fdbf4e9c34fb61517ceb8e15618950dc4d314",
-      "kept": false
+      "kept": true
     },
     {
       "id": "entitytexturefeatures",
@@ -145,18 +208,7 @@
       "versionNumber": "7.2.5-fabric-1.21.11",
       "filename": "entity_texture_features-7.2.5-1.21.11-fabric.jar",
       "sha1": "0472a695b10e86888f66c1673ee6e9cc24b6ac04",
-      "kept": false
-    },
-    {
-      "id": "entity-model-features",
-      "slug": "entity-model-features",
-      "title": "[EMF] Entity Model Features",
-      "projectId": "4I1XuqiY",
-      "versionId": "QI38ocrh",
-      "versionNumber": "3.3.10-fabric-1.21.11",
-      "filename": "entity_model_features-3.3.10-1.21.11-fabric.jar",
-      "sha1": "23dfaf3ace8d75c05262d3fd17c13be62f1cce7c",
-      "kept": false
+      "kept": true
     },
     {
       "id": "craftpresence",
@@ -167,51 +219,7 @@
       "versionNumber": "2.7.1+1.21.11-fabric",
       "filename": "CraftPresence-2.7.1_1.21.11-fabric.jar",
       "sha1": "9696e3080486bdf85e7d83a287cf913845c89de3",
-      "kept": false
-    },
-    {
-      "id": "fullbright",
-      "slug": "fullbright",
-      "title": "Fullbright",
-      "projectId": "VyxkIxCd",
-      "versionId": "wpeogqRv",
-      "versionNumber": "3.1.0",
-      "filename": "fullbright-3.1.0_1.21.11.jar",
-      "sha1": "665adeaefbbd55ada6749efe6194858de9e1496b",
-      "kept": false
-    },
-    {
-      "id": "overflowing-bars",
-      "slug": "overflowing-bars",
-      "title": "Overflowing Bars",
-      "projectId": "XD7XOrAF",
-      "versionId": "Wtc9Dvls",
-      "versionNumber": "21.11.0",
-      "filename": "OverflowingBars-v21.11.0-mc1.21.11-Fabric.jar",
-      "sha1": "7c9001abfeaa2a4f1e9d0ade35f229bf9fab6118",
-      "kept": false
-    },
-    {
-      "id": "health-indicators",
-      "slug": "health-indicators",
-      "title": "Health Indicators",
-      "projectId": "htkVd6dQ",
-      "versionId": "yZzbIUkE",
-      "versionNumber": "21.11.1",
-      "filename": "HealthIndicators-21.11.1.jar",
-      "sha1": "72a2c2cc16fa5a05bfae6c9cfb4dce859e34ea15",
-      "kept": false
-    },
-    {
-      "id": "fabric-api",
-      "slug": "fabric-api",
-      "title": "Fabric API",
-      "projectId": "P7dR8mSH",
-      "versionId": "6qAuTtLR",
-      "versionNumber": "0.141.6+1.21.11",
-      "filename": "fabric-api-0.141.6_1.21.11.jar",
-      "sha1": "c98467cbbaf4d197377266795ae015f4130d65b6",
-      "kept": false
+      "kept": true
     },
     {
       "id": "cloth-config",
@@ -222,62 +230,7 @@
       "versionNumber": "21.11.153+fabric",
       "filename": "cloth-config-21.11.153-fabric.jar",
       "sha1": "4c224606a963bce223db5b27edb4959ecf40d4ee",
-      "kept": false
-    },
-    {
-      "id": "unilib",
-      "slug": "unilib",
-      "title": "UniLib",
-      "projectId": "nT86WUER",
-      "versionId": "2wvZasyj",
-      "versionNumber": "1.2.1+1.21.11-fabric",
-      "filename": "UniLib-1.2.1_1.21.11-fabric.jar",
-      "sha1": "74f50874b3e9551f0df33c272ce62f5856acdd7d",
-      "kept": false
-    },
-    {
-      "id": "fabric-language-kotlin",
-      "slug": "fabric-language-kotlin",
-      "title": "Fabric Language Kotlin",
-      "projectId": "Ha28R6CL",
-      "versionId": "eRRZzGMc",
-      "versionNumber": "1.14.1+kotlin.2.4.20",
-      "filename": "fabric-language-kotlin-1.14.1_kotlin.2.4.20.jar",
-      "sha1": "62ae40a31b689b52fde399f2143d547a631e942c",
-      "kept": false
-    },
-    {
-      "id": "puzzles-lib",
-      "slug": "puzzles-lib",
-      "title": "Puzzles Lib",
-      "projectId": "QAGBst4M",
-      "versionId": "xTX7sOwU",
-      "versionNumber": "21.11.13",
-      "filename": "PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
-      "sha1": "f99cbbaf6e14929b842cfb025840e61fdfa9b1e1",
-      "kept": false
-    },
-    {
-      "id": "forge-config-api-port",
-      "slug": "forge-config-api-port",
-      "title": "Forge Config API Port",
-      "projectId": "ohNO6lps",
-      "versionId": "uXrWPsCu",
-      "versionNumber": "21.11.1",
-      "filename": "ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar",
-      "sha1": "61aa1b5fafd75afc44552d0213cac39bc938bc2d",
-      "kept": false
-    },
-    {
-      "id": "architectury-api",
-      "slug": "architectury-api",
-      "title": "Architectury API",
-      "projectId": "lhGA9TYQ",
-      "versionId": "uNdfrcQ8",
-      "versionNumber": "19.0.1+fabric",
-      "filename": "architectury-19.0.1-fabric.jar",
-      "sha1": "2d40563f7e36f7a03f094031aeaacb175117928e",
-      "kept": false
+      "kept": true
     },
     {
       "id": "yacl",
@@ -288,8 +241,95 @@
       "versionNumber": "3.8.2+1.21.11-fabric",
       "filename": "yet_another_config_lib_v3-3.8.2_1.21.11-fabric.jar",
       "sha1": "f99cda70903f16dd6927a276150b2762b4d5ab66",
-      "kept": false
+      "kept": true
+    },
+    {
+      "id": "fullbright",
+      "slug": "fullbright",
+      "title": "Fullbright",
+      "projectId": "VyxkIxCd",
+      "versionId": "wpeogqRv",
+      "versionNumber": "3.1.0",
+      "filename": "fullbright-3.1.0_1.21.11.jar",
+      "sha1": "665adeaefbbd55ada6749efe6194858de9e1496b",
+      "kept": true
+    },
+    {
+      "id": "overflowing-bars",
+      "slug": "overflowing-bars",
+      "title": "Overflowing Bars",
+      "projectId": "XD7XOrAF",
+      "versionId": "Wtc9Dvls",
+      "versionNumber": "21.11.0",
+      "filename": "OverflowingBars-v21.11.0-mc1.21.11-Fabric.jar",
+      "sha1": "7c9001abfeaa2a4f1e9d0ade35f229bf9fab6118",
+      "kept": true
+    },
+    {
+      "id": "health-indicators",
+      "slug": "health-indicators",
+      "title": "Health Indicators",
+      "projectId": "htkVd6dQ",
+      "versionId": "yZzbIUkE",
+      "versionNumber": "21.11.1",
+      "filename": "HealthIndicators-21.11.1.jar",
+      "sha1": "72a2c2cc16fa5a05bfae6c9cfb4dce859e34ea15",
+      "kept": true
+    },
+    {
+      "id": "fabric-api",
+      "slug": "fabric-api",
+      "title": "Fabric API",
+      "projectId": "P7dR8mSH",
+      "versionId": "6qAuTtLR",
+      "versionNumber": "0.141.6+1.21.11",
+      "filename": "fabric-api-0.141.6_1.21.11.jar",
+      "sha1": "c98467cbbaf4d197377266795ae015f4130d65b6",
+      "kept": true
+    },
+    {
+      "id": "unilib",
+      "slug": "unilib",
+      "title": "UniLib",
+      "projectId": "nT86WUER",
+      "versionId": "2wvZasyj",
+      "versionNumber": "1.2.1+1.21.11-fabric",
+      "filename": "UniLib-1.2.1_1.21.11-fabric.jar",
+      "sha1": "74f50874b3e9551f0df33c272ce62f5856acdd7d",
+      "kept": true
+    },
+    {
+      "id": "puzzles-lib",
+      "slug": "puzzles-lib",
+      "title": "Puzzles Lib",
+      "projectId": "QAGBst4M",
+      "versionId": "xTX7sOwU",
+      "versionNumber": "21.11.13",
+      "filename": "PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
+      "sha1": "f99cbbaf6e14929b842cfb025840e61fdfa9b1e1",
+      "kept": true
+    },
+    {
+      "id": "forge-config-api-port",
+      "slug": "forge-config-api-port",
+      "title": "Forge Config API Port",
+      "projectId": "ohNO6lps",
+      "versionId": "uXrWPsCu",
+      "versionNumber": "21.11.1",
+      "filename": "ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar",
+      "sha1": "61aa1b5fafd75afc44552d0213cac39bc938bc2d",
+      "kept": true
+    },
+    {
+      "id": "architectury-api",
+      "slug": "architectury-api",
+      "title": "Architectury API",
+      "projectId": "lhGA9TYQ",
+      "versionId": "uNdfrcQ8",
+      "versionNumber": "19.0.1+fabric",
+      "filename": "architectury-19.0.1-fabric.jar",
+      "sha1": "2d40563f7e36f7a03f094031aeaacb175117928e",
+      "kept": true
     }
-  ],
-  "kept": []
+  ]
 }

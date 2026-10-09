@@ -67,9 +67,12 @@ def _handler_for(app: VantaApp) -> type[BaseHTTPRequestHandler]:
             except BadRequest as exc:
                 app.log.error(exc.message)
                 status, body, content_type = 400, _json_bytes({"ok": False, "error": exc.message}), JSON
-            except Exception:
+            except Exception as exc:
                 message = "Something went wrong inside Vanta."
-                app.log.error(message)
+                import traceback
+
+                detail = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+                app.log.error(f"{message} {method} {urlparse(self.path).path}\n{detail}")
                 status, body, content_type = 500, _json_bytes({"ok": False, "error": message}), JSON
             self.send_response(status)
             self.send_header("Content-Type", content_type)
@@ -231,6 +234,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(app.list_managed_servers())
     if method == "POST" and path == "/api/servers/create":
         return _from_ok(app.create_server(_payload(body)))
+    if method == "POST" and path == "/api/servers/install-jar":
+        return _from_ok(app.install_server_jar(_payload(body)))
     if method == "POST" and path == "/api/servers/start":
         return _from_ok(app.start_server(_payload(body)))
     if method == "POST" and path == "/api/servers/stop":

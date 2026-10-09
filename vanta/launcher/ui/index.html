@@ -171,7 +171,7 @@
 
       <section class="panel" data-panel="servers" id="panel-servers" hidden>
         <h1>SERVERS</h1>
-        <p class="hint">Local servers on this machine only. Vanta does not download Paper, Fabric, or Minecraft. If server.jar is missing, Start fails and the server stays offline. A server crash cannot quit the launcher. An optional tunnel uses a local playit, cloudflared, or bore binary only. Vanta does not download one and does not invent a public address.</p>
+        <p class="hint">Local servers on this machine only. Create downloads the official Paper (PaperMC) or Fabric server jar for the chosen version. Java must be installed to Start. A server crash cannot quit the launcher. An optional tunnel uses a local playit, cloudflared, or bore binary only. Vanta does not download one and does not invent a public address.</p>
         <div class="mods-columns">
           <div>
             <h2>Create</h2>
@@ -202,6 +202,7 @@
         <div id="server-detail" hidden>
           <h2 id="server-detail-title">Server</h2>
           <p class="hint" id="server-jar-note"></p>
+          <button type="button" class="ghost" id="server-install-jar" hidden>Download server jar</button>
           <h2>Friends outside your network</h2>
           <label class="check-label">
             <input id="server-tunnel-enabled" type="checkbox">
@@ -1799,7 +1800,8 @@
       $("server-detail-title").textContent = server.name + " (" + (server.running ? "process online" : "offline") + ")";
       $("server-jar-note").textContent = server.jarInstalled
         ? "server.jar is present. Start runs it as a separate process."
-        : "Server jar is not installed. Start will fail until you place server.jar in this server folder. Vanta will not download one.";
+        : "Server jar is not installed. Click Download server jar, or place server.jar in this server folder.";
+      $("server-install-jar").hidden = !!server.jarInstalled;
       applyTunnel(server.tunnel);
     }
 
@@ -1929,20 +1931,39 @@
       return card;
     }
 
+    async function installServerJar() {
+      if (!selectedServerId) return;
+      setStatus("servers-status", "Downloading server jar…", "");
+      const result = await post("/api/servers/install-jar", { serverId: selectedServerId });
+      const data = result.data || {};
+      if (!data.ok) {
+        setStatus("servers-status", data.error || "Could not download the server jar.", "bad");
+      } else {
+        setStatus("servers-status", "Installed " + ((data.jar && data.jar.name) || "server.jar") + ". Press Start.", "good");
+      }
+      await selectServer(selectedServerId);
+    }
+
     async function createServer() {
+      setStatus("servers-status", "Creating server and downloading its jar…", "");
       const result = await post("/api/servers/create", {
         name: $("server-name").value,
         version: $("server-version").value,
         software: $("server-software").value,
         ram: Number($("server-ram-create").value),
-        eulaAccepted: $("server-eula").checked === true
+        eulaAccepted: $("server-eula").checked === true,
+        downloadJar: true
       });
       const data = result.data || {};
       if (!data.ok) {
         setStatus("servers-status", data.error || "Could not create that server.", "bad");
         return;
       }
-      setStatus("servers-status", "Created " + data.server.name + ". No server jar was downloaded.", "good");
+      if (data.jar && data.jar.ok) {
+        setStatus("servers-status", "Created " + data.server.name + " on port " + data.server.port + " and installed " + (data.jar.jar.name || "server.jar") + ". Press Start.", "good");
+      } else {
+        setStatus("servers-status", "Created " + data.server.name + ", but the server jar did not download: " + ((data.jar && data.jar.error) || "unknown error") + ". Use Download server jar to retry.", "bad");
+      }
       $("server-name").value = "";
       $("server-eula").checked = false;
       selectedServerId = data.server.id;
@@ -1985,6 +2006,9 @@
 
     $("server-create").addEventListener("click", () => {
       createServer().catch(() => setStatus("servers-status", "Could not create that server.", "bad"));
+    });
+    $("server-install-jar").addEventListener("click", () => {
+      installServerJar().catch(() => setStatus("servers-status", "Could not download the server jar.", "bad"));
     });
     $("server-start").addEventListener("click", () => serverAction("/api/servers/start"));
     $("server-stop").addEventListener("click", () => serverAction("/api/servers/stop"));

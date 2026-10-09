@@ -806,7 +806,10 @@ def _signal_stop(pid: int) -> None:
 
 
 def _reap(pid: int) -> None:
+    flag = getattr(os, "WNOHANG", None)
+    if flag is None:
+        return
     try:
-        os.waitpid(pid, os.WNOHANG)
+        os.waitpid(pid, flag)
     except (ChildProcessError, OSError):
         return

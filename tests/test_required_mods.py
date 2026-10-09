@@ -129,3 +129,37 @@ def test_profile_sync_keeps_required_jars(tmp_path: Path) -> None:
     _sync_profile_mods("Empty", instance, tmp_path / "data")
     assert (mods / "sodium.jar").read_bytes() == b"required"
     assert not (mods / "old-synced.jar").exists()
+
+
+def test_default_set_includes_e4mc_and_mod_menu_with_config_libraries() -> None:
+    from vanta.launcher.mods.required import REQUIRED_MODS
+
+    slugs = {item.slug for item in REQUIRED_MODS}
+    assert {"e4mc", "modmenu", "cloth-config", "yacl"} <= slugs
+
+
+def test_newer_build_replaces_the_old_jar_vanta_installed(tmp_path: Path, monkeypatch) -> None:
+    """Two jars of one mod make Fabric refuse to start."""
+    import json
+
+    import vanta.launcher.mods.required as required
+
+    monkeypatch.setattr(required, "REQUIRED_MODS", (
+        required.RequiredMod("sodium", "sodium", "Sodium", "performance"),
+    ))
+    mods = tmp_path / "mods"
+    mods.mkdir()
+    (mods / "sodium-old.jar").write_bytes(b"old")
+    (mods / "user-mod.jar").write_bytes(b"mine")
+    (mods / "required-mods.json").write_text(json.dumps({
+        "filenames": ["sodium-old.jar"],
+        "installed": [{"id": "sodium", "slug": "sodium", "projectId": "mod-sodium", "filename": "sodium-old.jar"}],
+        "kept": [],
+    }), encoding="utf-8")
+    result = install_required_mods(mods, repository=FakeMods())
+    names = sorted(path.name for path in mods.glob("*.jar"))
+    assert "sodium.jar" in names
+    assert "sodium-old.jar" not in names
+    assert "user-mod.jar" in names
+    replaced = {item["slug"]: item.get("replaced") for item in result["installed"]}
+    assert replaced["sodium"] == "sodium-old.jar"

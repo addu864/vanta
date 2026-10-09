@@ -1,7 +1,9 @@
 """Local server folders, settings, backups, and out-of-process start/stop.
 
-Vanta never downloads Paper, Fabric, or a Mojang server jar. A server is
-reported running only while its process is alive. An optional tunnel, when
+The create-server wizard downloads the official server jar (PaperMC Fill API
+for Paper, Fabric meta for Fabric, sha256-checked for Paper) only when asked
+with downloadJar=true. A server is reported running only while its process is
+alive. Process helpers work on Windows and POSIX. An optional tunnel, when
 enabled, is a separate process and only for this server's local port.
 """
 
@@ -20,6 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from vanta.launcher.servers import software as server_software
 from vanta.launcher.servers.tunnel import TUNNEL_PID_NAME, TunnelController
 from vanta.shared.utilities.jsonio import read_json, write_json
 from vanta.shared.utilities.ram import parse_ram
@@ -43,11 +46,14 @@ PLACEHOLDER_README = (
     "Placeholder only. Paper jars belong in plugins/. Fabric jars belong in mods/. "
     "Vanta does not download them.\n"
 )
+IS_WINDOWS = os.name == "nt"
+STOP_WAIT_SECONDS = 25
 
 
 class ServerManager:
-    def __init__(self, data_dir: Path) -> None:
+    def __init__(self, data_dir: Path, opener: Any = None) -> None:
         self.data_dir = Path(data_dir)
+        self._opener = opener
         self.root = self.data_dir / "servers"
         self._processes: dict[str, subprocess.Popen[Any]] = {}
         self.tunnels = TunnelController(self)
@@ -101,7 +107,43 @@ class ServerManager:
         except Exception:
             shutil.rmtree(folder, ignore_errors=True)
             raise
-        return {"ok": True, "created": True, "server": self._public(record)}
+        result: dict[str, Any] = {"ok": True, "created": True, "server": self._public(record)}
+        if payload.get("downloadJar") is True:
+            installed = self.install_jar(server_id)
+            result["jar"] = installed
+            result["server"] = self._public(record)
+            if not installed.get("ok"):
+                result["warning"] = installed.get("error")
+        return result
+
+    def install_jar(self, server_id: str) -> dict[str, Any]:
+        """Download the official server jar into this server folder as server.jar."""
+        try:
+            folder = self._folder(server_id)
+            record = self._require(server_id)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc), "installed": False}
+        if self._running(server_id):
+            return {"ok": False, "error": "Stop the server before replacing its jar.", "installed": False}
+        software = str(record.get("software") or "")
+        version = str(record.get("version") or DEFAULT_VERSION)
+        try:
+            info = server_software.resolve(software, version, self._opener)
+            stats = server_software.download(info, folder / JAR_NAME, self._opener)
+        except server_software.DownloadError as exc:
+            self._append_log(server_id, f"Server jar was not installed: {exc}")
+            return {"ok": False, "error": str(exc), "installed": False}
+        updated = dict(record)
+        updated["jar"] = {
+            "name": info.get("name"),
+            "build": info.get("build"),
+            "sha256": stats["sha256"],
+            "bytes": stats["bytes"],
+            "source": "papermc" if software == "paper" else "fabricmc",
+        }
+        self._write_record(updated)
+        self._append_log(server_id, f"Installed {info.get('name')} as {JAR_NAME} ({stats['bytes']} bytes).")
+        return {"ok": True, "installed": True, "jar": updated["jar"], "server": self._public(updated)}
 
     def start(self, server_id: str) -> dict[str, Any]:
         try:
@@ -134,6 +176,7 @@ class ServerManager:
                 "server": self._public(record),
             }
         command = self._java_command(record)
+        command[0] = find_java() or command[0]
         log_path = self._log_path(server_id)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         handle = log_path.open("a", encoding="utf-8")
@@ -143,9 +186,9 @@ class ServerManager:
                 cwd=str(folder),
                 stdout=handle,
                 stderr=subprocess.STDOUT,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
+                stdin=subprocess.PIPE,
                 close_fds=True,
+                **_spawn_options(),
             )
         except FileNotFoundError:
             handle.write("Java was not found. The server process was not started.\n")
@@ -202,6 +245,8 @@ class ServerManager:
             return {"ok": False, "error": str(exc), "running": False, "status": "offline"}
         self.tunnels.stop(server_id)
         process = self._processes.pop(server_id, None)
+        if process is not None and process.poll() is None:
+            _console_stop(process)
         pid = process.pid if process is not None and process.poll() is None else self._read_pid(folder)
         if pid and _pid_alive(pid):
             _signal_stop(pid)
@@ -631,7 +676,20 @@ class ServerManager:
         )
         path = folder / "start.sh"
         path.write_text(script, encoding="utf-8")
-        path.chmod(0o755)
+        try:
+            path.chmod(0o755)
+        except OSError:
+            pass
+        batch = subprocess.list2cmdline(command)
+        (folder / "start.bat").write_text(
+            "@echo off\r\n"
+            "rem Generated by Vanta.\r\n"
+            'cd /d "%~dp0"\r\n'
+            f"if not exist {JAR_NAME} (echo {JAR_MISSING} & exit /b 1)\r\n"
+            f"{batch}\r\n",
+            encoding="utf-8",
+            newline="",
+        )
 
     def _java_command(self, record: dict[str, Any]) -> list[str]:
         ram = int(record["ram"])
@@ -888,6 +946,9 @@ def _windows_pid_alive(pid: int) -> bool:
 def _signal_stop(pid: int) -> None:
     if pid <= 1 or pid == os.getpid() or pid == os.getppid():
         return
+    if IS_WINDOWS or not hasattr(os, "getpgid"):
+        _windows_kill_tree(pid)
+        return
     try:
         group = os.getpgid(pid)
     except ProcessLookupError:
@@ -920,7 +981,81 @@ def _signal_stop(pid: int) -> None:
 
 
 def _reap(pid: int) -> None:
+    """Collect a finished child on POSIX. No-op on Windows (no WNOHANG there)."""
+    flag = getattr(os, "WNOHANG", None)
+    if flag is None:
+        return
     try:
-        os.waitpid(pid, os.WNOHANG)
+        os.waitpid(pid, flag)
     except (ChildProcessError, OSError):
         return
+
+
+def _windows_kill_tree(pid: int) -> None:
+    try:
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            capture_output=True,
+            timeout=15,
+            check=False,
+            stdin=subprocess.DEVNULL,
+            **_hidden_window(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            return
+    deadline = time.time() + 3
+    while time.time() < deadline and _pid_alive(pid):
+        time.sleep(0.05)
+
+
+def _console_stop(process: subprocess.Popen[Any]) -> None:
+    """Ask the Minecraft server to save and stop by typing `stop` on its console."""
+    stdin = getattr(process, "stdin", None)
+    if stdin is None:
+        return
+    try:
+        stdin.write(b"stop\n")
+        stdin.flush()
+    except (OSError, ValueError):
+        return
+    try:
+        process.wait(timeout=STOP_WAIT_SECONDS)
+    except subprocess.TimeoutExpired:
+        return
+
+
+def _hidden_window() -> dict[str, Any]:
+    if not IS_WINDOWS:
+        return {}
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+
+
+def _spawn_options() -> dict[str, Any]:
+    if IS_WINDOWS:
+        flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        return {"creationflags": flags}
+    return {"start_new_session": True}
+
+
+def find_java() -> str | None:
+    """java on PATH, else JAVA_HOME, else common Windows install folders."""
+    found = shutil.which("java")
+    if found:
+        return found
+    exe = "java.exe" if IS_WINDOWS else "java"
+    home = os.environ.get("JAVA_HOME")
+    if home and (Path(home) / "bin" / exe).is_file():
+        return str(Path(home) / "bin" / exe)
+    if IS_WINDOWS:
+        roots = [os.environ.get(k) for k in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")]
+        for root in filter(None, roots):
+            for vendor in ("Eclipse Adoptium", "Java", "Microsoft", "Zulu", "BellSoft", "Amazon Corretto"):
+                base = Path(root) / vendor
+                if not base.is_dir():
+                    continue
+                for candidate in sorted(base.glob("*/bin/java.exe"), reverse=True):
+                    return str(candidate)
+    return None

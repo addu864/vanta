@@ -817,12 +817,27 @@ class VantaApp:
         result = self.servers.create(body)
         if result.get("ok"):
             server = result.get("server") or {}
+            jar = result.get("jar")
+            if jar is None:
+                note = "No server jar was downloaded."
+            elif jar.get("ok"):
+                note = f"Installed {jar['jar'].get('name')} as server.jar."
+            else:
+                note = f"Server jar was not installed: {jar.get('error')}"
             self.log.info(
                 f"Created local {server.get('software')} server '{server.get('name')}' "
-                f"on port {server.get('port')}. No server jar was downloaded."
+                f"on port {server.get('port')}. {note}"
             )
         else:
             self.log.error(str(result.get("error") or "Could not create a server."))
+        return result
+
+    def install_server_jar(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        result = self.servers.install_jar(self._server_id(payload))
+        if result.get("ok"):
+            self.log.info(f"Installed server jar {(result.get('jar') or {}).get('name')}.")
+        else:
+            self.log.error(str(result.get("error") or "Could not install the server jar."))
         return result
 
     def start_server(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:

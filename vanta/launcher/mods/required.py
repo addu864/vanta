@@ -64,6 +64,12 @@ REQUIRED_MODS: tuple[RequiredMod, ...] = (
     RequiredMod("entitytexturefeatures", "entitytexturefeatures", "Entity Texture Features", "utility"),
     RequiredMod("entity-model-features", "entity-model-features", "Entity Model Features", "utility"),
     RequiredMod("craftpresence", "craftpresence", "CraftPresence", "utility"),
+    # Open to LAN -> public join domain via e4mc, no port forwarding.
+    RequiredMod("e4mc", "e4mc", "e4mc", "utility"),
+    # In-game Mods screen with config buttons (uses Cloth Config / YACL screens).
+    RequiredMod("modmenu", "modmenu", "Mod Menu", "utility"),
+    RequiredMod("cloth-config", "cloth-config", "Cloth Config API", "utility"),
+    RequiredMod("yacl", "yacl", "YetAnotherConfigLib", "utility"),
     RequiredMod("fullbright", "fullbright", "Fullbright", "display"),
     RequiredMod("overflowing-bars", "overflowing-bars", "Overflowing Bars", "display"),
     RequiredMod("health-indicators", "health-indicators", "Health Indicators", "display"),
@@ -85,6 +91,7 @@ def install_required_mods(
     skipped: list[dict[str, Any]] = []
     kept: list[dict[str, Any]] = []
     seen_projects: set[str] = set()
+    previous = _previous_files(folder)
 
     if game_version != TARGET_GAME_VERSION or loader != TARGET_LOADER:
         return {
@@ -120,6 +127,7 @@ def install_required_mods(
             kept=kept,
             seen_projects=seen_projects,
             extra=extra,
+            previous=previous,
         )
     for mod_id, slug, title in extra:
         if slug in {item[1] for item in pending}:
@@ -137,6 +145,7 @@ def install_required_mods(
             kept=kept,
             seen_projects=seen_projects,
             extra=None,
+            previous=previous,
         )
 
     _write_manifest(folder, installed, kept)
@@ -163,6 +172,7 @@ def _place_one(
     kept: list[dict[str, Any]],
     seen_projects: set[str],
     extra: list[tuple[str, str, str]] | None,
+    previous: dict[str, str] | None = None,
 ) -> None:
     if _blocked(slug, title):
         skipped.append({"id": mod_id, "slug": slug, "title": title, "reason": "Excluded."})
@@ -235,6 +245,14 @@ def _place_one(
         return
     target.write_bytes(payload)
     record["kept"] = False
+    # A newer build of a jar Vanta installed earlier replaces it. Two jars of one
+    # mod make Fabric refuse to start, so the old one is removed.
+    old_name = (previous or {}).get(project.id) or (previous or {}).get(project.slug)
+    if old_name and old_name != safe_name:
+        old_path = folder / old_name
+        if old_path.is_file() and old_path.parent == folder:
+            old_path.unlink()
+            record["replaced"] = old_name
     installed.append(record)
 
 
@@ -326,6 +344,28 @@ def _payload_matches(payload: bytes, mod_file: ModFile) -> bool:
     if hashes.get("sha512"):
         return hashlib.sha512(payload).hexdigest() == hashes["sha512"]
     return bool(payload)
+
+
+def _previous_files(folder: Path) -> dict[str, str]:
+    """projectId/slug -> jar filename from the last required-mods.json."""
+    path = folder / MANIFEST_NAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    mapping: dict[str, str] = {}
+    if not isinstance(data, dict):
+        return mapping
+    for item in [*(data.get("kept") or []), *(data.get("installed") or [])]:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("filename") or "")
+        if not name or name != Path(name).name or not name.endswith(".jar"):
+            continue
+        for key in (item.get("projectId"), item.get("slug")):
+            if isinstance(key, str) and key:
+                mapping[key] = name
+    return mapping
 
 
 def _write_manifest(folder: Path, installed: list[dict[str, Any]], kept: list[dict[str, Any]]) -> None:

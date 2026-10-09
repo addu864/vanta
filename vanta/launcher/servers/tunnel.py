@@ -603,8 +603,11 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _reap(pid: int) -> None:
+    flag = getattr(os, "WNOHANG", None)
+    if flag is None:
+        return
     try:
-        os.waitpid(pid, os.WNOHANG)
+        os.waitpid(pid, flag)
     except (ChildProcessError, OSError):
         return
 
@@ -624,8 +627,8 @@ def _kill_only(pid: int) -> None:
         _reap(pid)
         return
     try:
-        os.kill(pid, signal.SIGKILL)
-    except (ProcessLookupError, PermissionError):
+        os.kill(pid, getattr(signal, "SIGKILL", signal.SIGTERM))
+    except (ProcessLookupError, PermissionError, OSError):
         return
     deadline = time.time() + 1
     while time.time() < deadline and _pid_alive(pid):
