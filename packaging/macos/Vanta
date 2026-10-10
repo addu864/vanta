@@ -1,0 +1,21 @@
+#!/bin/bash
+# Vanta launcher for macOS (Apple Silicon + Intel). Uses the bundled Python,
+# never the system one. Data: ~/Library/Application Support/Vanta
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
+case "$(uname -m)" in
+  arm64) PY="$HERE/Resources/python/arm64/bin/python3" ;;
+  *)     PY="$HERE/Resources/python/x86_64/bin/python3" ;;
+esac
+DATA="$HOME/Library/Application Support/Vanta"
+mkdir -p "$DATA"
+export VANTA_DATA_DIR="$DATA" VANTA_AUTO_INSTALL=1 VANTA_OPEN_BROWSER=1 PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
+# Make Homebrew / Adoptium Java visible to a Finder-launched app.
+export PATH="/opt/homebrew/opt/openjdk/bin:/usr/local/opt/openjdk/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# Already running? Just open the UI.
+if /usr/bin/curl -s -o /dev/null --max-time 1 http://127.0.0.1:8765/api/servers; then
+  /usr/bin/open "http://127.0.0.1:8765/"; exit 0
+fi
+# Remove the download quarantine flag from our own bundled files (no-op if absent).
+/usr/bin/xattr -dr com.apple.quarantine "$HERE/Resources" 2>/dev/null || true
+cd "$HERE/Resources/app" || exit 1
+exec "$PY" -m vanta >>"$DATA/launcher-ui.log" 2>&1

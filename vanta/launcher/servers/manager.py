@@ -1041,21 +1041,7 @@ def _spawn_options() -> dict[str, Any]:
 
 
 def find_java() -> str | None:
-    """java on PATH, else JAVA_HOME, else common Windows install folders."""
-    found = shutil.which("java")
-    if found:
-        return found
-    exe = "java.exe" if IS_WINDOWS else "java"
-    home = os.environ.get("JAVA_HOME")
-    if home and (Path(home) / "bin" / exe).is_file():
-        return str(Path(home) / "bin" / exe)
-    if IS_WINDOWS:
-        roots = [os.environ.get(k) for k in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")]
-        for root in filter(None, roots):
-            for vendor in ("Eclipse Adoptium", "Java", "Microsoft", "Zulu", "BellSoft", "Amazon Corretto"):
-                base = Path(root) / vendor
-                if not base.is_dir():
-                    continue
-                for candidate in sorted(base.glob("*/bin/java.exe"), reverse=True):
-                    return str(candidate)
-    return None
+    """Shared finder: JAVA_HOME, macOS java_home/JVM folders, PATH, Windows folders."""
+    from vanta.shared.java import find_java as _find
+
+    return _find()

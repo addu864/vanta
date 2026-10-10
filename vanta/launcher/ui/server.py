@@ -40,6 +40,14 @@ def serve() -> None:
     bound = httpd.server_address[1]
     print(f"Vanta 1.0 listening on http://{host}:{bound}/", flush=True)
     print(f"Data directory: {app.data_dir}", flush=True)
+    from vanta.launcher.minecraft.first_run import maybe_start
+
+    if maybe_start(app.data_dir):
+        print("First run: downloading Minecraft 1.21.11 + Fabric in the background (see install.log).", flush=True)
+    if os.environ.get("VANTA_OPEN_BROWSER") == "1":
+        import webbrowser
+
+        webbrowser.open(f"http://{host}:{bound}/")
     print("PLAY starts a local Java process only when Java is on PATH and client.jar is already installed. A LOCAL TEST ACCOUNT is not sent to online-mode servers. No Microsoft token is created.", flush=True)
     try:
         httpd.serve_forever()

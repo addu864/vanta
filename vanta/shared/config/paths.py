@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import platform
 from pathlib import Path
 
 
@@ -23,4 +24,16 @@ def default_data_dir() -> Path:
     override = os.environ.get("VANTA_DATA_DIR")
     if override:
         return Path(override).expanduser().resolve()
-    return repo_root() / ".vanta-data"
+    root = repo_root()
+    if mac_app_bundle(root):
+        # A .app may be read-only or translocated by Gatekeeper; keep data outside it.
+        return mac_support_dir()
+    return root / ".vanta-data"
+
+
+def mac_app_bundle(root: Path) -> bool:
+    return platform.system() == "Darwin" and ".app/Contents/" in (str(root).replace("\\", "/") + "/")
+
+
+def mac_support_dir() -> Path:
+    return Path.home() / "Library" / "Application Support" / "Vanta"

@@ -35,7 +35,7 @@ ONLINE_TARGETS = {"online", "online-mode", "online_mode", "multiplayer-online"}
 DRY_RUN_TARGETS = {"local-dry-run", "dry-run", "dry_run"}
 NO_ACCOUNT = "No local account selected. Create a LOCAL TEST ACCOUNT before play."
 TOKEN_REJECTED = "Vanta 0.1 does not accept or store tokens."
-JAVA_MISSING = "Java was not found on PATH. Minecraft was not started."
+JAVA_MISSING = "Java 21+ was not found (PATH, JAVA_HOME, or an installed JDK). Minecraft was not started."
 CLIENT_JAR_NAME = "client.jar"
 SESSION_NAME = "client-session.json"
 # Required by the Mojang client argument template. Not a Microsoft token.
@@ -44,7 +44,9 @@ PID_WAIT_SECONDS = 0.6
 
 
 def detect_java() -> dict[str, Any]:
-    executable = shutil.which("java")
+    from vanta.shared.java import find_java
+
+    executable = find_java()
     if not executable:
         return {
             "present": False,
@@ -261,7 +263,9 @@ def _launch_local(
     saved_profile: dict[str, Any],
     ram_value: int,
 ) -> dict[str, Any]:
-    java = shutil.which("java")
+    from vanta.shared.java import find_java
+
+    java = find_java()
     jar = client_jar_path(str(version["gameDirectory"]))
     missing: list[str] = []
     if not java:
