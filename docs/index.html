@@ -39,11 +39,12 @@
 <section class="features">
   <h2>What's inside</h2>
   <div class="grid">
-    <article class="glass"><h3>Fabric 1.21.11</h3><p>One supported version: Minecraft 1.21.11 with the Fabric loader.</p></article>
+    <article class="glass"><h3>Fabric 1.21.11, plus 1.18 to 26.3</h3><p>The main instance is Minecraft 1.21.11 with Fabric. Add instance downloads any release from 1.18 to 26.3 (Fabric or vanilla) into its own folder, with Sodium, Lithium, Fabric API and Mod Menu, and PLAY picks Java 17, 21 or 25 to match.</p></article>
+    <article class="glass"><h3>Browse servers</h3><p>A BROWSE SERVERS tab with 20 public servers that accept local accounts (PikaNetwork, FatalMC, ALWTO, BlueMC, RuleX MC, Twenture, ClubCraft and more), each with its logo, versions, live players when it answers, Copy IP and Play. Play joins straight in using an instance the server accepts, or offers to download one. A compact bar sits on PLAY too.</p></article>
     <article class="glass"><h3>Local accounts</h3><p>Pick a username and play. No Microsoft sign-in is required. Local accounts work on offline-mode, LAN and friend servers, but not on online-mode servers like Hypixel.</p></article>
     <article class="glass"><h3>Performance mods, automatically</h3><p>Sodium, Lithium, ImmediatelyFast, FerriteCore, Entity Culling and Dynamic FPS are downloaded from Modrinth for you.</p></article>
     <article class="glass"><h3>Mod Menu</h3><p>An in-game Mods screen with config buttons, using Cloth Config and YACL.</p></article>
-    <article class="glass"><h3>Skins library</h3><p>Built-in skin library, with a skin saved per local account.</p></article>
+    <article class="glass"><h3>Skins with 3D preview</h3><p>Built-in skin library, with a skin saved per local account, and a rotating 3D player preview (drag to spin, second layer, slim/classic arms detected).</p></article>
     <article class="glass"><h3>Local server maker</h3><p>Create a Paper (or Fabric) server in a few clicks. Vanta downloads the official server jar and checks its hash, then lets you start, stop and use the console.</p></article>
     <article class="glass"><h3>playit tunnel support</h3><p>Turn on a playit.gg tunnel for a server so friends can join without port forwarding.</p></article>
     <article class="glass"><h3>e4all: open to friends</h3><p>Open to LAN gives you a public join address. With Online Mode off, friends on local accounts can join too.</p></article>
@@ -52,35 +53,35 @@
     <article class="glass"><h3>Controller support</h3><p>Controller detection, plus a controller label for each profile in the launcher.</p></article>
     <article class="glass"><h3>Windows &amp; macOS</h3><p>A double-click Windows app with Python built in, and a macOS app for Apple Silicon and Intel (not yet tested on a real Mac).</p></article>
   </div>
-  <p class="note">The visual set and night-vision fullbright arrived after Windows v1.0.1 was built, so they are in the latest source and the macOS first-run download. They will be in the next Windows build.</p>
+  <p class="note">Windows v1.2.0 and macOS v1.2.0-mac include everything above.</p>
 </section>
 
 <section id="downloads">
   <h2>Downloads</h2>
   <div class="grid two">
     <article class="glass dl">
-      <h3>Windows <small>v1.0.1</small></h3>
-      <p class="size">Vanta-Windows-App.zip · 529 MB (555,134,783 bytes)</p>
+      <h3>Windows <small>v1.2.0</small></h3>
+      <p class="size">Vanta-Windows-App.zip · 572 MB (600,304,590 bytes)</p>
       <ul>
         <li>Windows 10 or 11, 64-bit</li>
-        <li><b>Java 21+</b> on PATH (<a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Adoptium Temurin</a>)</li>
+        <li><b>Java 21+</b> on PATH for 1.21.11 (Java 17 for 1.18–1.20.4, Java 25 for 26.x instances) (<a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Adoptium Temurin</a>)</li>
         <li>WebView2 runtime (already on Windows 11 and most Windows 10)</li>
         <li>~1.5 GB free after extracting</li>
       </ul>
       <p class="hint"><b>SmartScreen:</b> the exe isn't code-signed. If you see "Windows protected your PC", click <i>More info → Run anyway</i>. Extract the zip first; don't run it from inside the zip.</p>
-      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.0.1/Vanta-Windows-App.zip">Download for Windows</a>
+      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.2.0/Vanta-Windows-App.zip">Download for Windows</a>
     </article>
     <article class="glass dl">
-      <h3>macOS <small>v1.1.0-mac · untested</small></h3>
-      <p class="size">Vanta-macOS.zip · 39 MB (41,346,155 bytes)</p>
+      <h3>macOS <small>v1.2.0-mac · untested</small></h3>
+      <p class="size">Vanta-macOS.zip · 40 MB (41,742,112 bytes)</p>
       <ul>
         <li>Apple Silicon and Intel (Python built in)</li>
-        <li><b>Java 21+</b> (<a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Adoptium Temurin for Mac</a>)</li>
+        <li><b>Java 21+</b> for 1.21.11 (17 / 25 for older / 26.x instances) (<a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Adoptium Temurin for Mac</a>)</li>
         <li>First run downloads Minecraft 1.21.11 + Fabric, the default mods and the sounds (several hundred MB)</li>
         <li>Opens in your default browser at 127.0.0.1:8765</li>
       </ul>
       <p class="hint"><b>Gatekeeper:</b> the app is unsigned. The first time, right-click Vanta.app → <i>Open</i> → <i>Open</i>. <b>This build has not been tested on a real Mac yet.</b></p>
-      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.1.0-mac/Vanta-macOS.zip">Download for macOS</a>
+      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.2.0-mac/Vanta-macOS.zip">Download for macOS</a>
     </article>
   </div>
   <p class="note">All releases and source: <a href="https://github.com/addu864/vanta/releases" target="_blank" rel="noopener">github.com/addu864/vanta/releases</a></p>
@@ -90,6 +91,8 @@
   <h2>Updates</h2>
   <p class="note" id="updates-src">Release notes from GitHub Releases. A saved copy is shown if GitHub can't be reached.</p>
   <div id="releases" class="releases">
+    <article class="glass rel"><h3>Vanta v1.2.0 <small>v1.2.0 · v1.2.0-mac · 2026-10-12</small></h3>
+      <ul><li>Downloadable instances: any release from 1.18 to 26.3, Fabric or vanilla, with a progress bar and default mods</li><li>PLAY picks Java 17 / 21 / 25 per version, with a clear message if none fits</li><li>BROWSE SERVERS tab: 20 servers that accept local accounts, with logos, versions, live players, Copy IP and one-click Play</li><li>Popular servers bar on PLAY</li><li>3D skin preview (skinview3d, bundled)</li><li>Windows build now includes the visual set, Gamma Utils night-vision fullbright, e4all and Mod Menu</li></ul></article>
     <article class="glass rel"><h3>Vanta 1.1.0 for macOS (untested) <small>v1.1.0-mac · 2026-10-10</small></h3>
       <ul><li>macOS app for Apple Silicon and Intel with Python built in</li><li>Finds Java via JAVA_HOME, java_home and JavaVirtualMachines</li><li>First-run download of Minecraft 1.21.11 + Fabric with macOS natives</li></ul></article>
     <article class="glass rel"><h3>Vanta v1.0.1: Windows app <small>v1.0.1 · 2026-10-08</small></h3>
@@ -99,6 +102,9 @@
   </div>
   <h3 class="sub">Recent changes (source)</h3>
   <ul class="log glass">
+    <li><b>2026-10-12</b> BROWSE SERVERS tab and Popular servers bar (20 offline-mode servers, logos, live ping, Play auto-joins)</li>
+    <li><b>2026-10-12</b> Downloadable instances 1.18–26.3 with per-version Java selection</li>
+    <li><b>2026-10-12</b> 3D skin preview in the SKINS tab</li>
     <li><b>2026-10-10</b> macOS support and Vanta-macOS.zip packaging</li>
     <li><b>2026-10-09</b> Night-vision fullbright (Gamma Utils) that works with shaders</li>
     <li><b>2026-10-09</b> Trailer-look visual set: Iris, Complementary Reimagined/Unbound, Bare Bones + Fresh Animations, NEA, Visuality</li>
