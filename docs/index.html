@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vanta: a Minecraft Java launcher for Fabric 1.21.11</title>
+<meta name="description" content="Vanta is a free Minecraft Java launcher for Fabric 1.21.11 with local accounts, performance mods, a trailer-look visual set, and a local Paper server maker.">
+<link rel="icon" href="img/favicon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<header class="top">
+  <a class="brand" href="#home"><img src="img/logo.jpg" alt="Vanta logo"><span>VANTA</span></a>
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <nav>
+    <a href="#home">Home</a><a href="#downloads">Downloads</a><a href="#updates">Updates</a><a href="#support">Support</a>
+    <a class="gh" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</header>
+
+<main>
+<section id="home" class="hero">
+  <div class="hero-text glass">
+    <p class="eyebrow">Minecraft Java · Fabric 1.21.11</p>
+    <h1>Play your way.<br><span>No Microsoft login needed.</span></h1>
+    <p class="lead">Vanta is a free, open-source launcher that sets up Fabric 1.21.11 with performance mods, a trailer-style look and friend-friendly multiplayer tools. You can also make local servers.</p>
+    <div class="cta">
+      <a class="btn primary" href="#downloads">Download</a>
+      <a class="btn" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">View source</a>
+    </div>
+  </div>
+  <figure class="shot glass">
+    <img src="img/launcher-play.jpg" alt="Screenshot of the Vanta launcher PLAY screen" loading="lazy">
+    <figcaption>The real Vanta PLAY screen on a fresh install, with no account created yet.</figcaption>
+  </figure>
+</section>
+
+<section class="features">
+  <h2>What's inside</h2>
+  <div class="grid">
+    <article class="glass"><h3>Fabric 1.21.11</h3><p>One supported version: Minecraft 1.21.11 with the Fabric loader.</p></article>
+    <article class="glass"><h3>Local accounts</h3><p>Pick a username and play. No Microsoft sign-in is required. Local accounts work on offline-mode, LAN and friend servers, but not on online-mode servers like Hypixel.</p></article>
+    <article class="glass"><h3>Performance mods, automatically</h3><p>Sodium, Lithium, ImmediatelyFast, FerriteCore, Entity Culling and Dynamic FPS are downloaded from Modrinth for you.</p></article>
+    <article class="glass"><h3>Mod Menu</h3><p>An in-game Mods screen with config buttons, using Cloth Config and YACL.</p></article>
+    <article class="glass"><h3>Skins library</h3><p>Built-in skin library, with a skin saved per local account.</p></article>
+    <article class="glass"><h3>Local server maker</h3><p>Create a Paper (or Fabric) server in a few clicks. Vanta downloads the official server jar and checks its hash, then lets you start, stop and use the console.</p></article>
+    <article class="glass"><h3>playit tunnel support</h3><p>Turn on a playit.gg tunnel for a server so friends can join without port forwarding.</p></article>
+    <article class="glass"><h3>e4all: open to friends</h3><p>Open to LAN gives you a public join address. With Online Mode off, friends on local accounts can join too.</p></article>
+    <article class="glass"><h3>Trailer-look visual set</h3><p>Iris with Complementary Reimagined (default) and Unbound shaders, plus the Bare Bones, Fresh Animations and compat resource packs, EMF/ETF, Not Enough Animations and Visuality.</p></article>
+    <article class="glass"><h3>Night-vision fullbright</h3><p>Gamma Utils night-vision mode stays bright even with shaders on, unlike gamma-based fullbright.</p></article>
+    <article class="glass"><h3>Controller support</h3><p>Controller detection, plus a controller label for each profile in the launcher.</p></article>
+    <article class="glass"><h3>Windows &amp; macOS</h3><p>A double-click Windows app with Python built in, and a macOS app for Apple Silicon and Intel (not yet tested on a real Mac).</p></article>
+  </div>
+  <p class="note">The visual set and night-vision fullbright arrived after Windows v1.0.1 was built, so they are in the latest source and the macOS first-run download. They will be in the next Windows build.</p>
+</section>
+
+<section id="downloads">
+  <h2>Downloads</h2>
+  <div class="grid two">
+    <article class="glass dl">
+      <h3>Windows <small>v1.0.1</small></h3>
+      <p class="size">Vanta-Windows-App.zip · 529 MB (555,134,783 bytes)</p>
+      <ul>
+        <li>Windows 10 or 11, 64-bit</li>
+        <li><b>Java 21+</b> on PATH (<a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Adoptium Temurin</a>)</li>
+        <li>WebView2 runtime (already on Windows 11 and most Windows 10)</li>
+        <li>~1.5 GB free after extracting</li>
+      </ul>
+      <p class="hint"><b>SmartScreen:</b> the exe isn't code-signed. If you see "Windows protected your PC", click <i>More info → Run anyway</i>. Extract the zip first; don't run it from inside the zip.</p>
+      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.0.1/Vanta-Windows-App.zip">Download for Windows</a>
+    </article>
+    <article class="glass dl">
+      <h3>macOS <small>v1.1.0-mac · untested</small></h3>
+      <p class="size">Vanta-macOS.zip · 39 MB (41,346,155 bytes)</p>
+      <ul>
+        <li>Apple Silicon and Intel (Python built in)</li>
+        <li><b>Java 21+</b> (<a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Adoptium Temurin for Mac</a>)</li>
+        <li>First run downloads Minecraft 1.21.11 + Fabric, the default mods and the sounds (several hundred MB)</li>
+        <li>Opens in your default browser at 127.0.0.1:8765</li>
+      </ul>
+      <p class="hint"><b>Gatekeeper:</b> the app is unsigned. The first time, right-click Vanta.app → <i>Open</i> → <i>Open</i>. <b>This build has not been tested on a real Mac yet.</b></p>
+      <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.1.0-mac/Vanta-macOS.zip">Download for macOS</a>
+    </article>
+  </div>
+  <p class="note">All releases and source: <a href="https://github.com/addu864/vanta/releases" target="_blank" rel="noopener">github.com/addu864/vanta/releases</a></p>
+</section>
+
+<section id="updates">
+  <h2>Updates</h2>
+  <p class="note" id="updates-src">Release notes from GitHub Releases. A saved copy is shown if GitHub can't be reached.</p>
+  <div id="releases" class="releases">
+    <article class="glass rel"><h3>Vanta 1.1.0 for macOS (untested) <small>v1.1.0-mac · 2026-10-10</small></h3>
+      <ul><li>macOS app for Apple Silicon and Intel with Python built in</li><li>Finds Java via JAVA_HOME, java_home and JavaVirtualMachines</li><li>First-run download of Minecraft 1.21.11 + Fabric with macOS natives</li></ul></article>
+    <article class="glass rel"><h3>Vanta v1.0.1: Windows app <small>v1.0.1 · 2026-10-08</small></h3>
+      <ul><li>Double-click Vanta.exe desktop window (WebView2) with Python 3.12 built in</li><li>Includes the Fabric 1.21.11 client; no Python install or terminal needed</li></ul></article>
+    <article class="glass rel"><h3>Vanta v1.0.0 <small>v1.0.0 · 2026-10-07</small></h3>
+      <ul><li>First public release: launcher source, UI and the Fabric 1.21.11 game client (Python required)</li></ul></article>
+  </div>
+  <h3 class="sub">Recent changes (source)</h3>
+  <ul class="log glass">
+    <li><b>2026-10-10</b> macOS support and Vanta-macOS.zip packaging</li>
+    <li><b>2026-10-09</b> Night-vision fullbright (Gamma Utils) that works with shaders</li>
+    <li><b>2026-10-09</b> Trailer-look visual set: Iris, Complementary Reimagined/Unbound, Bare Bones + Fresh Animations, NEA, Visuality</li>
+    <li><b>2026-10-09</b> e4all 2.2.0 replaces e4mc, so local accounts can join LAN worlds</li>
+    <li><b>2026-10-09</b> Server maker fixed on Windows; downloads Paper/Fabric server jars; Mod Menu added</li>
+  </ul>
+</section>
+
+<section id="support">
+  <h2>Support</h2>
+  <div class="faq">
+    <details class="glass"><summary>Windows says "Windows protected your PC"</summary><p>That's SmartScreen. Vanta isn't code-signed yet. Click <b>More info → Run anyway</b>. Some antivirus tools may also flag unsigned launchers.</p></details>
+    <details class="glass"><summary>"Java was not found"</summary><p>Install Java 21 or newer, for example <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a>. On Windows, tick "Add to PATH" in the installer, then restart Vanta. On macOS, Vanta also finds Java in /Library/Java/JavaVirtualMachines.</p></details>
+    <details class="glass"><summary>How do I turn fullbright on/off?</summary><p>Fullbright uses Gamma Utils' night-vision mode, so it works with shaders. Toggle it with <b>B</b> where Vanta has set that key, otherwise with Gamma Utils' default <b>H</b>. Change the key in Options → Controls → Key Binds → "Gamma Utils – Night Vision". The Left/Right arrow keys change the strength.</p></details>
+    <details class="glass"><summary>How do I turn shaders on/off?</summary><p>Press <b>K</b> (Iris' toggle key). To switch between Complementary Reimagined and Unbound, go to Options → Video Settings → Shader Packs.</p></details>
+    <details class="glass"><summary>How do friends join my world with e4all?</summary><p>In your world, press Esc → <b>Open to LAN</b>. Set <b>Online Mode: OFF</b> so friends on local accounts can join, then start the LAN world. e4all shows a public address in chat. Send it to your friends; they add it under Multiplayer → Direct Connection.</p></details>
+    <details class="glass"><summary>Right-click keeps placing or using after I let go</summary><p>"Use" is set to Toggle. Go to Options → Controls → <b>Use: Hold</b>. In options.txt that's <code>toggleUse:false</code>. Sneak and Sprint have the same Toggle/Hold setting.</p></details>
+    <details class="glass"><summary>How do I turn resource packs on/off?</summary><p>Options → <b>Resource Packs</b>. Move packs between Available and Selected; the top pack wins. The visual set goes: compat patch on top, then Fresh Animations, then Bare Bones.</p></details>
+    <details class="glass"><summary>Can I join Hypixel or other online-mode servers?</summary><p>No. Local accounts only work on offline-mode, LAN and friend servers. Online-mode servers need a paid Microsoft account.</p></details>
+  </div>
+  <div class="glass contact">
+    <h3>Still stuck?</h3>
+    <p>Open an issue on GitHub. Describe what happened, and attach <code>client.log</code> or <code>launcher-ui.log</code> from Vanta's data folder if you can. Never post account files or passwords.</p>
+    <a class="btn primary" href="https://github.com/addu864/vanta/issues/new" target="_blank" rel="noopener">Open a GitHub issue</a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p>Vanta is a fan-made launcher. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.</p>
+  <p><a href="https://github.com/addu864/vanta">github.com/addu864/vanta</a></p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
