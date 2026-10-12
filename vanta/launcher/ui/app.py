@@ -532,11 +532,24 @@ class VantaApp:
             payload=payload,
         )
 
-    def popular_servers(self) -> dict[str, Any]:
+    def popular_servers(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         from vanta.launcher.servers import popular
 
         servers = popular.load_servers(self.data_dir)
-        return {"ok": True, "servers": popular.statuses(servers), "config": str(self.data_dir / popular.CONFIG_NAME)}
+        live = str((payload or {}).get("live", "1")) != "0"
+        rows = popular.statuses(servers) if live else [dict(s, address=popular.address(s), status={}) for s in servers]
+        for row in rows:
+            row["icon"] = f"/assets/servers/{row['id']}.png"
+            st = row.get("status") or {}
+            if not st.get("online"):
+                # No reply (or no raw TCP here): show only the bundled info, never "offline".
+                row["status"] = {"online": None, "checkedAt": st.get("checkedAt")}
+        return {"ok": True, "servers": rows, "config": str(self.data_dir / popular.CONFIG_NAME)}
+
+    def _installed_numbers(self, loader: str = "") -> list[str]:
+        settings = self.config.get()
+        rows = list_versions(str(settings["gameDirectory"]))
+        return [str(v["versionNumber"]) for v in rows if v.get("supported") and (not loader or v.get("loader") == loader)]
 
     def join_popular_server(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         """Add the server to the instance's servers.dat, then PLAY straight into it."""
@@ -549,6 +562,21 @@ class VantaApp:
         settings = self.config.get()
         number = str(body.get("versionNumber") or settings.get("defaultVersion") or "")
         loader = str(body.get("loader") or settings.get("defaultLoader") or "")
+        if server.get("versions") and not popular.compatible(number, server["versions"]):
+            rows = list_versions(str(settings["gameDirectory"]))
+            installed = [str(v["versionNumber"]) for v in rows if v.get("supported")]
+            picked = popular.choose_version(server["versions"], installed)
+            if picked is None:
+                from vanta.launcher.minecraft import instances as inst
+                try:
+                    available = [str(v.get("id") or v.get("versionNumber")) for v in inst.available_versions().get("versions") or []]
+                except Exception:  # noqa: BLE001
+                    available = []
+                return {"ok": False, "launched": False, "needsInstall": popular.suggest_install(server["versions"], available),
+                        "error": f"{server['name']} accepts {server['versions']}; no installed instance fits."}
+            number = picked
+            loader = next((str(v["loader"]) for v in rows if str(v["versionNumber"]) == picked and v.get("supported")), loader)
+            body["versionNumber"], body["loader"] = number, loader
         version = get_version(number, loader, str(settings["gameDirectory"]))
         if version is None:
             return {"ok": False, "error": f"Version {number} {loader} is not installed."}

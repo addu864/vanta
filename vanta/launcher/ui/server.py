@@ -114,6 +114,11 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _read_asset("vendor/skinview3d.bundle.js", "text/javascript; charset=utf-8")
     if method == "GET" and path == "/assets/logo.jpg":
         return _read_asset("logo.jpg", "image/jpeg")
+    if method == "GET" and path.startswith("/assets/servers/"):
+        from vanta.launcher.servers.popular import icon_path
+        name = path.removeprefix("/assets/servers/").removesuffix(".png")
+        found = icon_path(name)
+        return _read_asset(f"servers/{found.name}" if found else "servers/placeholder.png", "image/png")
     if method == "GET" and path.startswith("/assets/backgrounds/"):
         return _read_scene_background(path)
     if method == "GET" and path == "/api/status":
@@ -241,7 +246,7 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         status, payload, content_type = app.skin_texture(skin_id)
         return status, payload, content_type
     if method == "GET" and path == "/api/popular-servers":
-        return _from_ok(app.popular_servers())
+        return _from_ok(app.popular_servers(_query_dict(raw_path)))
     if method == "POST" and path == "/api/popular-servers/join":
         return _from_ok(app.join_popular_server(_payload(body)))
     if method == "GET" and path == "/api/instances/available":

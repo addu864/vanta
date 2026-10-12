@@ -22,6 +22,7 @@
       </nav>
       <nav class="nav-secondary" aria-label="More">
         <button type="button" class="tab" data-tab="skins">SKINS</button>
+        <button type="button" class="tab" data-tab="browse">BROWSE SERVERS</button>
         <button type="button" class="tab" data-tab="servers">SERVERS</button>
         <button type="button" class="tab" data-tab="hud">HUD</button>
       </nav>
@@ -43,7 +44,7 @@
             <h2>Popular servers</h2>
             <button type="button" class="ghost" id="popular-refresh">Refresh</button>
           </div>
-          <p class="hint">Public servers, not run by Vanta. Status comes from a live server-list ping. Edit the list in popular-servers.json in Vanta's data folder.</p>
+          <p class="hint">Public servers, not run by Vanta. More in BROWSE SERVERS.</p>
           <div class="popular-cards" id="popular-cards"><p class="hint">Checking servers…</p></div>
           <div class="status" id="popular-status"></div>
         </div>
@@ -199,6 +200,18 @@
         <p class="hint" id="skins-microsoft-note">Saving a skin writes it onto the LOCAL TEST ACCOUNT. Online upload needs a Microsoft account, which is not configured. Vanta will not claim a Microsoft upload.</p>
       </section>
 
+      <section class="panel" data-panel="browse" id="panel-browse" hidden>
+        <div class="glass">
+          <div class="popular-head">
+            <h2>Browse servers</h2>
+            <button type="button" class="ghost" id="browse-refresh">Refresh</button>
+          </div>
+          <p class="hint">Public servers that accept local (offline-mode) accounts. Not run by Vanta. Logos and descriptions come from each server's own status/MOTD, site or server-list entry. Live players appear only when the server answers a ping. Play picks an installed instance the server accepts, or offers to download one. Edit the list in popular-servers.json in Vanta's data folder.</p>
+          <input type="search" id="browse-filter" placeholder="Filter by name, mode or version" />
+          <div class="browse-grid" id="browse-grid"><p class="hint">Loading servers…</p></div>
+          <div class="status" id="browse-status"></div>
+        </div>
+      </section>
       <section class="panel" data-panel="servers" id="panel-servers" hidden>
         <h1>SERVERS</h1>
         <p class="hint">Local servers on this machine only. Create downloads the official Paper (PaperMC) or Fabric server jar for the chosen version. Java must be installed to Start. A server crash cannot quit the launcher. An optional tunnel uses a local playit, cloudflared, or bore binary only. Vanta does not download one and does not invent a public address.</p>
@@ -551,6 +564,9 @@
       }
       if (name === "skins") {
         loadSkinLibrary().catch(() => {});
+      }
+      if (name === "browse") {
+        loadPopularServers().catch(() => {});
       }
       if (name === "servers") {
         loadServers().catch(() => {});
@@ -2773,79 +2789,113 @@
       skinViewer.animation = $("skin3d-walk").checked ? new skinview3d.WalkingAnimation() : new skinview3d.IdleAnimation();
     });
 
-    // ---- Popular servers bar ----
-    async function loadPopularServers() {
-      const result = await api("/api/popular-servers");
-      const data = result.data || {};
-      const host = $("popular-cards");
-      host.replaceChildren();
-      (data.servers || []).forEach((server) => {
-        const st = server.status || {};
-        const card = document.createElement("article");
-        card.className = "popular-card" + (st.online ? " online" : " offline");
-        const name = document.createElement("strong");
-        name.textContent = server.name;
-        const badge = document.createElement("span");
-        badge.className = "popular-badge";
-        badge.textContent = st.online ? (st.players + " / " + st.maxPlayers + " online") : "offline / no reply";
-        const ip = document.createElement("code");
-        ip.textContent = server.address;
-        const desc = document.createElement("p");
-        desc.className = "hint popular-desc";
-        desc.textContent = (st.online && st.motd) ? st.motd : (server.description || "No description yet (the server didn't answer the status ping).");
-        const meta = document.createElement("p");
-        meta.className = "hint";
-        meta.textContent = st.online ? ((st.version ? st.version + " · " : "") + st.latencyMs + " ms") : "";
-        const row = document.createElement("div");
-        row.className = "row";
-        const copy = document.createElement("button");
-        copy.type = "button";
-        copy.className = "ghost";
-        copy.textContent = "Copy IP";
-        copy.addEventListener("click", async () => {
-          try { await navigator.clipboard.writeText(server.address); }
-          catch (err) {
-            const area = document.createElement("textarea"); area.value = server.address; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove();
-          }
-          setStatus("popular-status", "Copied " + server.address, "good");
-        });
-        const join = document.createElement("button");
-        join.type = "button";
-        join.className = "action";
-        join.textContent = "Join";
-        join.addEventListener("click", async () => {
-          const chosen = selectedVersionValue();
-          join.disabled = true;
-          setStatus("popular-status", "Adding " + server.name + " to the server list and starting Minecraft " + chosen.versionNumber + "…", "");
-          const res = await post("/api/popular-servers/join", {
-            id: server.id, accountId: $("account").value || null, versionNumber: chosen.versionNumber, loader: chosen.loader,
-            ramGb: Number($("ram").value), profileName: selectedProfile
-          });
-          const d = res.data || {};
-          if (d.launched === true) {
-            setStatus("popular-status", "Started Minecraft and joining " + server.address + "." + (d.serverAdded ? " Added to your Multiplayer list." : ""), "good");
-          } else {
-            setStatus("popular-status", d.error || (d.errors || []).join("\n") || "Could not join.", "bad");
-          }
-          join.disabled = false;
-        });
-        row.appendChild(copy);
-        row.appendChild(join);
-        const head = document.createElement("div");
-        head.className = "popular-card-head";
-        head.appendChild(name);
-        head.appendChild(badge);
-        card.appendChild(head);
-        card.appendChild(ip);
-        card.appendChild(desc);
-        card.appendChild(meta);
-        card.appendChild(row);
-        host.appendChild(card);
+    // ---- Popular servers: compact PLAY bar + BROWSE SERVERS tab ----
+    let popularRows = [];
+    async function copyText(text, statusId) {
+      try { await navigator.clipboard.writeText(text); }
+      catch (err) {
+        const area = document.createElement("textarea"); area.value = text; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove();
+      }
+      setStatus(statusId, "Copied " + text, "good");
+    }
+    function waitForJob(id, statusId, label) {
+      return new Promise((resolve) => {
+        const timer = setInterval(async () => {
+          const res = await api("/api/instances/job?id=" + encodeURIComponent(id));
+          const job = (res.data || {}).job || res.data || {};
+          setStatus(statusId, label + " " + (job.percent != null ? job.percent + "% " : "") + (job.message || job.step || ""), "");
+          if (job.state === "done" || job.state === "failed" || job.state === "unknown") { clearInterval(timer); resolve(job.state === "done"); }
+        }, 1000);
       });
-      if (!(data.servers || []).length) host.innerHTML = '<p class="hint">No servers in popular-servers.json.</p>';
+    }
+    async function playServer(server, statusId, button) {
+      const chosen = selectedVersionValue();
+      button.disabled = true;
+      setStatus(statusId, "Adding " + server.name + " to the server list and starting Minecraft…", "");
+      const send = (v) => post("/api/popular-servers/join", {
+        id: server.id, accountId: $("account").value || null, versionNumber: v.versionNumber, loader: v.loader,
+        ramGb: Number($("ram").value), profileName: selectedProfile
+      });
+      let d = (await send(chosen)).data || {};
+      if (!d.launched && d.needsInstall) {
+        if (confirm(server.name + " accepts " + server.versions + ". No installed instance fits. Download Minecraft " + d.needsInstall + " (Fabric) now?")) {
+          const job = ((await post("/api/instances/install", { version: d.needsInstall, loader: "fabric" })).data || {});
+          if (job.ok && await waitForJob((job.job || {}).id, statusId, "Downloading " + d.needsInstall + "…")) {
+            await refresh();
+            d = (await send({ versionNumber: d.needsInstall, loader: "fabric" })).data || {};
+          } else { d = { error: job.error || "The download did not finish." }; }
+        } else { d = { error: "Not started: install a version " + server.name + " accepts (" + server.versions + ") from PLAY › Add instance." }; }
+      }
+      if (d.launched === true) {
+        setStatus(statusId, "Started Minecraft and joining " + server.address + "." + (d.serverAdded ? " Added to your Multiplayer list." : ""), "good");
+      } else {
+        setStatus(statusId, d.error || (d.errors || []).join("\n") || "Could not join.", "bad");
+      }
+      button.disabled = false;
+    }
+    function serverCard(server, compact, statusId) {
+      const st = server.status || {};
+      const live = st.online === true;
+      const card = document.createElement("article");
+      card.className = (compact ? "popular-card" : "browse-card") + (live ? " online" : "");
+      card.dataset.search = [server.name, server.address, server.description, server.versions].join(" ").toLowerCase();
+      const icon = document.createElement("img");
+      icon.className = "server-icon"; icon.width = 64; icon.height = 64; icon.alt = "";
+      icon.src = (live && st.favicon) ? st.favicon : (server.icon || "/assets/servers/placeholder.png");
+      icon.addEventListener("error", () => { icon.src = "/assets/servers/placeholder.png"; }, { once: true });
+      const name = document.createElement("strong"); name.textContent = server.name;
+      const head = document.createElement("div"); head.className = "popular-card-head"; head.appendChild(name);
+      if (live) {
+        const badge = document.createElement("span"); badge.className = "popular-badge";
+        badge.textContent = st.players + " / " + st.maxPlayers + " online"; head.appendChild(badge);
+      }
+      const ip = document.createElement("code"); ip.textContent = server.address;
+      const desc = document.createElement("p"); desc.className = "hint popular-desc";
+      desc.textContent = server.description || (live ? st.motd : "") || "";
+      const meta = document.createElement("p"); meta.className = "hint server-versions";
+      meta.textContent = server.versions ? "Versions: " + server.versions : "";
+      const row = document.createElement("div"); row.className = "row";
+      const copy = document.createElement("button"); copy.type = "button"; copy.className = "ghost"; copy.textContent = "Copy IP";
+      copy.addEventListener("click", () => copyText(server.address, statusId));
+      const play = document.createElement("button"); play.type = "button"; play.className = "action"; play.textContent = compact ? "Join" : "Play";
+      play.addEventListener("click", () => playServer(server, statusId, play));
+      row.appendChild(copy); row.appendChild(play);
+      const top = document.createElement("div"); top.className = "server-top"; top.appendChild(icon);
+      const titles = document.createElement("div"); titles.className = "server-titles"; titles.appendChild(head); titles.appendChild(ip);
+      top.appendChild(titles);
+      card.appendChild(top);
+      if (!compact) { card.appendChild(desc); card.appendChild(meta); }
+      card.appendChild(row);
+      return card;
+    }
+    function renderPopular() {
+      const bar = $("popular-cards"); bar.replaceChildren();
+      const featured = popularRows.filter((s) => s.featured);
+      (featured.length ? featured : popularRows.slice(0, 5)).forEach((s) => bar.appendChild(serverCard(s, true, "popular-status")));
+      if (!popularRows.length) bar.innerHTML = '<p class="hint">No servers in popular-servers.json.</p>';
+      const grid = $("browse-grid"); grid.replaceChildren();
+      const needle = ($("browse-filter").value || "").toLowerCase().trim();
+      popularRows.forEach((s) => {
+        const card = serverCard(s, false, "browse-status");
+        if (!needle || card.dataset.search.includes(needle)) grid.appendChild(card);
+      });
+      if (!grid.children.length) grid.innerHTML = '<p class="hint">No servers match.</p>';
+    }
+    async function loadPopularServers() {
+      // Bundled info first (instant), then live pings fill in players/logos when servers answer.
+      if (!popularRows.length) {
+        const quick = await api("/api/popular-servers?live=0");
+        popularRows = (quick.data || {}).servers || [];
+        renderPopular();
+      }
+      const result = await api("/api/popular-servers");
+      const rows = (result.data || {}).servers || [];
+      if (rows.length) { popularRows = rows; renderPopular(); }
     }
     $("popular-refresh").addEventListener("click", () => loadPopularServers());
-    loadPopularServers().catch(() => setStatus("popular-status", "Could not check servers.", "bad"));
+    $("browse-refresh").addEventListener("click", () => loadPopularServers());
+    $("browse-filter").addEventListener("input", () => renderPopular());
+    loadPopularServers().catch(() => setStatus("popular-status", "Could not load servers.", "bad"));
   </script>
 </body>
 </html>

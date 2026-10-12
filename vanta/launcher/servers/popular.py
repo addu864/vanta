@@ -1,4 +1,4 @@
-"""Popular servers bar on the PLAY tab.
+"""Popular servers: the PLAY bar and the BROWSE SERVERS tab.
 
 The list lives in ``<data>/popular-servers.json`` (seeded from DEFAULT_SERVERS
 the first time), so it can be edited without touching code. Live status uses
@@ -27,18 +27,210 @@ CACHE_SECONDS = 60
 TIMEOUT = 4.0
 PROTOCOL = 767  # any recent protocol works for a status ping
 
+CONFIG_VERSION = 2
+# Offline-mode (cracked) friendly public servers, checked Oct 12 2026 via api.mcsrvstat.us.
+# Descriptions come from each server's own MOTD/site or its server-list entry; versions from MOTD/listing.
 DEFAULT_SERVERS: list[dict[str, Any]] = [
-    {"id": "pikanetwork", "name": "PikaNetwork", "host": "play.pika-network.net", "port": None,
-     "description": "", "source": "live MOTD"},
-    {"id": "fatalmc", "name": "FatalMC", "host": "mc.fatalmc.org", "port": None,
-     "description": "A cracked network focused on Lifesteal and FFA (Java and Bedrock).",
-     "source": "FatalMC's own server description"},
-    {"id": "alwto", "name": "ALWTO", "host": "alwto.net", "port": None,
-     "description": "ALWTO Practice: Duels, FFA, Party, Events.", "source": "server MOTD"},
-    {"id": "bluemc", "name": "BlueMC", "host": "bluemc.org", "port": None,
-     "description": "", "source": "live MOTD"},
-    {"id": "rulexmc", "name": "RulexMC", "host": "rulexmc.mcsh.io", "port": None,
-     "description": "", "source": "live MOTD"},
+    {
+        "id": "pikanetwork",
+        "name": "PikaNetwork",
+        "host": "play.pika-network.net",
+        "port": None,
+        "description": "PikaNetwork [1.8 - 26.3] · New OP Skyblock season.",
+        "source": "server MOTD",
+        "versions": "1.8–26.3",
+        "featured": True
+    },
+    {
+        "id": "fatalmc",
+        "name": "FatalMC",
+        "host": "mc.fatalmc.org",
+        "port": None,
+        "description": "A cracked network focused on Lifesteal and FFA (Java and Bedrock). Season 5 out now.",
+        "source": "FatalMC's own description + MOTD",
+        "versions": "1.21–26.3",
+        "featured": True
+    },
+    {
+        "id": "alwto",
+        "name": "ALWTO",
+        "host": "alwto.net",
+        "port": None,
+        "description": "ALWTO Practice: Duels, FFA, Party, Events. 26.3 update (spears).",
+        "source": "server MOTD",
+        "versions": "1.21–26.3",
+        "featured": True
+    },
+    {
+        "id": "bluemc",
+        "name": "BlueMC",
+        "host": "bluemc.org",
+        "port": None,
+        "description": "BlueMC.org · Economy SMP.",
+        "source": "server MOTD",
+        "versions": "1.21–26.2",
+        "featured": True
+    },
+    {
+        "id": "rulexmc",
+        "name": "RuleX MC",
+        "host": "rulexmc.mcsh.io",
+        "port": None,
+        "description": "RuleX MC · Crossplay [1.9 - 26.2+] · Lifesteal, Practice, Survival.",
+        "source": "server MOTD",
+        "versions": "1.9–26.2",
+        "featured": True
+    },
+    {
+        "id": "twenture",
+        "name": "Twenture",
+        "host": "menu.twenture.net",
+        "port": None,
+        "description": "Survival SMP, Earth Towny, LifeSteal Anarchy and OneBlock SkyBlock for 1.21–26.3.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.21–26.3",
+        "featured": False
+    },
+    {
+        "id": "clubcraft",
+        "name": "ClubCraft Network",
+        "host": "epic.clubcraft.net",
+        "port": None,
+        "description": "ClubCraft is a classic Minecraft network: SMP, Lifesteal, Towny, Skyblock, Prison, KitPvP (non-P2W).",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.9–26.2",
+        "featured": False
+    },
+    {
+        "id": "twerion",
+        "name": "TWERION.NET",
+        "host": "menu.twerion.net",
+        "port": None,
+        "description": "Lifesteal SMP, SkyMines, OneBlock, BedWars, Practice, KitRush, Duels, CityBuild · Java + Bedrock.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing",
+        "versions": "1.8–26.2",
+        "featured": False
+    },
+    {
+        "id": "plumsmp",
+        "name": "PlumSMP Network",
+        "host": "menu.plumsmp.net",
+        "port": None,
+        "description": "Practice PvP · KitPvP · Lifesteal · Survival · GenPVP.",
+        "source": "server MOTD",
+        "versions": "1.7.2–26.2",
+        "featured": False
+    },
+    {
+        "id": "normalsurvival",
+        "name": "NormalSurvival",
+        "host": "mcm.normalsurvival.com",
+        "port": None,
+        "description": "Survival · Economy · Community. A welcoming community to build, survive, farm and have fun.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.8–26.3",
+        "featured": False
+    },
+    {
+        "id": "bohol",
+        "name": "BOHOL NETWORK",
+        "host": "play.boholmc.net",
+        "port": None,
+        "description": "BOHOL NETWORK 1.21+ · Dungeons, Survival.",
+        "source": "server MOTD",
+        "versions": "1.21–26.2",
+        "featured": False
+    },
+    {
+        "id": "extremecraft",
+        "name": "ExtremeCraft",
+        "host": "sl.extremecraft.net",
+        "port": None,
+        "description": "Survival: new economy, treasure relics, bosses and more. Also Anarchy, BedWars, Creative, Factions, KitPvP, Lifesteal, SkyBlock.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.7.2–26.3",
+        "featured": False
+    },
+    {
+        "id": "mineland",
+        "name": "Mineland Network",
+        "host": "msl.mineland.net",
+        "port": None,
+        "description": "Mineland Network 1.8.x–26.x: BedWars, Creative, Prison, PvP, SkyBlock, Survival.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.8–26.3",
+        "featured": False
+    },
+    {
+        "id": "cookiesmp",
+        "name": "CookieSMP",
+        "host": "play.cookiesmp.pro",
+        "port": None,
+        "description": "CookieSMP [1.21+] · Season 2 is live.",
+        "source": "server MOTD",
+        "versions": "1.21–1.21.11",
+        "featured": False
+    },
+    {
+        "id": "2f2f",
+        "name": "2f2f",
+        "host": "2f2f.me",
+        "port": None,
+        "description": "Cracked anarchy: any username, no rules, no bans, same world since launch (Aug 2026).",
+        "source": "2f2f.me site",
+        "versions": "1.7.2–26.2",
+        "featured": False
+    },
+    {
+        "id": "eternel",
+        "name": "eternel.eu",
+        "host": "eternel.eu",
+        "port": None,
+        "description": "Cracked anarchy, never reset, no whitelist. Voicechat + Distant Horizons.",
+        "source": "eternel.eu site + MOTD",
+        "versions": "26.2",
+        "featured": False
+    },
+    {
+        "id": "illuminati",
+        "name": "Illuminati Lifesteal",
+        "host": "mc-sl.illuminati.onl",
+        "port": None,
+        "description": "Illuminati Lifesteal: auctions, economy, jobs, PvE and PvP.",
+        "source": "minecraft.menu / minecraft-serverlist.com cracked listing + MOTD",
+        "versions": "1.21–26.3",
+        "featured": False
+    },
+    {
+        "id": "heartsmp",
+        "name": "HeartSMP",
+        "host": "menu.heartsmp.net",
+        "port": None,
+        "description": "Lifesteal & Creative · Free WorldEdit · Minigames · 4 unique modes.",
+        "source": "server MOTD",
+        "versions": "1.8–26.3",
+        "featured": False
+    },
+    {
+        "id": "mayari",
+        "name": "MayariSMP",
+        "host": "play.mayari.space",
+        "port": None,
+        "description": "MayariSMP [26.2] · Dungeons, economy · Season III.",
+        "source": "server MOTD",
+        "versions": "26.2",
+        "featured": False
+    },
+    {
+        "id": "strongcraft",
+        "name": "StrongCraft Network",
+        "host": "menu.strongcraft.org",
+        "port": None,
+        "description": "New LifeSteal, PvPMine, BoxPvP, new economy.",
+        "source": "server MOTD",
+        "versions": "1.8–26.3",
+        "featured": False
+    }
 ]
 
 _cache: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -51,11 +243,17 @@ def load_servers(data_dir: Path) -> list[dict[str, Any]]:
     path = Path(data_dir) / CONFIG_NAME
     if not path.is_file():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"servers": DEFAULT_SERVERS}, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(json.dumps({"configVersion": CONFIG_VERSION, "servers": DEFAULT_SERVERS}, indent=2, ensure_ascii=False), encoding="utf-8")
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return [dict(item) for item in DEFAULT_SERVERS]
+    if isinstance(data, dict) and int(data.get("configVersion") or 1) < CONFIG_VERSION:
+        data = _upgrade(data)
+        try:
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
     rows = data.get("servers") if isinstance(data, dict) else data
     servers = []
     for item in rows or []:
@@ -69,8 +267,83 @@ def load_servers(data_dir: Path) -> list[dict[str, Any]]:
             "port": _port(item.get("port")),
             "description": str(item.get("description") or ""),
             "source": str(item.get("source") or ""),
+            "versions": str(item.get("versions") or ""),
+            "featured": bool(item.get("featured")),
         })
     return servers
+
+
+def _upgrade(data: dict[str, Any]) -> dict[str, Any]:
+    """Older configs keep the user's own entries; new default servers and fields are added."""
+    rows = [dict(r) for r in (data.get("servers") or []) if isinstance(r, dict)]
+    defaults = {d["id"]: d for d in DEFAULT_SERVERS}
+    seen = set()
+    for row in rows:
+        known = defaults.get(str(row.get("id") or ""))
+        if known:
+            seen.add(known["id"])
+            for field in ("versions", "featured"):
+                row.setdefault(field, known[field])
+            if not row.get("description"):
+                row["description"] = known["description"]
+    rows += [dict(d) for d in DEFAULT_SERVERS if d["id"] not in seen]
+    return {"configVersion": CONFIG_VERSION, "servers": rows}
+
+
+def version_range(versions: str) -> tuple[tuple[int, ...], tuple[int, ...]] | None:
+    """'1.8–26.3' / '1.21+' / '26.2' -> (min, max) version tuples."""
+    found = [tuple(int(p) for p in m.split(".")) for m in re.findall(r"\d+(?:\.\d+)+|\b26\b", versions or "")]
+    if not found:
+        return None
+    low = found[0]
+    high = found[-1] if len(found) > 1 else low
+    if "+" in versions and len(found) == 1:
+        high = (99,)
+    return low, high
+
+
+def _norm(v: tuple[int, ...]) -> tuple[int, ...]:
+    return tuple(v) + (0,) * (3 - len(v))
+
+
+def compatible(version_number: str, versions: str) -> bool:
+    rng = version_range(versions)
+    if rng is None:
+        return True  # unknown: let the player try
+    try:
+        key = _norm(tuple(int(p) for p in version_number.split(".")))
+    except ValueError:
+        return False
+    low, high = rng
+    if len(high) == 2:
+        high = high + (99,)  # '26.2' covers 26.2.x
+    return _norm(low) <= key <= _norm(high)
+
+
+def choose_version(versions: str, installed: list[str], preferred: str = "") -> str | None:
+    """Preferred installed version if the server accepts it, else the newest compatible installed one."""
+    if preferred and preferred in installed and compatible(preferred, versions):
+        return preferred
+    ok = [v for v in installed if compatible(v, versions)]
+    def key(v: str) -> tuple[int, ...]:
+        try:
+            return _norm(tuple(int(p) for p in v.split(".")))
+        except ValueError:
+            return (0,)
+    return max(ok, key=key) if ok else None
+
+
+def suggest_install(versions: str, available: list[str]) -> str | None:
+    """Newest downloadable version the server accepts (to offer an install)."""
+    return choose_version(versions, available)
+
+
+def icon_path(server_id: str) -> Path | None:
+    from vanta.shared.config.paths import repo_root
+    if not re.fullmatch(r"[a-z0-9-]+", server_id or ""):
+        return None
+    path = repo_root() / "assets" / "servers" / f"{server_id}.png"
+    return path if path.is_file() else None
 
 
 def _port(value: Any) -> int | None:
@@ -183,7 +456,13 @@ def parse_status(payload: dict[str, Any]) -> dict[str, Any]:
         "maxPlayers": int(players.get("max") or 0),
         "version": re.sub(r"§.", "", str((payload.get("version") or {}).get("name") or "")),
         "motd": "\n".join(line.strip() for line in motd.splitlines() if line.strip()),
+        "favicon": _favicon(payload.get("favicon")),
     }
+
+
+def _favicon(value: Any) -> str:
+    text = str(value or "").replace("\n", "")
+    return text if text.startswith("data:image/png;base64,") and len(text) < 100_000 else ""
 
 
 def server_status(server: dict[str, Any], *, pinger: Callable[..., dict[str, Any]] = ping, srv: Callable[[str], Any] = resolve_srv) -> dict[str, Any]:
@@ -215,7 +494,7 @@ def server_status(server: dict[str, Any], *, pinger: Callable[..., dict[str, Any
 
 
 def statuses(servers: list[dict[str, Any]], **kwargs: Any) -> list[dict[str, Any]]:
-    with ThreadPoolExecutor(max_workers=min(8, max(1, len(servers)))) as pool:
+    with ThreadPoolExecutor(max_workers=min(16, max(1, len(servers)))) as pool:
         found = list(pool.map(lambda s: server_status(s, **kwargs), servers))
     return [dict(server, address=address(server), status=status) for server, status in zip(servers, found)]
 
