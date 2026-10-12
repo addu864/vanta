@@ -15,8 +15,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import platform
+import threading
 import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -37,12 +40,24 @@ def install_client(
     game_directory: Path,
     *,
     version: str = GAME_VERSION,
-    loader: str = FABRIC_LOADER,
+    loader: str | None = FABRIC_LOADER,
     download_assets: bool = False,
+    instance_name: str | None = None,
+    assets_root: Path | None = None,
+    progress: Any = None,
+    default_mods: bool = True,
 ) -> dict[str, Any]:
-    """Place client.jar, libraries, and version metadata under the instance dir."""
-    instance = Path(game_directory) / f"{version}-fabric"
+    """Place client.jar, libraries, and version metadata under the instance dir.
+
+    ``loader`` is a Fabric loader version, or None for vanilla. ``progress`` is
+    an optional callable ``progress(step, done, total)``. ``assets_root`` lets
+    several instances share one assets folder.
+    """
+    report = progress or (lambda step, done, total: None)
+    suffix = "fabric" if loader else "vanilla"
+    instance = Path(game_directory) / (instance_name or f"{version}-{suffix}")
     instance.mkdir(parents=True, exist_ok=True)
+    report("metadata", 0, 1)
     version_meta = _fetch_json(MANIFEST_URL)
     entry = next((item for item in version_meta["versions"] if item.get("id") == version), None)
     if entry is None:
@@ -53,34 +68,47 @@ def install_client(
 
     client = vanilla["downloads"]["client"]
     client_jar = instance / "client.jar"
+    report("client", 0, 1)
     _download(client["url"], client_jar, sha1=client.get("sha1"), size=client.get("size"))
 
     libraries = instance / "libraries"
+    natives_dir = instance / "natives"
     kept = 0
-    for library in vanilla.get("libraries", []):
-        if not _rules_allow(library.get("rules")):
-            continue
-        artifact = (library.get("downloads") or {}).get("artifact")
-        if not artifact or not artifact.get("path") or not artifact.get("url"):
-            continue
-        destination = libraries / artifact["path"]
-        _download(artifact["url"], destination, sha1=artifact.get("sha1"), size=artifact.get("size"))
-        kept += 1
+    allowed = [lib for lib in vanilla.get("libraries", []) if _rules_allow(lib.get("rules"))]
+    for index, library in enumerate(allowed):
+        report("libraries", index, len(allowed))
+        downloads = library.get("downloads") or {}
+        artifact = downloads.get("artifact")
+        if artifact and artifact.get("path") and artifact.get("url"):
+            destination = libraries / artifact["path"]
+            _download(artifact["url"], destination, sha1=artifact.get("sha1"), size=artifact.get("size"))
+            kept += 1
+        native = native_classifier(library)
+        if native:
+            # Pre-1.19 format: natives are a classifier jar that is extracted, not put on the classpath.
+            destination = libraries / native["path"]
+            _download(native["url"], destination, sha1=native.get("sha1"), size=native.get("size"))
+            _extract_natives(destination, natives_dir, (library.get("extract") or {}).get("exclude") or [])
+    report("libraries", len(allowed), len(allowed))
 
-    fabric_url = f"{FABRIC_META}/{version}/{loader}/profile/json"
-    fabric = _fetch_json(fabric_url)
-    fabric_path = instance / "fabric-profile.json"
-    fabric_path.write_text(json.dumps(fabric), encoding="utf-8")
+    fabric_url = ""
     fabric_count = 0
-    for library in fabric.get("libraries", []):
-        relative = _maven_relative(library["name"])
-        base = str(library.get("url") or "https://maven.fabricmc.net/").rstrip("/") + "/"
-        destination = libraries / relative
-        _download(base + relative, destination, sha1=library.get("sha1"), size=library.get("size"))
-        fabric_count += 1
+    if loader:
+        fabric_url = f"{FABRIC_META}/{version}/{loader}/profile/json"
+        fabric = _fetch_json(fabric_url)
+        fabric_path = instance / "fabric-profile.json"
+        fabric_path.write_text(json.dumps(fabric), encoding="utf-8")
+        fabric_libs = fabric.get("libraries", [])
+        for index, library in enumerate(fabric_libs):
+            report("fabric", index, len(fabric_libs))
+            relative = _maven_relative(library["name"])
+            base = str(library.get("url") or "https://maven.fabricmc.net/").rstrip("/") + "/"
+            destination = libraries / relative
+            _download(base + relative, destination, sha1=library.get("sha1"), size=library.get("size"))
+            fabric_count += 1
 
     asset_index = vanilla.get("assetIndex") or {}
-    assets_root = instance / "assets"
+    assets_root = Path(assets_root) if assets_root else instance / "assets"
     index_id = str(asset_index.get("id") or "")
     asset_count = 0
     if index_id and asset_index.get("url"):
@@ -102,14 +130,25 @@ def install_client(
                 )
 
             workers = min(8, max(1, len(objects)))
+            done = [0]
+            lock = threading.Lock()
+
+            def _counted(obj: dict[str, Any]) -> None:
+                _one(obj)
+                with lock:
+                    done[0] += 1
+                    if done[0] % 50 == 0 or done[0] == len(objects):
+                        report("assets", done[0], len(objects))
+
+            report("assets", 0, len(objects))
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                list(pool.map(_one, objects))
+                list(pool.map(_counted, objects))
             asset_count = len(objects)
 
     required_mods = None
     visual_set = None
     # Only instances this installer creates. Linking an existing folder does not call this.
-    if version == GAME_VERSION:
+    if version == GAME_VERSION and loader and default_mods:
         from vanta.launcher.mods.required import install_required_mods
 
         required_mods = install_required_mods(instance / "mods")
@@ -132,7 +171,9 @@ def install_client(
         "assetIndex": index_id,
         "loader": loader,
         "version": version,
-        "sources": [entry["url"], fabric_url],
+        "sources": [item for item in (entry["url"], fabric_url) if item],
+        "javaMajor": int((vanilla.get("javaVersion") or {}).get("majorVersion") or 8),
+        "assetsRoot": str(assets_root),
     }
 
 
@@ -172,7 +213,7 @@ def build_official_command(
 
     natives = instance / "natives"
     natives.mkdir(parents=True, exist_ok=True)
-    assets_root = instance / "assets"
+    assets_root = instance_assets_root(instance)
     asset_index = str((vanilla.get("assetIndex") or {}).get("id") or "")
     values = {
         "natives_directory": str(natives),
@@ -219,6 +260,51 @@ def build_official_command(
         command.append(_substitute(arg, values))
     # Never append a multiplayer server. The local account is not an online session.
     return command
+
+
+def instance_assets_root(instance: Path) -> Path:
+    """assets folder for an instance: vanta-instance.json "assetsRoot", else instance/assets."""
+    meta = Path(instance) / "vanta-instance.json"
+    try:
+        data = json.loads(meta.read_text(encoding="utf-8"))
+        root = data.get("assetsRoot") if isinstance(data, dict) else None
+        if root:
+            return Path(str(root))
+    except (OSError, ValueError):
+        pass
+    return Path(instance) / "assets"
+
+
+def native_classifier(library: dict[str, Any]) -> dict[str, Any] | None:
+    """Old (pre-1.19) natives: library["natives"][os] names a classifier download."""
+    natives = library.get("natives")
+    if not isinstance(natives, dict):
+        return None
+    key = natives.get(_os_name())
+    if not key:
+        return None
+    key = str(key).replace("${arch}", "64")
+    classifiers = (library.get("downloads") or {}).get("classifiers") or {}
+    item = classifiers.get(key)
+    if not isinstance(item, dict) or not item.get("url") or not item.get("path"):
+        return None
+    return item
+
+
+def _extract_natives(jar: Path, target: Path, exclude: list[str]) -> None:
+    target.mkdir(parents=True, exist_ok=True)
+    root = target.resolve()
+    with zipfile.ZipFile(jar) as archive:
+        for member in archive.infolist():
+            name = member.filename
+            if member.is_dir() or any(name.startswith(prefix) for prefix in exclude) or name.startswith("META-INF/"):
+                continue
+            out = (target / name).resolve()
+            if root not in out.parents:
+                continue
+            out.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member) as source, out.open("wb") as handle:
+                shutil.copyfileobj(source, handle)
 
 
 def _argument_list(items: list[Any]) -> list[str]:

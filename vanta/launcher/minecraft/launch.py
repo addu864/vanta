@@ -43,6 +43,42 @@ OFFLINE_ACCESS_TOKEN = "0"
 PID_WAIT_SECONDS = 0.6
 
 
+MAIN_VERSION = "1.21.11"
+
+
+def required_java(instance: Path, version_number: str) -> int:
+    """javaVersion.majorVersion from the instance's Mojang JSON (17 or 21 or 25 ...)."""
+    path = Path(instance) / f"{version_number}.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return int((data.get("javaVersion") or {}).get("majorVersion") or 8)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 8
+
+
+def java_for_instance(instance: Path, version_number: str) -> tuple[str | None, str]:
+    """Pick an installed Java that suits this Minecraft version."""
+    from vanta.shared.java import find_java, select_java
+
+    needed = required_java(instance, version_number)
+    if needed <= 8:
+        found = find_java()
+        return found, "" if found else JAVA_MISSING
+    return select_java(needed)
+
+
+def prepare_command(version: dict[str, Any], account: dict[str, Any], ram_gb: int) -> dict[str, Any]:
+    """Build (do not run) the Java command for an installed instance."""
+    jar = client_jar_path(str(version["gameDirectory"]))
+    if not jar.is_file():
+        return {"ok": False, "error": jar_missing_message(jar)}
+    java, error = java_for_instance(jar.parent, str(version["versionNumber"]))
+    if not java:
+        return {"ok": False, "error": error}
+    command, official = _build_command(java=java, jar=jar, instance=jar.parent, ram_gb=ram_gb, account=account, version=version)
+    return {"ok": True, "java": java, "javaRequired": required_java(jar.parent, str(version["versionNumber"])), "command": command, "official": official}
+
+
 def detect_java() -> dict[str, Any]:
     from vanta.shared.java import find_java
 
@@ -122,8 +158,8 @@ def attempt_play(
             f"Version {version['versionNumber']} with {version['loader']} is not fully supported "
             "in Vanta 0.1. The only fully supported version is 1.21.11 with Fabric."
         )
-    if loader != "fabric":
-        errors.append(f"Loader {loader or '(none)'} is not supported in Vanta 0.1. Use Fabric.")
+    if loader not in {"fabric", "vanilla"}:
+        errors.append(f"Loader {loader or '(none)'} is not supported. Use Fabric or vanilla.")
 
     profile_name = body.get("profileName") or settings.get("selectedProfileName")
     profile = profiles.get(profile_name) if profile_name else None
@@ -151,6 +187,9 @@ def attempt_play(
     })
     saved_profile = profiles.set_ram(profile["name"], ram_value)
     version, instance_error = _version_for_profile(version, saved_profile)
+    join = body.get("joinServer")
+    if isinstance(join, dict) and str(join.get("host") or "").strip():
+        version = dict(version, joinServer={"host": str(join["host"]).strip(), "port": join.get("port")})
     if instance_error:
         return _fail(log, data_dir, [instance_error])
 
@@ -234,6 +273,8 @@ def _dry_run(
         "java": java,
         "downloads": [],
     }
+    prepared = prepare_command(version, account, ram_value)
+    plan["preparedCommand"] = prepared
     plan_path = data_dir / "launch-plan.json"
     write_json(plan_path, plan)
     log.info(
@@ -263,13 +304,11 @@ def _launch_local(
     saved_profile: dict[str, Any],
     ram_value: int,
 ) -> dict[str, Any]:
-    from vanta.shared.java import find_java
-
-    java = find_java()
     jar = client_jar_path(str(version["gameDirectory"]))
+    java, java_error = java_for_instance(jar.parent, str(version.get("versionNumber") or ""))
     missing: list[str] = []
     if not java:
-        missing.append(JAVA_MISSING)
+        missing.append(java_error or JAVA_MISSING)
     if not jar.is_file() or jar.stat().st_size <= 0:
         missing.append(jar_missing_message(jar))
     if missing:
@@ -303,13 +342,21 @@ def _launch_local(
         account=account,
         version=version,
     )
+    join = version.get("joinServer")
+    if minecraft_client and isinstance(join, dict) and join.get("host"):
+        # Only when the player pressed Join on a server card.
+        from vanta.launcher.servers.popular import join_arguments
+
+        command.extend(join_arguments(str(version.get("versionNumber") or ""), str(join["host"]), join.get("port")))
     log_path = data_dir / "client.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handle = log_path.open("a", encoding="utf-8")
     handle.write(
         f"\n--- local start {datetime.now().astimezone().isoformat(timespec='seconds')} ---\n"
     )
-    _sync_profile_mods(str(saved_profile.get("name") or ""), jar.parent, data_dir)
+    if str(version.get("versionNumber")) == MAIN_VERSION and not version.get("downloaded"):
+        # Profile mods target 1.21.11; never copy them into other versions' instances.
+        _sync_profile_mods(str(saved_profile.get("name") or ""), jar.parent, data_dir)
     popen_kwargs: dict[str, Any] = {
         "cwd": str(jar.parent),
         "stdout": handle,
@@ -559,7 +606,7 @@ def _version_for_profile(version: dict[str, Any], profile: dict[str, Any]) -> tu
     instance folder. A missing client.jar is an error and does not start Java.
     """
     raw = str(profile.get("instanceDirectory") or "").strip()
-    if not raw:
+    if not raw or version.get("downloaded"):
         return version, ""
     instance = Path(raw)
     if not instance.is_dir() or not (instance / "client.jar").is_file():

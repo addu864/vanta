@@ -674,3 +674,29 @@ textarea {
 .utility-state[data-status="NO_DEVICE"] { color: var(--warn); }
 .utility-state[data-status="PRESENT"] { color: var(--good); }
 .utility-state[data-status="ON"] { color: var(--mint); }
+
+/* Add instance + download progress */
+.add-instance { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: var(--glass); }
+.add-instance summary { cursor: pointer; font-weight: 600; }
+.add-instance .row { gap: 8px; flex-wrap: wrap; }
+.progress { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; margin: 10px 0 4px; }
+.progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, #8a5cf0, var(--violet)); transition: width .4s ease; }
+/* 3D skin preview */
+.skin3d { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; padding: 12px 16px; margin: 10px 0; }
+.skin3d canvas { width: 260px; height: 340px; max-width: 100%; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(201,180,255,0.18), rgba(0,0,0,0) 70%); cursor: grab; touch-action: none; }
+.skin3d canvas:active { cursor: grabbing; }
+.skin3d-info { display: grid; gap: 6px; min-width: 200px; }
+.toggle-row { display: flex; gap: 8px; align-items: center; color: var(--muted); }
+
+/* Popular servers bar */
+.popular-bar { margin-bottom: 14px; }
+.popular-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.popular-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; }
+.popular-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--bg-sink); display: grid; gap: 4px; }
+.popular-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.popular-badge { font-size: 12px; color: var(--muted); }
+.popular-card.online .popular-badge { color: var(--good); }
+.popular-card.offline .popular-badge { color: var(--warn); }
+.popular-card code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--violet); }
+.popular-desc { white-space: pre-line; margin: 0; min-height: 2.6em; }
+.popular-card .row { gap: 6px; }

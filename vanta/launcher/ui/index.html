@@ -38,6 +38,15 @@
             <button type="button" class="ghost" id="clear-background">Clear</button>
           </div>
         </div>
+        <div class="glass popular-bar" id="popular-bar">
+          <div class="popular-head">
+            <h2>Popular servers</h2>
+            <button type="button" class="ghost" id="popular-refresh">Refresh</button>
+          </div>
+          <p class="hint">Public servers, not run by Vanta. Status comes from a live server-list ping. Edit the list in popular-servers.json in Vanta's data folder.</p>
+          <div class="popular-cards" id="popular-cards"><p class="hint">Checking servers…</p></div>
+          <div class="status" id="popular-status"></div>
+        </div>
         <div class="home-layout">
           <div class="glass">
             <h2>Where you left off</h2>
@@ -70,6 +79,17 @@
                 </label>
               </div>
               <div class="meta" id="version-meta"></div>
+              <details class="add-instance" id="add-instance">
+                <summary>Add instance (Minecraft 1.18 to 26.3)</summary>
+                <p class="hint">Real releases from Mojang's version list. Each version downloads into its own folder with Fabric (or vanilla), libraries, natives and sounds. Fabric instances also get Fabric API, Sodium, Lithium and Mod Menu where Modrinth has a build. Your 1.21.11 instance is not changed.</p>
+                <div class="row">
+                  <select id="instance-version" aria-label="Minecraft version"><option value="">Loading versions…</option></select>
+                  <select id="instance-loader" aria-label="Loader"><option value="fabric">Fabric</option><option value="vanilla">Vanilla</option></select>
+                  <button type="button" class="action" id="instance-install">Download</button>
+                </div>
+                <div class="progress" id="instance-progress" hidden><div class="progress-bar" id="instance-progress-bar"></div></div>
+                <div class="status" id="instance-status"></div>
+              </details>
             </div>
           </div>
           <div class="home-side">
@@ -133,7 +153,17 @@
       <section class="panel" data-panel="skins" id="panel-skins" hidden>
         <h1>SKINS</h1>
         <p class="hint" id="skins-repo-note">Vanta's own skin library is stored in the app. Ely.by and NameMC are not contacted.</p>
-        <p class="hint" id="skins-preview-note">Preview is a 2D image of the skin PNG. A rotating WebGL preview is not in this slice.</p>
+        <p class="hint" id="skins-preview-note">Select a skin to see it on a rotating 3D player. Drag to spin it.</p>
+        <div class="glass skin3d" id="skin3d">
+          <canvas id="skin3d-canvas" width="260" height="340" aria-label="3D skin preview"></canvas>
+          <div class="skin3d-info">
+            <strong id="skin3d-name">No skin selected</strong>
+            <p class="hint" id="skin3d-model"></p>
+            <label class="toggle-row"><input type="checkbox" id="skin3d-rotate" checked> Auto-rotate</label>
+            <label class="toggle-row"><input type="checkbox" id="skin3d-layer" checked> Second layer (hat, jacket, sleeves)</label>
+            <label class="toggle-row"><input type="checkbox" id="skin3d-walk"> Walk animation</label>
+          </div>
+        </div>
         <div class="mods-toolbar">
           <label>Show
             <select id="skins-filter"></select>
@@ -501,6 +531,7 @@
       </section>
     </main>
   </div>
+  <script src="/assets/vendor/skinview3d.bundle.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     let versions = [];
@@ -1518,7 +1549,7 @@
       view.type = "button";
       view.className = "ghost";
       view.textContent = "View";
-      view.addEventListener("click", () => viewSkin(skin.id));
+      view.addEventListener("click", () => { showSkin3d(skin); viewSkin(skin.id); });
       const apply = document.createElement("button");
       apply.type = "button";
       apply.className = "action";
@@ -1530,7 +1561,8 @@
       fav.addEventListener("click", (event) => event.stopPropagation(), true);
       view.addEventListener("click", (event) => event.stopPropagation(), true);
       model.addEventListener("click", (event) => event.stopPropagation());
-      const choose = () => applySkin(skin.id, model.value);
+      skinCache[skin.id] = skin;
+      const choose = () => { showSkin3d(skin); applySkin(skin.id, model.value); };
       card.addEventListener("click", (event) => {
         if (event.target.closest("button, select, option")) {
           return;
@@ -1612,6 +1644,9 @@
       });
       appliedSkinId = (data.applied && data.applied.skinId) || "";
       fillSkinSelects();
+      const all = [].concat(data.catalog || [], data.favorites || [], data.recent || []);
+      const current = all.find((item) => item.id === appliedSkinId) || all[0];
+      if (current && $("skin3d-name").textContent === "No skin selected") showSkin3d(current);
       fillSkinHost("skin-favorites", data.favorites || [], "No favorite skins yet.");
       fillSkinHost("skin-recent", data.recent || [], "No recently viewed skins yet.");
       if (!$("skins-query").value && data.catalog && data.catalog.length) {
@@ -2567,6 +2602,250 @@
     refresh().catch((err) => {
       setStatus("play-status", "The launcher UI could not load its data.", "bad");
     });
+
+    // ---- Add instance (Minecraft 1.18 .. 26.3) ----
+    let instanceRows = [];
+    let instancePoll = null;
+
+    async function loadInstanceVersions() {
+      const result = await api("/api/instances/available");
+      const data = result.data || {};
+      const select = $("instance-version");
+      select.replaceChildren();
+      if (!data.ok) {
+        setStatus("instance-status", data.error || "Could not load Mojang's version list.", "bad");
+        return;
+      }
+      instanceRows = data.versions || [];
+      instanceRows.forEach((row) => {
+        const option = document.createElement("option");
+        option.value = row.id;
+        const have = [];
+        if (row.installedFabric) have.push("Fabric installed");
+        if (row.installedVanilla) have.push("vanilla installed");
+        option.textContent = row.id + (row.releaseTime ? "  (" + row.releaseTime + ")" : "") + (have.length ? " · " + have.join(", ") : "") + (row.fabric ? "" : " · no Fabric");
+        select.appendChild(option);
+      });
+      const running = (data.jobs || []).find((job) => job.state === "downloading" || job.state === "queued");
+      if (running) watchInstanceJob(running.id);
+    }
+
+    function showInstanceJob(job) {
+      const bar = $("instance-progress");
+      bar.hidden = false;
+      $("instance-progress-bar").style.width = Math.max(2, job.percent || 0) + "%";
+      const labels = { metadata: "Reading version info", client: "Downloading client jar", libraries: "Libraries and natives", fabric: "Fabric loader", assets: "Sounds and assets", mods: "Default mods", done: "Done" };
+      const step = labels[job.step] || job.step || "";
+      if (job.state === "failed") {
+        setStatus("instance-status", "Download failed: " + (job.error || "unknown error"), "bad");
+      } else if (job.state === "done") {
+        const skipped = (job.result && job.result.skippedMods) || [];
+        setStatus("instance-status", "Installed " + job.id + ". Pick it in Version and press PLAY." + (skipped.length ? " Skipped: " + skipped.join("; ") : ""), "good");
+      } else {
+        const count = job.total > 1 ? " (" + job.done + "/" + job.total + ")" : "";
+        setStatus("instance-status", job.id + ": " + step + count + " · " + (job.percent || 0) + "%", "");
+      }
+    }
+
+    function watchInstanceJob(id) {
+      if (instancePoll) clearInterval(instancePoll);
+      instancePoll = setInterval(async () => {
+        const result = await api("/api/instances/job?id=" + encodeURIComponent(id));
+        const job = (result.data && result.data.job) || {};
+        showInstanceJob(job);
+        if (job.state === "done" || job.state === "failed" || job.state === "unknown") {
+          clearInterval(instancePoll);
+          instancePoll = null;
+          $("instance-install").disabled = false;
+          if (job.state === "done") {
+            await refresh();
+            await loadInstanceVersions();
+          }
+        }
+      }, 1000);
+    }
+
+    $("instance-install").addEventListener("click", async () => {
+      const version = $("instance-version").value;
+      const loader = $("instance-loader").value;
+      if (!version) return;
+      const row = instanceRows.find((item) => item.id === version);
+      if (loader === "fabric" && row && !row.fabric) {
+        setStatus("instance-status", "Fabric has no build for " + version + ". Choose Vanilla.", "bad");
+        return;
+      }
+      $("instance-install").disabled = true;
+      const result = await post("/api/instances/install", { version: version, loader: loader });
+      const data = result.data || {};
+      if (!data.ok) {
+        $("instance-install").disabled = false;
+        setStatus("instance-status", data.error || "Could not start the download.", "bad");
+        return;
+      }
+      showInstanceJob(data.job || {});
+      watchInstanceJob((data.job || {}).id);
+    });
+    $("add-instance").addEventListener("toggle", () => {
+      if ($("add-instance").open && !instanceRows.length) {
+        loadInstanceVersions().catch(() => setStatus("instance-status", "Could not load versions.", "bad"));
+      }
+    });
+
+    // ---- 3D skin preview (skinview3d, bundled locally) ----
+    let skinViewer = null;
+    let skinViewerError = "";
+    const skinCache = {};
+
+    function detectSlim(image) {
+      // Slim (Alex) skins leave the 4th arm column transparent: pixel (54, 20) on a 64x64 skin.
+      try {
+        if (image.naturalHeight < 64) return false;
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+        const scale = image.naturalWidth / 64;
+        const alpha = ctx.getImageData(Math.floor(54 * scale), Math.floor(20 * scale), 1, 1).data[3];
+        return alpha === 0;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function ensureSkinViewer() {
+      if (skinViewer || skinViewerError) return skinViewer;
+      if (!window.skinview3d) {
+        skinViewerError = "3D preview library did not load.";
+        return null;
+      }
+      try {
+        const canvas = $("skin3d-canvas");
+        skinViewer = new skinview3d.SkinViewer({ canvas: canvas, width: 260, height: 340 });
+        skinViewer.autoRotate = true;
+        skinViewer.autoRotateSpeed = 0.8;
+        skinViewer.controls.enableRotate = true;
+        skinViewer.controls.enableZoom = true;
+        skinViewer.controls.enablePan = false;
+        skinViewer.zoom = 0.85;
+        skinViewer.animation = new skinview3d.IdleAnimation();
+      } catch (err) {
+        skinViewerError = "WebGL is not available, so the 3D preview is off.";
+        skinViewer = null;
+      }
+      return skinViewer;
+    }
+
+    function setSecondLayer(on) {
+      if (!skinViewer) return;
+      const skin = skinViewer.playerObject.skin;
+      ["head", "body", "rightArm", "leftArm", "rightLeg", "leftLeg"].forEach((part) => {
+        if (skin[part] && skin[part].outerLayer) skin[part].outerLayer.visible = on;
+      });
+    }
+
+    function showSkin3d(skin) {
+      if (!skin || !skin.previewPath) return;
+      skinCache[skin.id] = skin;
+      $("skin3d-name").textContent = skin.name || skin.username || "Skin";
+      const viewer = ensureSkinViewer();
+      if (!viewer) {
+        $("skin3d-model").textContent = skinViewerError;
+        return;
+      }
+      const image = new Image();
+      image.onload = () => {
+        const slim = detectSlim(image);
+        viewer.loadSkin(image, { model: slim ? "slim" : "default" });
+        setSecondLayer($("skin3d-layer").checked);
+        const saved = skin.model === "alex" ? "slim" : "classic";
+        const detected = slim ? "slim (Alex, 3px arms)" : "classic (Steve, 4px arms)";
+        $("skin3d-model").textContent = "Detected arms: " + detected + (saved !== (slim ? "slim" : "classic") ? ". Saved model setting: " + saved + "." : ".");
+      };
+      image.onerror = () => { $("skin3d-model").textContent = "Could not load this skin's texture."; };
+      image.src = skin.previewPath;
+    }
+
+    $("skin3d-rotate").addEventListener("change", () => { if (skinViewer) skinViewer.autoRotate = $("skin3d-rotate").checked; });
+    $("skin3d-layer").addEventListener("change", () => setSecondLayer($("skin3d-layer").checked));
+    $("skin3d-walk").addEventListener("change", () => {
+      if (!skinViewer) return;
+      skinViewer.animation = $("skin3d-walk").checked ? new skinview3d.WalkingAnimation() : new skinview3d.IdleAnimation();
+    });
+
+    // ---- Popular servers bar ----
+    async function loadPopularServers() {
+      const result = await api("/api/popular-servers");
+      const data = result.data || {};
+      const host = $("popular-cards");
+      host.replaceChildren();
+      (data.servers || []).forEach((server) => {
+        const st = server.status || {};
+        const card = document.createElement("article");
+        card.className = "popular-card" + (st.online ? " online" : " offline");
+        const name = document.createElement("strong");
+        name.textContent = server.name;
+        const badge = document.createElement("span");
+        badge.className = "popular-badge";
+        badge.textContent = st.online ? (st.players + " / " + st.maxPlayers + " online") : "offline / no reply";
+        const ip = document.createElement("code");
+        ip.textContent = server.address;
+        const desc = document.createElement("p");
+        desc.className = "hint popular-desc";
+        desc.textContent = (st.online && st.motd) ? st.motd : (server.description || "No description yet (the server didn't answer the status ping).");
+        const meta = document.createElement("p");
+        meta.className = "hint";
+        meta.textContent = st.online ? ((st.version ? st.version + " · " : "") + st.latencyMs + " ms") : "";
+        const row = document.createElement("div");
+        row.className = "row";
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.className = "ghost";
+        copy.textContent = "Copy IP";
+        copy.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(server.address); }
+          catch (err) {
+            const area = document.createElement("textarea"); area.value = server.address; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove();
+          }
+          setStatus("popular-status", "Copied " + server.address, "good");
+        });
+        const join = document.createElement("button");
+        join.type = "button";
+        join.className = "action";
+        join.textContent = "Join";
+        join.addEventListener("click", async () => {
+          const chosen = selectedVersionValue();
+          join.disabled = true;
+          setStatus("popular-status", "Adding " + server.name + " to the server list and starting Minecraft " + chosen.versionNumber + "…", "");
+          const res = await post("/api/popular-servers/join", {
+            id: server.id, accountId: $("account").value || null, versionNumber: chosen.versionNumber, loader: chosen.loader,
+            ramGb: Number($("ram").value), profileName: selectedProfile
+          });
+          const d = res.data || {};
+          if (d.launched === true) {
+            setStatus("popular-status", "Started Minecraft and joining " + server.address + "." + (d.serverAdded ? " Added to your Multiplayer list." : ""), "good");
+          } else {
+            setStatus("popular-status", d.error || (d.errors || []).join("\n") || "Could not join.", "bad");
+          }
+          join.disabled = false;
+        });
+        row.appendChild(copy);
+        row.appendChild(join);
+        const head = document.createElement("div");
+        head.className = "popular-card-head";
+        head.appendChild(name);
+        head.appendChild(badge);
+        card.appendChild(head);
+        card.appendChild(ip);
+        card.appendChild(desc);
+        card.appendChild(meta);
+        card.appendChild(row);
+        host.appendChild(card);
+      });
+      if (!(data.servers || []).length) host.innerHTML = '<p class="hint">No servers in popular-servers.json.</p>';
+    }
+    $("popular-refresh").addEventListener("click", () => loadPopularServers());
+    loadPopularServers().catch(() => setStatus("popular-status", "Could not check servers.", "bad"));
   </script>
 </body>
 </html>

@@ -199,10 +199,10 @@ class SkinManager:
             "favorites": [self._public(item) for item in self.library.favorites()],
             "recent": [self._public(item) for item in self.library.recent()],
             "note": LOCAL_APPLY_NOTE,
-            "preview": "2d-png",
+            "preview": "3d-webgl",
             "previewNote": (
-                "Preview is a 2D image of the skin PNG (flat front composite plus the texture). "
-                "A rotating WebGL preview is not in this slice."
+                "Select a skin to see it on a rotating 3D player (WebGL, skinview3d bundled with Vanta). "
+                "Drag to spin it. The cards still show the flat 2D texture."
             ),
         }
 

@@ -110,6 +110,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _read_asset("style.css", "text/css; charset=utf-8")
     if method == "GET" and path == "/assets/wordmark.svg":
         return _read_asset("wordmark.svg", "image/svg+xml")
+    if method == "GET" and path == "/assets/vendor/skinview3d.bundle.js":
+        return _read_asset("vendor/skinview3d.bundle.js", "text/javascript; charset=utf-8")
     if method == "GET" and path == "/assets/logo.jpg":
         return _read_asset("logo.jpg", "image/jpeg")
     if method == "GET" and path.startswith("/assets/backgrounds/"):
@@ -238,6 +240,16 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         skin_id = (query.get("id") or [""])[0]
         status, payload, content_type = app.skin_texture(skin_id)
         return status, payload, content_type
+    if method == "GET" and path == "/api/popular-servers":
+        return _from_ok(app.popular_servers())
+    if method == "POST" and path == "/api/popular-servers/join":
+        return _from_ok(app.join_popular_server(_payload(body)))
+    if method == "GET" and path == "/api/instances/available":
+        return _from_ok(app.available_instances())
+    if method == "POST" and path == "/api/instances/install":
+        return _from_ok(app.install_instance(_payload(body)))
+    if method == "GET" and path == "/api/instances/job":
+        return _from_ok(app.instance_job(_query_dict(raw_path)))
     if method == "GET" and path == "/api/servers":
         return _from_ok(app.list_managed_servers())
     if method == "POST" and path == "/api/servers/create":
@@ -312,6 +324,13 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return 404, _json_bytes({"ok": False, "error": "That API is not part of Vanta 1.0."}), JSON
     return 404, b"That page is not part of Vanta 1.0.\n", TEXT
 
+
+
+def _query_dict(raw_path: str) -> dict[str, str]:
+    from urllib.parse import parse_qs
+
+    query = parse_qs(urlparse(raw_path).query)
+    return {key: values[0] for key, values in query.items() if values}
 
 
 def _query_server(raw_path: str) -> dict[str, Any]:

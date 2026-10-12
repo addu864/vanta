@@ -36,6 +36,25 @@ def list_versions(game_directory: str) -> list[dict[str, Any]]:
         item["compatibleMods"] = list(item.get("compatibleMods") or [])
         item["compatibleLibraries"] = list(item.get("compatibleLibraries") or [])
         versions.append(item)
+    # Instances downloaded from the version picker (1.18 .. 26.3, Fabric or vanilla).
+    from vanta.launcher.minecraft.instances import installed_instances
+
+    for inst in installed_instances(base):
+        number, loader = str(inst.get("versionNumber")), str(inst.get("loader"))
+        entry = {
+            "versionNumber": number,
+            "loader": loader,
+            "mappings": "official",
+            "gameDirectory": inst["gameDirectory"],
+            "compatibleMods": list(inst.get("defaultMods") or []),
+            "compatibleLibraries": [],
+            "supported": True,
+            "supportNote": f"Downloaded instance ({loader}). Needs Java {inst.get('javaMajor') or '?'}+.",
+            "downloaded": True,
+            "javaMajor": inst.get("javaMajor"),
+        }
+        versions = [v for v in versions if not (v["versionNumber"] == number and v["loader"] == loader)]
+        versions.append(entry)
     return versions
 
 

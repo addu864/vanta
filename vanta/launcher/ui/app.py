@@ -79,6 +79,42 @@ class VantaApp:
         items = list_versions(str(settings["gameDirectory"]))
         return {"versions": items}
 
+    def _game_root(self) -> Path:
+        return Path(str(self.config.get()["gameDirectory"]))
+
+    def available_instances(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+
+        result = instances.available_versions()
+        installed = {(i["versionNumber"], i["loader"]) for i in instances.installed_instances(self._game_root())}
+        main = self._game_root() / "1.21.11-fabric" / "client.jar"
+        for row in result.get("versions", []):
+            row["installedFabric"] = (row["id"], "fabric") in installed or (row["id"] == "1.21.11" and main.is_file())
+            row["installedVanilla"] = (row["id"], "vanilla") in installed
+        result["jobs"] = instances.all_jobs()
+        return result
+
+    def install_instance(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+
+        body = payload or {}
+        version = str(body.get("version") or "").strip()
+        loader = str(body.get("loader") or "fabric").strip().lower()
+        result = instances.start_install(self._game_root(), version, loader)
+        if result.get("ok"):
+            self.log.info(f"Downloading Minecraft {version} ({loader}) into its own instance folder.")
+        else:
+            self.log.error(str(result.get("error")))
+        return result
+
+    def instance_job(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+
+        job_id = str((payload or {}).get("id") or "")
+        data = instances.job(job_id)
+        data.pop("trace", None)
+        return {"ok": True, "job": data}
+
     def list_accounts(self) -> dict[str, Any]:
         settings = self.config.get()
         return {
@@ -495,6 +531,44 @@ class VantaApp:
             data_dir=self.data_dir,
             payload=payload,
         )
+
+    def popular_servers(self) -> dict[str, Any]:
+        from vanta.launcher.servers import popular
+
+        servers = popular.load_servers(self.data_dir)
+        return {"ok": True, "servers": popular.statuses(servers), "config": str(self.data_dir / popular.CONFIG_NAME)}
+
+    def join_popular_server(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Add the server to the instance's servers.dat, then PLAY straight into it."""
+        from vanta.launcher.servers import popular
+
+        body = dict(payload or {})
+        server = next((s for s in popular.load_servers(self.data_dir) if s["id"] == str(body.get("id") or "")), None)
+        if server is None:
+            return {"ok": False, "error": "That server is not in the popular servers list."}
+        settings = self.config.get()
+        number = str(body.get("versionNumber") or settings.get("defaultVersion") or "")
+        loader = str(body.get("loader") or settings.get("defaultLoader") or "")
+        version = get_version(number, loader, str(settings["gameDirectory"]))
+        if version is None:
+            return {"ok": False, "error": f"Version {number} {loader} is not installed."}
+        instance = Path(str(version["gameDirectory"]))
+        profile = self.profiles.get(str(body.get("profileName") or settings.get("selectedProfileName") or ""))
+        linked = str((profile or {}).get("instanceDirectory") or "").strip()
+        if linked and not version.get("downloaded"):
+            instance = Path(linked)
+        added = False
+        try:
+            added = popular.add_to_server_list(instance / "servers.dat", server["name"], popular.address(server))
+        except (OSError, ValueError) as exc:
+            self.log.error(f"Could not update servers.dat: {exc}")
+        # No port: the Minecraft client resolves the SRV record from the hostname itself.
+        body["joinServer"] = {"host": server["host"], "port": server.get("port")}
+        body.setdefault("targetMode", "local")
+        result = self.play(body)
+        result["serverAdded"] = added
+        result["server"] = {"name": server["name"], "address": popular.address(server)}
+        return result
 
     def logs(self) -> dict[str, Any]:
         return {"lines": self.log.tail()}
