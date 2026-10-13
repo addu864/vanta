@@ -1,0 +1,182 @@
+[
+ {
+  "id": "pikanetwork",
+  "name": "PikaNetwork",
+  "host": "play.pika-network.net",
+  "port": null,
+  "description": "PikaNetwork [1.8 - 26.3] · New OP Skyblock season.",
+  "versions": "1.8–26.3",
+  "featured": true
+ },
+ {
+  "id": "fatalmc",
+  "name": "FatalMC",
+  "host": "mc.fatalmc.org",
+  "port": null,
+  "description": "A cracked network focused on Lifesteal and FFA (Java and Bedrock). Season 5 out now.",
+  "versions": "1.21–26.3",
+  "featured": true
+ },
+ {
+  "id": "alwto",
+  "name": "ALWTO",
+  "host": "alwto.net",
+  "port": null,
+  "description": "ALWTO Practice: Duels, FFA, Party, Events. 26.3 update (spears).",
+  "versions": "1.21–26.3",
+  "featured": true
+ },
+ {
+  "id": "bluemc",
+  "name": "BlueMC",
+  "host": "bluemc.org",
+  "port": null,
+  "description": "BlueMC.org · Economy SMP.",
+  "versions": "1.21–26.2",
+  "featured": true
+ },
+ {
+  "id": "rulexmc",
+  "name": "RuleX MC",
+  "host": "rulexmc.mcsh.io",
+  "port": null,
+  "description": "RuleX MC · Crossplay [1.9 - 26.2+] · Lifesteal, Practice, Survival.",
+  "versions": "1.9–26.2",
+  "featured": true
+ },
+ {
+  "id": "twenture",
+  "name": "Twenture",
+  "host": "menu.twenture.net",
+  "port": null,
+  "description": "Survival SMP, Earth Towny, LifeSteal Anarchy and OneBlock SkyBlock for 1.21–26.3.",
+  "versions": "1.21–26.3",
+  "featured": false
+ },
+ {
+  "id": "clubcraft",
+  "name": "ClubCraft Network",
+  "host": "epic.clubcraft.net",
+  "port": null,
+  "description": "ClubCraft is a classic Minecraft network: SMP, Lifesteal, Towny, Skyblock, Prison, KitPvP (non-P2W).",
+  "versions": "1.9–26.2",
+  "featured": false
+ },
+ {
+  "id": "twerion",
+  "name": "TWERION.NET",
+  "host": "menu.twerion.net",
+  "port": null,
+  "description": "Lifesteal SMP, SkyMines, OneBlock, BedWars, Practice, KitRush, Duels, CityBuild · Java + Bedrock.",
+  "versions": "1.8–26.2",
+  "featured": false
+ },
+ {
+  "id": "plumsmp",
+  "name": "PlumSMP Network",
+  "host": "menu.plumsmp.net",
+  "port": null,
+  "description": "Practice PvP · KitPvP · Lifesteal · Survival · GenPVP.",
+  "versions": "1.7.2–26.2",
+  "featured": false
+ },
+ {
+  "id": "normalsurvival",
+  "name": "NormalSurvival",
+  "host": "mcm.normalsurvival.com",
+  "port": null,
+  "description": "Survival · Economy · Community. A welcoming community to build, survive, farm and have fun.",
+  "versions": "1.8–26.3",
+  "featured": false
+ },
+ {
+  "id": "bohol",
+  "name": "BOHOL NETWORK",
+  "host": "play.boholmc.net",
+  "port": null,
+  "description": "BOHOL NETWORK 1.21+ · Dungeons, Survival.",
+  "versions": "1.21–26.2",
+  "featured": false
+ },
+ {
+  "id": "extremecraft",
+  "name": "ExtremeCraft",
+  "host": "sl.extremecraft.net",
+  "port": null,
+  "description": "Survival: new economy, treasure relics, bosses and more. Also Anarchy, BedWars, Creative, Factions, KitPvP, Lifesteal, SkyBlock.",
+  "versions": "1.7.2–26.3",
+  "featured": false
+ },
+ {
+  "id": "mineland",
+  "name": "Mineland Network",
+  "host": "msl.mineland.net",
+  "port": null,
+  "description": "Mineland Network 1.8.x–26.x: BedWars, Creative, Prison, PvP, SkyBlock, Survival.",
+  "versions": "1.8–26.3",
+  "featured": false
+ },
+ {
+  "id": "cookiesmp",
+  "name": "CookieSMP",
+  "host": "play.cookiesmp.pro",
+  "port": null,
+  "description": "CookieSMP [1.21+] · Season 2 is live.",
+  "versions": "1.21–1.21.11",
+  "featured": false
+ },
+ {
+  "id": "2f2f",
+  "name": "2f2f",
+  "host": "2f2f.me",
+  "port": null,
+  "description": "Cracked anarchy: any username, no rules, no bans, same world since launch (Aug 2026).",
+  "versions": "1.7.2–26.2",
+  "featured": false
+ },
+ {
+  "id": "eternel",
+  "name": "eternel.eu",
+  "host": "eternel.eu",
+  "port": null,
+  "description": "Cracked anarchy, never reset, no whitelist. Voicechat + Distant Horizons.",
+  "versions": "26.2",
+  "featured": false
+ },
+ {
+  "id": "illuminati",
+  "name": "Illuminati Lifesteal",
+  "host": "mc-sl.illuminati.onl",
+  "port": null,
+  "description": "Illuminati Lifesteal: auctions, economy, jobs, PvE and PvP.",
+  "versions": "1.21–26.3",
+  "featured": false
+ },
+ {
+  "id": "heartsmp",
+  "name": "HeartSMP",
+  "host": "menu.heartsmp.net",
+  "port": null,
+  "description": "Lifesteal & Creative · Free WorldEdit · Minigames · 4 unique modes.",
+  "versions": "1.8–26.3",
+  "featured": false
+ },
+ {
+  "id": "mayari",
+  "name": "MayariSMP",
+  "host": "play.mayari.space",
+  "port": null,
+  "description": "MayariSMP [26.2] · Dungeons, economy · Season III.",
+  "versions": "26.2",
+  "featured": false
+ },
+ {
+  "id": "strongcraft",
+  "name": "StrongCraft Network",
+  "host": "menu.strongcraft.org",
+  "port": null,
+  "description": "New LifeSteal, PvPMine, BoxPvP, new economy.",
+  "versions": "1.8–26.3",
+  "featured": false
+ }
+]

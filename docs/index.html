@@ -3,140 +3,254 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vanta: a Minecraft Java launcher for Fabric 1.21.11</title>
-<meta name="description" content="Vanta is a free Minecraft Java launcher for Fabric 1.21.11 with local accounts, performance mods, a trailer-look visual set, and a local Paper server maker.">
-<link rel="icon" href="img/favicon.png">
+<title>Vanta: free Minecraft Java launcher with local accounts (Windows &amp; macOS)</title>
+<meta name="description" content="Vanta is a free Minecraft Java launcher for Windows and macOS: local accounts, any version from 1.18 to 26.3, Fast and Trailer-style mod sets, a server browser, 3D skins, crash help and one-click updates.">
+<meta name="theme-color" content="#120a22">
+<link rel="canonical" href="https://addu864.github.io/vanta/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vanta: Minecraft Java launcher">
+<meta property="og:description" content="Local accounts, versions 1.18–26.3, Fast and Trailer-style mod sets, a server browser, 3D skins. Free for Windows and macOS.">
+<meta property="og:url" content="https://addu864.github.io/vanta/">
+<meta property="og:image" content="https://addu864.github.io/vanta/img/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://addu864.github.io/vanta/img/og.png">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preload" href="img/logo.jpg" as="image">
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Vanta", "applicationCategory": "GameApplication", "operatingSystem": "Windows 10, Windows 11, macOS", "softwareVersion": "1.3.0", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "url": "https://addu864.github.io/vanta/", "downloadUrl": "https://github.com/addu864/vanta/releases"}</script>
 </head>
 <body>
-<div class="bg" aria-hidden="true"></div>
-<header class="top">
-  <a class="brand" href="#home"><img src="img/logo.jpg" alt="Vanta logo"><span>VANTA</span></a>
-  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
-  <nav>
-    <a href="#home">Home</a><a href="#downloads">Downloads</a><a href="#updates">Updates</a><a href="#support">Support</a>
+<a class="skip" href="#main">Skip to content</a>
+<div class="bg" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="grain"></div></div>
+<header class="top" id="top">
+  <a class="brand" href="#home" aria-label="Vanta home"><img src="img/logo.jpg" alt="" width="36" height="36"><span>VANTA</span></a>
+  <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">☰</button>
+  <nav id="site-nav" aria-label="Sections">
+    <a href="#features">Features</a><a href="#types">Download types</a><a href="#downloads">Downloads</a><a href="#servers">Servers</a><a href="#updates">Updates</a><a href="#support">Support</a><a href="#about">About</a>
     <a class="gh" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>
   </nav>
 </header>
-
-<main>
+<main id="main">
 <section id="home" class="hero">
-  <div class="hero-text glass">
-    <p class="eyebrow">Minecraft Java · Fabric 1.21.11</p>
-    <h1>Play your way.<br><span>No Microsoft login needed.</span></h1>
-    <p class="lead">Vanta is a free, open-source launcher that sets up Fabric 1.21.11 with performance mods, a trailer-style look and friend-friendly multiplayer tools. You can also make local servers.</p>
+  <div class="hero-text">
+    <img class="hero-logo" src="img/logo.jpg" alt="Vanta logo" width="112" height="112">
+    <p class="eyebrow">Minecraft Java launcher · v1.3.0</p>
+    <h1>Play any version.<br><span class="grad">No sign-in needed.</span></h1>
+    <p class="lead">Vanta is a free launcher for Windows and macOS. Local accounts, every release from 1.18 to 26.3, one-click Fast or Trailer-style mod sets, a server browser and 3D skins.</p>
     <div class="cta">
-      <a class="btn primary" href="#downloads">Download</a>
-      <a class="btn" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">View source</a>
+      <a class="btn primary big" id="dl-main" href="#downloads" data-win="https://github.com/addu864/vanta/releases/download/v1.3.0/Vanta-Windows-App.zip" data-mac="https://github.com/addu864/vanta/releases/download/v1.3.0-mac/Vanta-macOS.zip">Download Vanta</a>
+      <a class="btn ghost big" href="#features">See features</a>
     </div>
+    <p class="small" id="dl-note">Windows 10/11 and macOS (Apple Silicon &amp; Intel). Free; source code on GitHub.</p>
   </div>
-  <figure class="shot glass">
-    <img src="img/launcher-play.jpg" alt="Screenshot of the Vanta launcher PLAY screen" loading="lazy">
-    <figcaption>The real Vanta PLAY screen on a fresh install, with no account created yet.</figcaption>
-  </figure>
+  <div class="hero-shot reveal"><a class="shot hero-img" href="img/shots/play.webp" data-lightbox data-caption="Vanta&#x27;s PLAY tab with the popular servers bar and the PLAY button"><img src="img/shots/play-thumb.webp" width="640" height="457" alt="Vanta&#x27;s PLAY tab with the popular servers bar and the PLAY button" loading="eager" fetchpriority="high" decoding="async"></a></div>
 </section>
 
-<section class="features">
-  <h2>What's inside</h2>
-  <div class="grid">
-    <article class="glass"><h3>Fabric 1.21.11, plus 1.18 to 26.3</h3><p>The main instance is Minecraft 1.21.11 with Fabric. Add instance downloads any release from 1.18 to 26.3 (Fabric or vanilla) into its own folder, with Sodium, Lithium, Fabric API and Mod Menu, and PLAY picks Java 17, 21 or 25 to match.</p></article>
-    <article class="glass"><h3>Browse servers</h3><p>A BROWSE SERVERS tab with 20 public servers that accept local accounts (PikaNetwork, FatalMC, ALWTO, BlueMC, RuleX MC, Twenture, ClubCraft and more), each with its logo, versions, live players when it answers, Copy IP and Play. Play joins straight in using an instance the server accepts, or offers to download one. A compact bar sits on PLAY too.</p></article>
-    <article class="glass"><h3>Local accounts</h3><p>Pick a username and play. No Microsoft sign-in is required. Local accounts work on offline-mode, LAN and friend servers, but not on online-mode servers like Hypixel.</p></article>
-    <article class="glass"><h3>Performance mods, automatically</h3><p>Sodium, Lithium, ImmediatelyFast, FerriteCore, Entity Culling and Dynamic FPS are downloaded from Modrinth for you.</p></article>
-    <article class="glass"><h3>Mod Menu</h3><p>An in-game Mods screen with config buttons, using Cloth Config and YACL.</p></article>
-    <article class="glass"><h3>Skins with 3D preview</h3><p>Built-in skin library, with a skin saved per local account, and a rotating 3D player preview (drag to spin, second layer, slim/classic arms detected).</p></article>
-    <article class="glass"><h3>Local server maker</h3><p>Create a Paper (or Fabric) server in a few clicks. Vanta downloads the official server jar and checks its hash, then lets you start, stop and use the console.</p></article>
-    <article class="glass"><h3>playit tunnel support</h3><p>Turn on a playit.gg tunnel for a server so friends can join without port forwarding.</p></article>
-    <article class="glass"><h3>e4all: open to friends</h3><p>Open to LAN gives you a public join address. With Online Mode off, friends on local accounts can join too.</p></article>
-    <article class="glass"><h3>Trailer-look visual set</h3><p>Iris with Complementary Reimagined (default) and Unbound shaders, plus the Bare Bones, Fresh Animations and compat resource packs, EMF/ETF, Not Enough Animations and Visuality.</p></article>
-    <article class="glass"><h3>Night-vision fullbright</h3><p>Gamma Utils night-vision mode stays bright even with shaders on, unlike gamma-based fullbright.</p></article>
-    <article class="glass"><h3>Controller support</h3><p>Controller detection, plus a controller label for each profile in the launcher.</p></article>
-    <article class="glass"><h3>Windows &amp; macOS</h3><p>A double-click Windows app with Python built in, and a macOS app for Apple Silicon and Intel (not yet tested on a real Mac).</p></article>
-  </div>
-  <p class="note">Windows v1.2.0 and macOS v1.2.0-mac include everything above.</p>
+<section id="features">
+  <h2 class="reveal">Features</h2>
+  <p class="section-lead reveal">Everything below is in Vanta v1.3.0. Click a screenshot to enlarge it.</p>
+  <div class="features"><article class="feature reveal"><a class="shot " href="img/shots/play.webp" data-lightbox data-caption="PLAY tab screenshot"><img src="img/shots/play-thumb.webp" width="640" height="457" alt="PLAY tab screenshot" loading="lazy" decoding="async"></a><div><h3>PLAY tab</h3><p>Local account, version picker, RAM slider, a popular-servers bar and a big PLAY button. A green light shows while Minecraft is running, with a Stop button and a live game log.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/add-instance.webp" data-lightbox data-caption="Any version, 1.18 to 26.3 screenshot"><img src="img/shots/add-instance-thumb.webp" width="158" height="640" alt="Any version, 1.18 to 26.3 screenshot" loading="lazy" decoding="async"></a><div><h3>Any version, 1.18 to 26.3</h3><p>Add instance downloads any real release into its own folder, with a progress bar. PLAY picks Java 17, 21 or 25 to match, and says clearly if none fits.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/instances.webp" data-lightbox data-caption="INSTANCES tab screenshot"><img src="img/shots/instances-thumb.webp" width="633" height="640" alt="INSTANCES tab screenshot" loading="lazy" decoding="async"></a><div><h3>INSTANCES tab</h3><p>For each instance: RAM and extra Java flags, mod on/off switches, Trailer style on/off, a screenshots gallery and an Open game folder button.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/browse.webp" data-lightbox data-caption="BROWSE SERVERS screenshot"><img src="img/shots/browse-thumb.webp" width="578" height="640" alt="BROWSE SERVERS screenshot" loading="lazy" decoding="async"></a><div><h3>BROWSE SERVERS</h3><p>20 public servers that accept local accounts, each with its own logo, versions and description. Live player counts appear when a server answers. Play joins straight in using an instance the server accepts.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/skins3d.webp" data-lightbox data-caption="3D skin preview screenshot"><img src="img/shots/skins3d-thumb.webp" width="640" height="198" alt="3D skin preview screenshot" loading="lazy" decoding="async"></a><div><h3>3D skin preview</h3><p>A rotating 3D player (skinview3d, bundled). Drag to spin, see the second layer, and slim/classic arms are detected.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/servers-maker.webp" data-lightbox data-caption="Local server maker screenshot"><img src="img/shots/servers-maker-thumb.webp" width="640" height="457" alt="Local server maker screenshot" loading="lazy" decoding="async"></a><div><h3>Local server maker</h3><p>Create a Paper or Fabric server in a few clicks. Vanta downloads the official jar, checks its hash, and gives you start, stop and a console, plus optional playit.gg tunnels.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/mods.webp" data-lightbox data-caption="Mods from Modrinth screenshot"><img src="img/shots/mods-thumb.webp" width="640" height="457" alt="Mods from Modrinth screenshot" loading="lazy" decoding="async"></a><div><h3>Mods from Modrinth</h3><p>Search and add Fabric mods for your profile, and turn them on or off. Official Modrinth files, hash-checked.</p></div></article>
+<article class="feature reveal"><a class="shot " href="img/shots/hud.webp" data-lightbox data-caption="HUD &amp; visuals screenshot"><img src="img/shots/hud-thumb.webp" width="640" height="457" alt="HUD &amp; visuals screenshot" loading="lazy" decoding="async"></a><div><h3>HUD &amp; visuals</h3><p>HUD modules, visual presets and quality-of-life toggles, plus controller mapping.</p></div></article></div>
+  <div class="cards"><article class="card reveal"><h3>Crash help</h3><p>If Minecraft crashes, Vanta explains the likely cause in plain words (out of memory, a missing mod dependency, the wrong Java version, a graphics driver problem, a mod conflict) and links the crash report.</p></article>
+<article class="card reveal"><h3>One-click updates</h3><p>Vanta checks GitHub Releases. Update replaces only the changed launcher files, each checked against GitHub&#x27;s hash. Accounts, worlds and game mods are never touched.</p></article>
+<article class="card reveal"><h3>Local accounts</h3><p>Pick a username and play. No Microsoft sign-in needed for offline-mode, LAN and friend servers.</p></article>
+<article class="card reveal"><h3>e4all: open to friends</h3><p>Open to LAN gives you a public join address. With Online Mode off, friends on local accounts can join.</p></article>
+<article class="card reveal"><h3>Night vision on B</h3><p>Gamma Utils&#x27; night-vision fullbright stays bright even with shaders on.</p></article>
+<article class="card reveal"><h3>Keyboard friendly</h3><p>Ctrl+1–9 switch tabs, Ctrl+Enter starts PLAY, / searches servers, ? shows the shortcuts.</p></article></div>
+</section>
+
+<section id="types">
+  <h2 class="reveal">Download types</h2>
+  <p class="section-lead reveal">In PLAY › Add instance, pick a version and one of four types. Mods are downloaded from Modrinth for that exact version; anything without a build is skipped, and Vanta lists what was skipped.</p>
+  <div class="types"><article class="type-card reveal" id="type-vanilla"><p class="eyebrow">Download type</p><h3>Vanilla</h3><p>Plain Minecraft exactly as Mojang ships it.</p><ul><li>No mod loader</li><li>No mods</li><li>Every release from 1.18 to 26.3</li></ul></article>
+<article class="type-card reveal" id="type-fast"><p class="eyebrow">Download type</p><h3>Fast</h3><p>Fabric with performance mods.</p><ul><li>Fabric API</li><li>Sodium</li><li>Lithium</li><li>ModernFix</li><li>ImmediatelyFast</li><li>Entity Culling</li><li>FerriteCore</li><li>Mod Menu</li></ul></article>
+<article class="type-card reveal" id="type-custom"><p class="eyebrow">Download type</p><h3>Custom</h3><p>Fabric plus the mods you choose.</p><ul><li>Search Modrinth for your version</li><li>Tick the mods you want</li><li>Optionally start from the Fast set</li></ul></article>
+<article class="type-card reveal" id="type-trailer"><p class="eyebrow">Download type</p><h3>Trailer style</h3><p>The Fast set plus the cinematic look.</p><ul><li>Iris + Complementary Reimagined (Unbound as alternate)</li><li>Bare Bones + Fresh Animations + compat pack, in the right order</li><li>EMF / ETF</li><li>Not Enough Animations</li><li>Visuality</li><li>Gamma Utils night vision on B</li></ul></article></div>
+  <p class="small reveal">Trailer style can also be turned on or off later for any Fabric instance in the INSTANCES tab.</p>
 </section>
 
 <section id="downloads">
-  <h2>Downloads</h2>
-  <div class="grid two">
-    <article class="glass dl">
+  <h2 class="reveal">Downloads</h2>
+  <div class="dl-grid">
+    <article class="dl glass reveal" id="dl-win">
       <h3>Windows <small>v1.3.0</small></h3>
-      <p class="size">Vanta-Windows-App.zip · 572 MB (600,320,171 bytes)</p>
+      <p class="size">Vanta-Windows-App.zip · 572 MB · includes Minecraft 1.21.11 + Fabric, ready to play</p>
       <ul>
-        <li>Windows 10 or 11, 64-bit</li>
-        <li><b>Java 21+</b> on PATH for 1.21.11 (Java 17 for 1.18–1.20.4, Java 25 for 26.x instances) (<a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Adoptium Temurin</a>)</li>
-        <li>WebView2 runtime (already on Windows 11 and most Windows 10)</li>
-        <li>~1.5 GB free after extracting</li>
+        <li>Windows 10 or 11, 64-bit; WebView2 (already on Windows 11)</li>
+        <li><b>Java 21+</b> for 1.21.11 (Java 17 for 1.18–1.20.4, Java 25 for 26.x): <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Adoptium Temurin</a></li>
+        <li>About 1.5 GB free after extracting</li>
       </ul>
-      <p class="hint"><b>SmartScreen:</b> the exe isn't code-signed. If you see "Windows protected your PC", click <i>More info → Run anyway</i>. Extract the zip first; don't run it from inside the zip.</p>
+      <details class="how"><summary>SmartScreen steps</summary><ol><li>Extract the zip (right-click → Extract All).</li><li>Double-click <b>Vanta.exe</b>.</li><li>If “Windows protected your PC” appears: <b>More info → Run anyway</b>. Vanta isn't code-signed yet.</li></ol></details>
+      <p class="sha"><span>SHA-256</span><code>365e925d8b678c19b9da65b9350ebae8a017d20e17364e8694f5be32d35c35c5</code><button type="button" class="btn ghost tiny copy" data-copy="365e925d8b678c19b9da65b9350ebae8a017d20e17364e8694f5be32d35c35c5" aria-label="Copy Windows SHA-256">Copy</button></p>
+      <p class="small live-count" data-tag="v1.3.0"></p>
       <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.3.0/Vanta-Windows-App.zip">Download for Windows</a>
     </article>
-    <article class="glass dl">
-      <h3>macOS <small>v1.3.0-mac · untested</small></h3>
-      <p class="size">Vanta-macOS.zip · 40 MB (41,758,360 bytes)</p>
+    <article class="dl glass reveal" id="dl-mac">
+      <h3>macOS <small>v1.3.0-mac · untested on real Macs</small></h3>
+      <p class="size">Vanta-macOS.zip · 40 MB · first run downloads Minecraft 1.21.11 + Fabric (several hundred MB)</p>
       <ul>
-        <li>Apple Silicon and Intel (Python built in)</li>
-        <li><b>Java 21+</b> for 1.21.11 (17 / 25 for older / 26.x instances) (<a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Adoptium Temurin for Mac</a>)</li>
-        <li>First run downloads Minecraft 1.21.11 + Fabric, the default mods and the sounds (several hundred MB)</li>
-        <li>Opens in your default browser at 127.0.0.1:8765</li>
+        <li>Apple Silicon and Intel, Python built in</li>
+        <li><b>Java 21+</b>: <a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Adoptium Temurin for Mac</a></li>
+        <li>Opens in your browser at 127.0.0.1:8765</li>
       </ul>
-      <p class="hint"><b>Gatekeeper:</b> the app is unsigned. The first time, right-click Vanta.app → <i>Open</i> → <i>Open</i>. <b>This build has not been tested on a real Mac yet.</b></p>
+      <details class="how"><summary>Gatekeeper steps</summary><ol><li>Double-click the zip to unpack <b>Vanta.app</b> (move it to Applications if you like).</li><li>Right-click Vanta.app → <b>Open</b> → <b>Open</b>.</li><li>If blocked: System Settings → Privacy &amp; Security → <b>Open Anyway</b>.</li></ol></details>
+      <p class="sha"><span>SHA-256</span><code>9ae68a02a0526b13763f014c2e11296b9ad5743c503cede354f34790288d9c57</code><button type="button" class="btn ghost tiny copy" data-copy="9ae68a02a0526b13763f014c2e11296b9ad5743c503cede354f34790288d9c57" aria-label="Copy macOS SHA-256">Copy</button></p>
+      <p class="small live-count" data-tag="v1.3.0-mac"></p>
       <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.3.0-mac/Vanta-macOS.zip">Download for macOS</a>
     </article>
   </div>
-  <p class="note">All releases and source: <a href="https://github.com/addu864/vanta/releases" target="_blank" rel="noopener">github.com/addu864/vanta/releases</a></p>
+  <details class="glass older reveal"><summary>Older versions</summary>
+    <ul id="older-list">
+      <li><a href="https://github.com/addu864/vanta/releases/tag/v1.2.0">v1.2.0</a> (Windows) · <a href="https://github.com/addu864/vanta/releases/tag/v1.2.0-mac">v1.2.0-mac</a></li>
+      <li><a href="https://github.com/addu864/vanta/releases/tag/v1.1.0-mac">v1.1.0-mac</a></li>
+      <li><a href="https://github.com/addu864/vanta/releases/tag/v1.0.1">v1.0.1</a> (first Windows app)</li>
+      <li><a href="https://github.com/addu864/vanta/releases/tag/v1.0.0">v1.0.0</a></li>
+    </ul>
+    <p class="small">Verify a download: Windows <code>Get-FileHash Vanta-Windows-App.zip</code> · macOS <code>shasum -a 256 Vanta-macOS.zip</code></p>
+  </details>
+</section>
+
+<section id="servers">
+  <h2 class="reveal">Servers that accept local accounts</h2>
+  <p class="section-lead reveal">These 20 public servers are built into BROWSE SERVERS. They're not run by Vanta; logos and descriptions come from each server's own status, website or listing. Copy an address, or press Play in Vanta to join directly.</p>
+  <label class="search reveal"><span class="sr-only">Filter servers</span><input type="search" id="srv-filter" placeholder="Filter by name, mode or version"></label>
+  <div class="srv-grid" id="srv-grid"><article class="srv reveal" data-search="pikanetwork play.pika-network.net pikanetwork [1.8 - 26.3] · new op skyblock season. 1.8–26.3"><img src="img/servers/pikanetwork.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="PikaNetwork logo" loading="lazy"><div class="srv-body"><h3>PikaNetwork</h3><code>play.pika-network.net</code><p>PikaNetwork [1.8 - 26.3] · New OP Skyblock season.</p><p class="small">Versions: 1.8–26.3</p></div><button type="button" class="btn ghost copy" data-copy="play.pika-network.net" aria-label="Copy PikaNetwork address">Copy IP</button></article>
+<article class="srv reveal" data-search="fatalmc mc.fatalmc.org a cracked network focused on lifesteal and ffa (java and bedrock). season 5 out now. 1.21–26.3"><img src="img/servers/fatalmc.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="FatalMC logo" loading="lazy"><div class="srv-body"><h3>FatalMC</h3><code>mc.fatalmc.org</code><p>A cracked network focused on Lifesteal and FFA (Java and Bedrock). Season 5 out now.</p><p class="small">Versions: 1.21–26.3</p></div><button type="button" class="btn ghost copy" data-copy="mc.fatalmc.org" aria-label="Copy FatalMC address">Copy IP</button></article>
+<article class="srv reveal" data-search="alwto alwto.net alwto practice: duels, ffa, party, events. 26.3 update (spears). 1.21–26.3"><img src="img/servers/alwto.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="ALWTO logo" loading="lazy"><div class="srv-body"><h3>ALWTO</h3><code>alwto.net</code><p>ALWTO Practice: Duels, FFA, Party, Events. 26.3 update (spears).</p><p class="small">Versions: 1.21–26.3</p></div><button type="button" class="btn ghost copy" data-copy="alwto.net" aria-label="Copy ALWTO address">Copy IP</button></article>
+<article class="srv reveal" data-search="bluemc bluemc.org bluemc.org · economy smp. 1.21–26.2"><img src="img/servers/bluemc.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="BlueMC logo" loading="lazy"><div class="srv-body"><h3>BlueMC</h3><code>bluemc.org</code><p>BlueMC.org · Economy SMP.</p><p class="small">Versions: 1.21–26.2</p></div><button type="button" class="btn ghost copy" data-copy="bluemc.org" aria-label="Copy BlueMC address">Copy IP</button></article>
+<article class="srv reveal" data-search="rulex mc rulexmc.mcsh.io rulex mc · crossplay [1.9 - 26.2+] · lifesteal, practice, survival. 1.9–26.2"><img src="img/servers/rulexmc.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="RuleX MC logo" loading="lazy"><div class="srv-body"><h3>RuleX MC</h3><code>rulexmc.mcsh.io</code><p>RuleX MC · Crossplay [1.9 - 26.2+] · Lifesteal, Practice, Survival.</p><p class="small">Versions: 1.9–26.2</p></div><button type="button" class="btn ghost copy" data-copy="rulexmc.mcsh.io" aria-label="Copy RuleX MC address">Copy IP</button></article>
+<article class="srv reveal" data-search="twenture menu.twenture.net survival smp, earth towny, lifesteal anarchy and oneblock skyblock for 1.21–26.3. 1.21–26.3"><img src="img/servers/twenture.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="Twenture logo" loading="lazy"><div class="srv-body"><h3>Twenture</h3><code>menu.twenture.net</code><p>Survival SMP, Earth Towny, LifeSteal Anarchy and OneBlock SkyBlock for 1.21–26.3.</p><p class="small">Versions: 1.21–26.3</p></div><button type="button" class="btn ghost copy" data-copy="menu.twenture.net" aria-label="Copy Twenture address">Copy IP</button></article>
+<article class="srv reveal" data-search="clubcraft network epic.clubcraft.net clubcraft is a classic minecraft network: smp, lifesteal, towny, skyblock, prison, kitpvp (non-p2w). 1.9–26.2"><img src="img/servers/clubcraft.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="ClubCraft Network logo" loading="lazy"><div class="srv-body"><h3>ClubCraft Network</h3><code>epic.clubcraft.net</code><p>ClubCraft is a classic Minecraft network: SMP, Lifesteal, Towny, Skyblock, Prison, KitPvP (non-P2W).</p><p class="small">Versions: 1.9–26.2</p></div><button type="button" class="btn ghost copy" data-copy="epic.clubcraft.net" aria-label="Copy ClubCraft Network address">Copy IP</button></article>
+<article class="srv reveal" data-search="twerion.net menu.twerion.net lifesteal smp, skymines, oneblock, bedwars, practice, kitrush, duels, citybuild · java + bedrock. 1.8–26.2"><img src="img/servers/twerion.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="TWERION.NET logo" loading="lazy"><div class="srv-body"><h3>TWERION.NET</h3><code>menu.twerion.net</code><p>Lifesteal SMP, SkyMines, OneBlock, BedWars, Practice, KitRush, Duels, CityBuild · Java + Bedrock.</p><p class="small">Versions: 1.8–26.2</p></div><button type="button" class="btn ghost copy" data-copy="menu.twerion.net" aria-label="Copy TWERION.NET address">Copy IP</button></article>
+<article class="srv reveal" data-search="plumsmp network menu.plumsmp.net practice pvp · kitpvp · lifesteal · survival · genpvp. 1.7.2–26.2"><img src="img/servers/placeholder.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="PlumSMP Network logo" loading="lazy"><div class="srv-body"><h3>PlumSMP Network</h3><code>menu.plumsmp.net</code><p>Practice PvP · KitPvP · Lifesteal · Survival · GenPVP.</p><p class="small">Versions: 1.7.2–26.2</p></div><button type="button" class="btn ghost copy" data-copy="menu.plumsmp.net" aria-label="Copy PlumSMP Network address">Copy IP</button></article>
+<article class="srv reveal" data-search="normalsurvival mcm.normalsurvival.com survival · economy · community. a welcoming community to build, survive, farm and have fun. 1.8–26.3"><img src="img/servers/normalsurvival.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="NormalSurvival logo" loading="lazy"><div class="srv-body"><h3>NormalSurvival</h3><code>mcm.normalsurvival.com</code><p>Survival · Economy · Community. A welcoming community to build, survive, farm and have fun.</p><p class="small">Versions: 1.8–26.3</p></div><button type="button" class="btn ghost copy" data-copy="mcm.normalsurvival.com" aria-label="Copy NormalSurvival address">Copy IP</button></article>
+<article class="srv reveal" data-search="bohol network play.boholmc.net bohol network 1.21+ · dungeons, survival. 1.21–26.2"><img src="img/servers/bohol.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="BOHOL NETWORK logo" loading="lazy"><div class="srv-body"><h3>BOHOL NETWORK</h3><code>play.boholmc.net</code><p>BOHOL NETWORK 1.21+ · Dungeons, Survival.</p><p class="small">Versions: 1.21–26.2</p></div><button type="button" class="btn ghost copy" data-copy="play.boholmc.net" aria-label="Copy BOHOL NETWORK address">Copy IP</button></article>
+<article class="srv reveal" data-search="extremecraft sl.extremecraft.net survival: new economy, treasure relics, bosses and more. also anarchy, bedwars, creative, factions, kitpvp, lifesteal, skyblock. 1.7.2–26.3"><img src="img/servers/extremecraft.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="ExtremeCraft logo" loading="lazy"><div class="srv-body"><h3>ExtremeCraft</h3><code>sl.extremecraft.net</code><p>Survival: new economy, treasure relics, bosses and more. Also Anarchy, BedWars, Creative, Factions, KitPvP, Lifesteal, SkyBlock.</p><p class="small">Versions: 1.7.2–26.3</p></div><button type="button" class="btn ghost copy" data-copy="sl.extremecraft.net" aria-label="Copy ExtremeCraft address">Copy IP</button></article>
+<article class="srv reveal" data-search="mineland network msl.mineland.net mineland network 1.8.x–26.x: bedwars, creative, prison, pvp, skyblock, survival. 1.8–26.3"><img src="img/servers/mineland.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="Mineland Network logo" loading="lazy"><div class="srv-body"><h3>Mineland Network</h3><code>msl.mineland.net</code><p>Mineland Network 1.8.x–26.x: BedWars, Creative, Prison, PvP, SkyBlock, Survival.</p><p class="small">Versions: 1.8–26.3</p></div><button type="button" class="btn ghost copy" data-copy="msl.mineland.net" aria-label="Copy Mineland Network address">Copy IP</button></article>
+<article class="srv reveal" data-search="cookiesmp play.cookiesmp.pro cookiesmp [1.21+] · season 2 is live. 1.21–1.21.11"><img src="img/servers/cookiesmp.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="CookieSMP logo" loading="lazy"><div class="srv-body"><h3>CookieSMP</h3><code>play.cookiesmp.pro</code><p>CookieSMP [1.21+] · Season 2 is live.</p><p class="small">Versions: 1.21–1.21.11</p></div><button type="button" class="btn ghost copy" data-copy="play.cookiesmp.pro" aria-label="Copy CookieSMP address">Copy IP</button></article>
+<article class="srv reveal" data-search="2f2f 2f2f.me cracked anarchy: any username, no rules, no bans, same world since launch (aug 2026). 1.7.2–26.2"><img src="img/servers/2f2f.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="2f2f logo" loading="lazy"><div class="srv-body"><h3>2f2f</h3><code>2f2f.me</code><p>Cracked anarchy: any username, no rules, no bans, same world since launch (Aug 2026).</p><p class="small">Versions: 1.7.2–26.2</p></div><button type="button" class="btn ghost copy" data-copy="2f2f.me" aria-label="Copy 2f2f address">Copy IP</button></article>
+<article class="srv reveal" data-search="eternel.eu eternel.eu cracked anarchy, never reset, no whitelist. voicechat + distant horizons. 26.2"><img src="img/servers/placeholder.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="eternel.eu logo" loading="lazy"><div class="srv-body"><h3>eternel.eu</h3><code>eternel.eu</code><p>Cracked anarchy, never reset, no whitelist. Voicechat + Distant Horizons.</p><p class="small">Versions: 26.2</p></div><button type="button" class="btn ghost copy" data-copy="eternel.eu" aria-label="Copy eternel.eu address">Copy IP</button></article>
+<article class="srv reveal" data-search="illuminati lifesteal mc-sl.illuminati.onl illuminati lifesteal: auctions, economy, jobs, pve and pvp. 1.21–26.3"><img src="img/servers/illuminati.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="Illuminati Lifesteal logo" loading="lazy"><div class="srv-body"><h3>Illuminati Lifesteal</h3><code>mc-sl.illuminati.onl</code><p>Illuminati Lifesteal: auctions, economy, jobs, PvE and PvP.</p><p class="small">Versions: 1.21–26.3</p></div><button type="button" class="btn ghost copy" data-copy="mc-sl.illuminati.onl" aria-label="Copy Illuminati Lifesteal address">Copy IP</button></article>
+<article class="srv reveal" data-search="heartsmp menu.heartsmp.net lifesteal &amp; creative · free worldedit · minigames · 4 unique modes. 1.8–26.3"><img src="img/servers/heartsmp.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="HeartSMP logo" loading="lazy"><div class="srv-body"><h3>HeartSMP</h3><code>menu.heartsmp.net</code><p>Lifesteal &amp; Creative · Free WorldEdit · Minigames · 4 unique modes.</p><p class="small">Versions: 1.8–26.3</p></div><button type="button" class="btn ghost copy" data-copy="menu.heartsmp.net" aria-label="Copy HeartSMP address">Copy IP</button></article>
+<article class="srv reveal" data-search="mayarismp play.mayari.space mayarismp [26.2] · dungeons, economy · season iii. 26.2"><img src="img/servers/mayari.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="MayariSMP logo" loading="lazy"><div class="srv-body"><h3>MayariSMP</h3><code>play.mayari.space</code><p>MayariSMP [26.2] · Dungeons, economy · Season III.</p><p class="small">Versions: 26.2</p></div><button type="button" class="btn ghost copy" data-copy="play.mayari.space" aria-label="Copy MayariSMP address">Copy IP</button></article>
+<article class="srv reveal" data-search="strongcraft network menu.strongcraft.org new lifesteal, pvpmine, boxpvp, new economy. 1.8–26.3"><img src="img/servers/strongcraft.png" onerror="this.onerror=null;this.src='img/servers/placeholder.png'" width="48" height="48" alt="StrongCraft Network logo" loading="lazy"><div class="srv-body"><h3>StrongCraft Network</h3><code>menu.strongcraft.org</code><p>New LifeSteal, PvPMine, BoxPvP, new economy.</p><p class="small">Versions: 1.8–26.3</p></div><button type="button" class="btn ghost copy" data-copy="menu.strongcraft.org" aria-label="Copy StrongCraft Network address">Copy IP</button></article></div>
+  <p class="small">Server rules and availability are up to each server. Join at your own discretion.</p>
 </section>
 
 <section id="updates">
-  <h2>Updates</h2>
-  <p class="note" id="updates-src">Release notes from GitHub Releases. A saved copy is shown if GitHub can't be reached.</p>
+  <h2 class="reveal">Updates</h2>
+  <p class="small" id="updates-src">Release notes from GitHub Releases. A saved copy is shown if GitHub can't be reached.</p>
   <div id="releases" class="releases">
+    <article class="glass rel"><h3>Vanta v1.3.0 <small>v1.3.0 · v1.3.0-mac · 2026-10-13</small></h3>
+      <ul><li>Four download types: Vanilla, Fast, Custom (Modrinth picker) and Trailer style</li><li>INSTANCES tab: Trailer on/off, RAM and Java flags, mod switches, screenshots, Open folder</li><li>Minecraft-running indicator, live game log and plain-language crash help</li><li>Update button with hash-checked updates from GitHub</li><li>Pop-up notifications, keyboard shortcuts, faster startup, and fixes</li></ul></article>
     <article class="glass rel"><h3>Vanta v1.2.0 <small>v1.2.0 · v1.2.0-mac · 2026-10-12</small></h3>
-      <ul><li>Downloadable instances: any release from 1.18 to 26.3, Fabric or vanilla, with a progress bar and default mods</li><li>PLAY picks Java 17 / 21 / 25 per version, with a clear message if none fits</li><li>BROWSE SERVERS tab: 20 servers that accept local accounts, with logos, versions, live players, Copy IP and one-click Play</li><li>Popular servers bar on PLAY</li><li>3D skin preview (skinview3d, bundled)</li><li>Windows build now includes the visual set, Gamma Utils night-vision fullbright, e4all and Mod Menu</li></ul></article>
-    <article class="glass rel"><h3>Vanta 1.1.0 for macOS (untested) <small>v1.1.0-mac · 2026-10-10</small></h3>
-      <ul><li>macOS app for Apple Silicon and Intel with Python built in</li><li>Finds Java via JAVA_HOME, java_home and JavaVirtualMachines</li><li>First-run download of Minecraft 1.21.11 + Fabric with macOS natives</li></ul></article>
-    <article class="glass rel"><h3>Vanta v1.0.1: Windows app <small>v1.0.1 · 2026-10-08</small></h3>
-      <ul><li>Double-click Vanta.exe desktop window (WebView2) with Python 3.12 built in</li><li>Includes the Fabric 1.21.11 client; no Python install or terminal needed</li></ul></article>
-    <article class="glass rel"><h3>Vanta v1.0.0 <small>v1.0.0 · 2026-10-07</small></h3>
-      <ul><li>First public release: launcher source, UI and the Fabric 1.21.11 game client (Python required)</li></ul></article>
+      <ul><li>Downloadable instances 1.18–26.3 with per-version Java</li><li>BROWSE SERVERS with 20 servers that accept local accounts</li><li>3D skin preview</li></ul></article>
+    <article class="glass rel"><h3>Vanta 1.1.0 for macOS <small>v1.1.0-mac · 2026-10-10</small></h3><ul><li>First macOS app (Apple Silicon and Intel)</li></ul></article>
+    <article class="glass rel"><h3>Vanta v1.0.1 <small>v1.0.1 · 2026-10-08</small></h3><ul><li>Double-click Windows app with Python built in</li></ul></article>
   </div>
-  <h3 class="sub">Recent changes (source)</h3>
-  <ul class="log glass">
-    <li><b>2026-10-12</b> BROWSE SERVERS tab and Popular servers bar (20 offline-mode servers, logos, live ping, Play auto-joins)</li>
-    <li><b>2026-10-12</b> Downloadable instances 1.18–26.3 with per-version Java selection</li>
-    <li><b>2026-10-12</b> 3D skin preview in the SKINS tab</li>
-    <li><b>2026-10-10</b> macOS support and Vanta-macOS.zip packaging</li>
-    <li><b>2026-10-09</b> Night-vision fullbright (Gamma Utils) that works with shaders</li>
-    <li><b>2026-10-09</b> Trailer-look visual set: Iris, Complementary Reimagined/Unbound, Bare Bones + Fresh Animations, NEA, Visuality</li>
-    <li><b>2026-10-09</b> e4all 2.2.0 replaces e4mc, so local accounts can join LAN worlds</li>
-    <li><b>2026-10-09</b> Server maker fixed on Windows; downloads Paper/Fabric server jars; Mod Menu added</li>
-  </ul>
 </section>
 
 <section id="support">
-  <h2>Support</h2>
-  <div class="faq">
-    <details class="glass"><summary>Windows says "Windows protected your PC"</summary><p>That's SmartScreen. Vanta isn't code-signed yet. Click <b>More info → Run anyway</b>. Some antivirus tools may also flag unsigned launchers.</p></details>
-    <details class="glass"><summary>"Java was not found"</summary><p>Install Java 21 or newer, for example <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a>. On Windows, tick "Add to PATH" in the installer, then restart Vanta. On macOS, Vanta also finds Java in /Library/Java/JavaVirtualMachines.</p></details>
-    <details class="glass"><summary>How do I turn fullbright on/off?</summary><p>Fullbright uses Gamma Utils' night-vision mode, so it works with shaders. Toggle it with <b>B</b> where Vanta has set that key, otherwise with Gamma Utils' default <b>H</b>. Change the key in Options → Controls → Key Binds → "Gamma Utils – Night Vision". The Left/Right arrow keys change the strength.</p></details>
-    <details class="glass"><summary>How do I turn shaders on/off?</summary><p>Press <b>K</b> (Iris' toggle key). To switch between Complementary Reimagined and Unbound, go to Options → Video Settings → Shader Packs.</p></details>
-    <details class="glass"><summary>How do friends join my world with e4all?</summary><p>In your world, press Esc → <b>Open to LAN</b>. Set <b>Online Mode: OFF</b> so friends on local accounts can join, then start the LAN world. e4all shows a public address in chat. Send it to your friends; they add it under Multiplayer → Direct Connection.</p></details>
-    <details class="glass"><summary>Right-click keeps placing or using after I let go</summary><p>"Use" is set to Toggle. Go to Options → Controls → <b>Use: Hold</b>. In options.txt that's <code>toggleUse:false</code>. Sneak and Sprint have the same Toggle/Hold setting.</p></details>
-    <details class="glass"><summary>How do I turn resource packs on/off?</summary><p>Options → <b>Resource Packs</b>. Move packs between Available and Selected; the top pack wins. The visual set goes: compat patch on top, then Fresh Animations, then Bare Bones.</p></details>
-    <details class="glass"><summary>Can I join Hypixel or other online-mode servers?</summary><p>No. Local accounts only work on offline-mode, LAN and friend servers. Online-mode servers need a paid Microsoft account.</p></details>
-  </div>
-  <div class="glass contact">
+  <h2 class="reveal">Support</h2>
+  <h3 class="sub reveal">Install guide</h3>
+  <ol class="steps"><li class="step reveal"><span class="num" aria-hidden="true">1</span><div><h3>Download</h3><p>Click the Download button above. It picks Windows or macOS for you.</p></div></li>
+<li class="step reveal"><span class="num" aria-hidden="true">2</span><div><h3>Extract</h3><p>Windows: right-click the zip → <b>Extract All</b>. Don't run Vanta from inside the zip. macOS: double-click the zip.</p></div></li>
+<li class="step reveal"><span class="num" aria-hidden="true">3</span><div><h3>Open Vanta</h3><p>Windows: double-click <b>Vanta.exe</b> (SmartScreen: More info → Run anyway). macOS: right-click Vanta.app → Open.</p></div></li>
+<li class="step reveal"><span class="num" aria-hidden="true">4</span><div><h3>Create a local account</h3><p>Type a username and click <b>Create local account</b>. No Microsoft sign-in.</p></div><a class="shot step-img" href="img/shots/play.webp" data-lightbox data-caption="Create a local account"><img src="img/shots/play-thumb.webp" width="640" height="457" alt="Create a local account" loading="lazy" decoding="async"></a></li>
+<li class="step reveal"><span class="num" aria-hidden="true">5</span><div><h3>Pick a version (optional)</h3><p>PLAY › <b>Add instance</b>: choose a version and Vanilla, Fast, Custom or Trailer style.</p></div><a class="shot step-img" href="img/shots/add-instance.webp" data-lightbox data-caption="Pick a version (optional)"><img src="img/shots/add-instance-thumb.webp" width="158" height="640" alt="Pick a version (optional)" loading="lazy" decoding="async"></a></li>
+<li class="step reveal"><span class="num" aria-hidden="true">6</span><div><h3>Press PLAY</h3><p>Or open BROWSE SERVERS and press Play on a server to join it directly.</p></div><a class="shot step-img" href="img/shots/browse.webp" data-lightbox data-caption="Press PLAY"><img src="img/shots/browse-thumb.webp" width="578" height="640" alt="Press PLAY" loading="lazy" decoding="async"></a></li></ol>
+  <h3 class="sub reveal">FAQ &amp; troubleshooting</h3>
+  <label class="search reveal"><span class="sr-only">Search the FAQ</span><input type="search" id="faq-filter" placeholder="Search questions (e.g. Java, crash, shaders)"></label>
+  <div class="faq" id="faq"><details class="faq-item glass"><summary>Windows says “Windows protected your PC”</summary><div><p>That's SmartScreen. Vanta isn't code-signed yet. Click <b>More info → Run anyway</b>. Some antivirus tools may also flag unsigned launchers.</p></div></details>
+<details class="faq-item glass"><summary>macOS says the app can't be opened</summary><div><p>The app is unsigned. Right-click (or Control-click) <b>Vanta.app → Open → Open</b> the first time. If it still refuses: System Settings → Privacy &amp; Security → <b>Open Anyway</b>.</p></div></details>
+<details class="faq-item glass"><summary>“Java was not found” or “needs a newer Java”</summary><div><p>Minecraft 1.21.11 needs Java 21+, 1.18–1.20.4 need Java 17+, and 26.x needs Java 25. Install from <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a>. On Windows tick “Add to PATH”, then restart Vanta. Vanta picks the right installed Java per version.</p></div></details>
+<details class="faq-item glass"><summary>Minecraft crashed. What now?</summary><div><p>Vanta shows a crash card on PLAY with the likely cause. Out of memory: raise RAM in INSTANCES. A mod error: turn off the last mod you added. The Game log button shows the full log, and Open crash reports opens the folder.</p></div></details>
+<details class="faq-item glass"><summary>How do I update Vanta?</summary><div><p>When a new release exists, an <b>Update</b> button appears in Vanta's top bar. It replaces only changed launcher files (hash-checked) and never touches accounts, worlds or mods. Restart Vanta afterwards. Or download the new zip here.</p></div></details>
+<details class="faq-item glass"><summary>How do I turn fullbright on/off?</summary><div><p>Press <b>B</b> (Gamma Utils night vision; it works with shaders). Left/Right arrows change the strength. Change the key in Options → Controls → Key Binds → “Gamma Utils – Night Vision”.</p></div></details>
+<details class="faq-item glass"><summary>How do I turn shaders on/off?</summary><div><p>Press <b>K</b> (Iris). Switch between Complementary Reimagined and Unbound in Options → Video Settings → Shader Packs. In Vanta's INSTANCES tab you can turn the whole Trailer style off.</p></div></details>
+<details class="faq-item glass"><summary>How do friends join my world?</summary><div><p>In your world press Esc → <b>Open to LAN</b>, set <b>Online Mode: OFF</b>, start it. e4all prints a public address in chat; friends add it under Multiplayer → Direct Connection.</p></div></details>
+<details class="faq-item glass"><summary>Right-click keeps using after I let go</summary><div><p>“Use” is set to Toggle. Options → Controls → <b>Use: Hold</b> (<code>toggleUse:false</code>). Vanta sets Hold for new instances.</p></div></details>
+<details class="faq-item glass"><summary>Can I join Hypixel or other online-mode servers?</summary><div><p>No. Local accounts work on offline-mode, LAN and friend servers only. Online-mode servers need a paid Microsoft account. BROWSE SERVERS lists servers that accept local accounts.</p></div></details>
+<details class="faq-item glass"><summary>Where are my worlds, screenshots and mods?</summary><div><p>INSTANCES → <b>Open game folder</b>. Each version has its own folder with saves, screenshots, mods, resourcepacks and shaderpacks.</p></div></details>
+<details class="faq-item glass"><summary>Is Vanta safe? What does it send?</summary><div><p>Vanta talks only to Mojang, Fabric, Modrinth, GitHub (updates) and the servers you ping or join. No accounts or passwords are uploaded, and this website has no trackers.</p></div></details></div>
+  <p class="small" id="faq-empty" hidden>No answers match. Try other words, or open an issue below.</p>
+  <div class="glass contact reveal">
     <h3>Still stuck?</h3>
-    <p>Open an issue on GitHub. Describe what happened, and attach <code>client.log</code> or <code>launcher-ui.log</code> from Vanta's data folder if you can. Never post account files or passwords.</p>
+    <p>Open an issue on GitHub. Say what happened, and attach the Game log (Copy log in Vanta) or <code>client.log</code> from Vanta's data folder. Never post account files or passwords.</p>
     <a class="btn primary" href="https://github.com/addu864/vanta/issues/new" target="_blank" rel="noopener">Open a GitHub issue</a>
   </div>
 </section>
-</main>
 
+<section id="about">
+  <h2 class="reveal">About &amp; credits</h2>
+  <div class="about-grid">
+    <div class="glass reveal">
+      <h3>Vanta</h3>
+      <p>Vanta is a fan-made launcher by ADDU. Its source code, issues and releases are on <a href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>.</p>
+      <p>This site uses no cookies, analytics or trackers. The only outside requests are to GitHub's public API for release notes and download counts.</p>
+      <p class="small">Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</p>
+    </div>
+    <div class="glass reveal">
+      <h3>Built on</h3>
+      <ul class="credits">
+        <li><a href="https://fabricmc.net/" target="_blank" rel="noopener">Fabric Loader</a> <span class="small">Apache-2.0</span></li>
+        <li><a href="https://github.com/bs-community/skinview3d" target="_blank" rel="noopener">skinview3d</a> <span class="small">MIT · includes three.js (MIT)</span></li>
+        <li><a href="https://modrinth.com/" target="_blank" rel="noopener">Modrinth</a> <span class="small">mod downloads and search</span></li>
+        <li><a href="https://adoptium.net/" target="_blank" rel="noopener">Eclipse Temurin</a> <span class="small">recommended Java</span></li>
+        <li><a href="https://www.python.org/" target="_blank" rel="noopener">Python</a> <span class="small">PSF License, bundled runtime</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="glass reveal">
+    <h3>Mods, shaders &amp; packs Vanta can install</h3>
+    <p class="small">All belong to their authors and are downloaded from Modrinth. Licenses as listed on Modrinth.</p>
+    <ul class="credits cols"><li><a href="https://modrinth.com/mod/entity-model-features" target="_blank" rel="noopener">[EMF] Entity Model Features</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/entitytexturefeatures" target="_blank" rel="noopener">[ETF] Entity Texture Features</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/appleskin" target="_blank" rel="noopener">AppleSkin</a> <span class="small">mod · Unlicense</span></li>
+<li><a href="https://modrinth.com/mod/bobby" target="_blank" rel="noopener">Bobby</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/cloth-config" target="_blank" rel="noopener">Cloth Config API</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/dynamic-fps" target="_blank" rel="noopener">Dynamic FPS</a> <span class="small">mod · MIT</span></li>
+<li><a href="https://modrinth.com/mod/e4all" target="_blank" rel="noopener">e4all</a> <span class="small">mod · MIT</span></li>
+<li><a href="https://modrinth.com/mod/entityculling" target="_blank" rel="noopener">Entity Culling</a> <span class="small">mod · tr7zw Protective License</span></li>
+<li><a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Fabric API</a> <span class="small">mod · Apache-2.0</span></li>
+<li><a href="https://modrinth.com/mod/ferrite-core" target="_blank" rel="noopener">FerriteCore</a> <span class="small">mod · MIT</span></li>
+<li><a href="https://modrinth.com/mod/gamma-utils" target="_blank" rel="noopener">Gamma Utils (Fullbright)</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/immediatelyfast" target="_blank" rel="noopener">ImmediatelyFast</a> <span class="small">mod · LGPL-3.0-or-later</span></li>
+<li><a href="https://modrinth.com/mod/iris" target="_blank" rel="noopener">Iris Shaders</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/lithium" target="_blank" rel="noopener">Lithium</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/modmenu" target="_blank" rel="noopener">Mod Menu</a> <span class="small">mod · MIT</span></li>
+<li><a href="https://modrinth.com/mod/modernfix" target="_blank" rel="noopener">ModernFix</a> <span class="small">mod · LGPL-3.0-only</span></li>
+<li><a href="https://modrinth.com/mod/not-enough-animations" target="_blank" rel="noopener">Not Enough Animations</a> <span class="small">mod · tr7zw Protective License</span></li>
+<li><a href="https://modrinth.com/mod/sodium" target="_blank" rel="noopener">Sodium</a> <span class="small">mod · PolyForm Shield 1.0.0</span></li>
+<li><a href="https://modrinth.com/mod/visuality" target="_blank" rel="noopener">Visuality</a> <span class="small">mod · MIT</span></li>
+<li><a href="https://modrinth.com/mod/yacl" target="_blank" rel="noopener">YetAnotherConfigLib (YACL)</a> <span class="small">mod · LGPL-3.0-or-later</span></li>
+<li><a href="https://modrinth.com/resourcepack/bare-bones" target="_blank" rel="noopener">Bare Bones</a> <span class="small">resourcepack · All rights reserved</span></li>
+<li><a href="https://modrinth.com/resourcepack/bare-bones-x-fresh-animations" target="_blank" rel="noopener">Bare Bones x Fresh Animations</a> <span class="small">resourcepack · Unlicense</span></li>
+<li><a href="https://modrinth.com/shader/complementary-reimagined" target="_blank" rel="noopener">Complementary Shaders - Reimagined</a> <span class="small">shader · Custom license</span></li>
+<li><a href="https://modrinth.com/shader/complementary-unbound" target="_blank" rel="noopener">Complementary Shaders - Unbound</a> <span class="small">shader · Custom license</span></li>
+<li><a href="https://modrinth.com/resourcepack/fresh-animations" target="_blank" rel="noopener">Fresh Animations</a> <span class="small">resourcepack · Custom terms</span></li></ul>
+  </div>
+</section>
+</main>
 <footer>
-  <p>Vanta is a fan-made launcher. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.</p>
-  <p><a href="https://github.com/addu864/vanta">github.com/addu864/vanta</a></p>
+  <p><a href="#home">Back to top ↑</a> · <a href="https://github.com/addu864/vanta">GitHub</a> · <a href="https://github.com/addu864/vanta/releases">Releases</a> · <a href="https://github.com/addu864/vanta/issues">Issues</a></p>
+  <p class="small">Vanta is a fan-made launcher. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.</p>
 </footer>
-<script src="app.js"></script>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot" hidden>
+  <button type="button" class="lb-close" aria-label="Close">×</button>
+  <button type="button" class="lb-prev" aria-label="Previous screenshot">‹</button>
+  <figure><img alt="" id="lb-img"><figcaption id="lb-cap"></figcaption></figure>
+  <button type="button" class="lb-next" aria-label="Next screenshot">›</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js" defer></script>
 </body>
 </html>

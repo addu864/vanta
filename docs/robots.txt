@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://addu864.github.io/vanta/sitemap.xml
