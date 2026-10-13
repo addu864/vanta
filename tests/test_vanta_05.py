@@ -340,7 +340,7 @@ def test_two_servers_do_not_share_tunnel_pids(tmp_path: Path, monkeypatch: pytes
 def test_ui_hides_address_until_online() -> None:
     html = index_page()
     assert "Make this server accessible to friends outside your network?" in html
-    assert "Milestone 1.0" in html
+    assert "app-version" in html
     assert 'id="server-tunnel-address-row" hidden' in html
     assert "Copy address" in html
     assert 'status === "ONLINE"' in html

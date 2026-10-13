@@ -13,7 +13,7 @@
   <div class="app">
     <header class="topbar">
       <img class="wordmark" src="/assets/logo.jpg" alt="VANTA">
-      <p class="milestone">Milestone 1.0</p>
+      <p class="milestone" id="app-version">Vanta</p>
       <nav class="nav-primary" aria-label="Primary">
         <button type="button" class="tab active" data-tab="play">PLAY</button>
         <button type="button" class="tab" data-tab="profiles">PROFILES</button>
@@ -22,10 +22,13 @@
       </nav>
       <nav class="nav-secondary" aria-label="More">
         <button type="button" class="tab" data-tab="skins">SKINS</button>
+        <button type="button" class="tab" data-tab="instances">INSTANCES</button>
         <button type="button" class="tab" data-tab="browse">BROWSE SERVERS</button>
         <button type="button" class="tab" data-tab="servers">SERVERS</button>
         <button type="button" class="tab" data-tab="hud">HUD</button>
       </nav>
+      <button type="button" class="pill game-pill" id="game-pill" hidden title="Minecraft is running"><span class="dot"></span><span id="game-pill-text">Minecraft running</span></button>
+      <button type="button" class="pill update-pill" id="update-pill" hidden>Update</button>
       <div class="account-chip" id="nav-account">No local account</div>
     </header>
     <p id="background-status" class="hint top-note"></p>
@@ -57,8 +60,15 @@
           <div class="home-center glass">
             <p class="eyebrow" id="home-account-label">Local account</p>
             <h1 id="home-account-name">No local account</h1>
-            <p class="hint">PLAY starts Java only when a LOCAL TEST ACCOUNT, a profile, Java, and client.jar are all present. A missing Java or a missing client jar is an error, and launched stays false. The account is not sent to online-mode servers.</p>
+            <p class="hint">Local accounts play offline, on LAN and on servers that accept them (see BROWSE SERVERS). No Microsoft sign-in needed.</p>
+            <div class="crash-card" id="crash-card" hidden>
+              <strong id="crash-title">Minecraft crashed</strong>
+              <p id="crash-hint"></p>
+              <code id="crash-exception"></code>
+              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
+            </div>
             <button type="button" class="action play" id="play">PLAY</button>
+            <button type="button" class="ghost stop-game" id="stop-game" hidden>Stop Minecraft</button>
             <div class="status" id="play-status"></div>
             <div class="session-fields">
               <label>Account
@@ -66,11 +76,12 @@
               </label>
               <div class="row">
                 <input id="username" maxlength="16" placeholder="Username" autocomplete="off">
-                <button type="button" class="action" id="create-account">Create LOCAL TEST ACCOUNT</button>
+                <button type="button" class="action" id="create-account">Create local account</button>
               </div>
-              <p class="hint">A LOCAL TEST ACCOUNT is mode=local and is not valid for online-mode servers.</p>
+              <details class="more-accounts"><summary>Microsoft account (optional)</summary>
               <button type="button" class="ghost" id="microsoft">Add Microsoft account</button>
-              <p class="hint">Microsoft sign-in cannot finish in 0.1 without a client id and an interactive login. Vanta will not invent a session.</p>
+              <p class="hint">Not needed to play. Microsoft sign-in isn't available in this build; local accounts work everywhere offline-mode is allowed.</p>
+              </details>
               <div class="form-grid session-split">
                 <label>Version
                   <select id="version"></select>
@@ -79,15 +90,21 @@
                   <input id="ram" type="range" min="2" max="8" step="1" value="4">
                 </label>
               </div>
-              <div class="meta" id="version-meta"></div>
-              <details class="add-instance" id="add-instance">
+              <details class="tech-details"><summary>Version details</summary><div class="meta" id="version-meta"></div></details>
+              <details class="add-instance" id="add-instance-panel">
                 <summary>Add instance (Minecraft 1.18 to 26.3)</summary>
-                <p class="hint">Real releases from the official Minecraft version list. Each version downloads into its own folder with Fabric (or vanilla), libraries, natives and sounds. Fabric instances also get Fabric API, Sodium, Lithium and Mod Menu where Modrinth has a build. Your 1.21.11 instance is not changed.</p>
-                <div class="row">
+                <p class="hint">Each version downloads into its own folder. Your 1.21.11 instance is not changed.</p>
+                <label>Minecraft version
                   <select id="instance-version" aria-label="Minecraft version"><option value="">Loading versions…</option></select>
-                  <select id="instance-loader" aria-label="Loader"><option value="fabric">Fabric</option><option value="vanilla">Vanilla</option></select>
-                  <button type="button" class="action" id="instance-install">Download</button>
+                </label>
+                <div class="preset-cards" id="preset-cards" role="radiogroup" aria-label="Download type"></div>
+                <div class="custom-picker" id="custom-picker" hidden>
+                  <label class="check"><input type="checkbox" id="custom-fast" checked> Start from the Fast set</label>
+                  <div class="row"><input type="search" id="custom-query" placeholder="Search Modrinth mods for this version"><button type="button" class="ghost" id="custom-search">Search</button></div>
+                  <div class="custom-results" id="custom-results"></div>
+                  <p class="hint" id="custom-picked">No extra mods picked.</p>
                 </div>
+                <button type="button" class="action" id="instance-install">Download</button>
                 <div class="progress" id="instance-progress" hidden><div class="progress-bar" id="instance-progress-bar"></div></div>
                 <div class="status" id="instance-status"></div>
               </details>
@@ -200,6 +217,33 @@
         <p class="hint" id="skins-microsoft-note">Saving a skin writes it onto the LOCAL TEST ACCOUNT. Online upload needs a Microsoft account, which is not configured. Vanta will not claim a Microsoft upload.</p>
       </section>
 
+      <section class="panel" data-panel="instances" id="panel-instances" hidden>
+        <div class="glass">
+          <div class="popular-head"><h2>Instances</h2>
+            <div class="row"><select id="inst-select" aria-label="Instance"></select><button type="button" class="ghost" id="inst-open">Open game folder</button></div>
+          </div>
+          <p class="hint" id="inst-summary">Choose an instance.</p>
+          <div class="inst-grid">
+            <div class="inst-box">
+              <h3>Trailer style</h3>
+              <p class="hint">Iris + Complementary shaders, Bare Bones + Fresh Animations, EMF/ETF, Not Enough Animations, Visuality, Gamma Utils night vision on B. Downloads what exists for this version.</p>
+              <label class="switch"><input type="checkbox" id="inst-trailer"><span>Trailer style</span></label>
+              <div class="status" id="inst-trailer-status"></div>
+            </div>
+            <div class="inst-box">
+              <h3>Memory &amp; Java</h3>
+              <label>RAM for this instance (GB, 0 = PLAY slider)<input type="number" id="inst-ram" min="0" max="64" step="1" value="0"></label>
+              <label>Extra JVM arguments<input id="inst-jvm" placeholder="-XX:+UseG1GC -Dfoo=bar"></label>
+              <button type="button" class="action" id="inst-save">Save</button>
+              <div class="status" id="inst-settings-status"></div>
+            </div>
+          </div>
+          <h3>Mods <small class="hint" id="inst-mods-note"></small></h3>
+          <div class="inst-mods" id="inst-mods"></div>
+          <div class="popular-head"><h3>Screenshots</h3><button type="button" class="ghost" id="inst-shots-open">Open screenshots folder</button></div>
+          <div class="shots" id="inst-shots"></div>
+        </div>
+      </section>
       <section class="panel" data-panel="browse" id="panel-browse" hidden>
         <div class="glass">
           <div class="popular-head">
@@ -536,12 +580,17 @@
 
       <section class="panel" id="log-panel">
         <div class="log-head">
-          <h2>Log</h2>
-          <button type="button" class="ghost" id="copy-error">Copy last error</button>
+          <div class="seg" role="tablist"><button type="button" class="seg-btn active" id="log-tab-vanta">Launcher log</button><button type="button" class="seg-btn" id="log-tab-game">Game log</button></div>
+          <div class="row"><button type="button" class="ghost" id="copy-log">Copy log</button><button type="button" class="ghost" id="copy-error">Copy last error</button></div>
         </div>
         <pre id="log"></pre>
         <p id="copy-note" class="hint"></p>
       </section>
+      <div class="toasts" id="toasts" aria-live="polite"></div>
+      <div class="kbd-help glass" id="kbd-help" hidden>
+        <h3>Keyboard shortcuts</h3>
+        <p><kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd> switch tabs · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> PLAY · <kbd>/</kbd> search servers · <kbd>?</kbd> this help · <kbd>Esc</kbd> close</p>
+      </div>
     </main>
   </div>
   <script src="/assets/vendor/skinview3d.bundle.js"></script>
@@ -564,6 +613,9 @@
       }
       if (name === "skins") {
         loadSkinLibrary().catch(() => {});
+      }
+      if (name === "instances") {
+        loadInstancesTab().catch(() => {});
       }
       if (name === "browse") {
         loadPopularServers().catch(() => {});
@@ -601,8 +653,26 @@
 
     function setStatus(id, text, kind) {
       const node = $(id);
+      if (!node) return;
       node.textContent = text || "";
       node.className = "status" + (kind ? " " + kind : "");
+      if (kind === "bad" && text) toast(text, "bad");
+    }
+
+    function toast(text, kind, ms) {
+      const host = $("toasts");
+      if (!host || !text) return;
+      const first = String(text).split("\n")[0];
+      const short = first.length > 220 ? first.slice(0, 217) + "…" : first;
+      if ([...host.children].some((t) => t.dataset.text === short)) return;
+      const node = document.createElement("div");
+      node.className = "toast" + (kind ? " " + kind : "");
+      node.dataset.text = short;
+      node.textContent = short;
+      node.addEventListener("click", () => node.remove());
+      host.appendChild(node);
+      while (host.children.length > 4) host.firstChild.remove();
+      setTimeout(() => { node.classList.add("out"); setTimeout(() => node.remove(), 300); }, ms || (kind === "bad" ? 7000 : 3500));
     }
 
     function selectedVersionValue() {
@@ -726,17 +796,23 @@
       $("ram-label").textContent = number + " GB";
     }
 
+    let logMode = "vanta";
     async function refreshLogs() {
-      const result = await api("/api/logs");
-      $("log").textContent = ((result.data && result.data.lines) || []).join("\n");
+      if (logMode === "game") {
+        const g = await api("/api/game");
+        const lines = (g.data && g.data.log) || [];
+        $("log").textContent = lines.length ? lines.join("\n") : "No game log yet. Press PLAY to start Minecraft.";
+      } else {
+        const result = await api("/api/logs");
+        $("log").textContent = ((result.data && result.data.lines) || []).join("\n");
+      }
+      const box = $("log"); box.scrollTop = box.scrollHeight;
     }
 
     async function refresh() {
-      const status = await api("/api/status");
-      const versionResult = await api("/api/versions");
-      const accountResult = await api("/api/accounts");
-      const profileResult = await api("/api/profiles");
-      const settingsResult = await api("/api/settings");
+      const [status, versionResult, accountResult, profileResult, settingsResult] = await Promise.all([
+        api("/api/status"), api("/api/versions"), api("/api/accounts"), api("/api/profiles"), api("/api/settings")
+      ]);
       versions = (versionResult.data && versionResult.data.versions) || [];
       const settings = (settingsResult.data && settingsResult.data.settings) || {};
       const profiles = (profileResult.data && profileResult.data.profiles) || [];
@@ -753,6 +829,7 @@
       $("default-ram").value = settings.defaultRamGb || 4;
       $("game-directory").value = settings.gameDirectory || "";
       $("jvm-args").value = settings.jvmArgs || "";
+      if (status.data && status.data.version) $("app-version").textContent = "v" + status.data.version;
       if (status.data && status.data.name !== "Vanta") {
         setStatus("play-status", "Launcher status did not identify itself as Vanta.", "bad");
       }
@@ -766,13 +843,8 @@
       if (!$("server-ram-create").value) {
         $("server-ram-create").value = "2";
       }
-      await loadInstalledMods();
-      await loadServers();
-      await loadHud();
-      await loadController();
-      await loadHome();
-      await loadBackground();
-      await refreshLogs();
+      await Promise.all([loadHome(), loadBackground(), refreshLogs()].map((p) => p.catch(() => {})));
+      Promise.all([loadInstalledMods(), loadServers(), loadHud(), loadController()].map((p) => p.catch(() => {})));
     }
 
     function fillPlaceholderSelect(select, values, current, labelForSingle) {
@@ -2650,13 +2722,14 @@
       const bar = $("instance-progress");
       bar.hidden = false;
       $("instance-progress-bar").style.width = Math.max(2, job.percent || 0) + "%";
-      const labels = { metadata: "Reading version info", client: "Downloading client jar", libraries: "Libraries and natives", fabric: "Fabric loader", assets: "Sounds and assets", mods: "Default mods", done: "Done" };
+      const labels = { metadata: "Reading version info", client: "Downloading client jar", libraries: "Libraries and natives", fabric: "Fabric loader", assets: "Sounds and assets", mods: "Mods and packs", done: "Done" };
       const step = labels[job.step] || job.step || "";
       if (job.state === "failed") {
         setStatus("instance-status", "Download failed: " + (job.error || "unknown error"), "bad");
       } else if (job.state === "done") {
         const skipped = (job.result && job.result.skippedMods) || [];
-        setStatus("instance-status", "Installed " + job.id + ". Pick it in Version and press PLAY." + (skipped.length ? " Skipped: " + skipped.join("; ") : ""), "good");
+        setStatus("instance-status", "Installed " + job.id + ". Pick it in Version and press PLAY." + (skipped.length ? " Not available for this version (skipped): " + skipped.join("; ") : ""), "good");
+        toast("Minecraft " + job.version + " is ready.", "good");
       } else {
         const count = job.total > 1 ? " (" + job.done + "/" + job.total + ")" : "";
         setStatus("instance-status", job.id + ": " + step + count + " · " + (job.percent || 0) + "%", "");
@@ -2681,29 +2754,80 @@
       }, 1000);
     }
 
+    // ---- Download types: Vanilla / Fast / Custom / Trailer ----
+    let presetRows = [];
+    let chosenPreset = "fast";
+    const customPicks = new Map();
+    async function loadPresets() {
+      const res = await api("/api/instances/presets");
+      presetRows = (res.data && res.data.presets) || [];
+      const host = $("preset-cards"); host.replaceChildren();
+      presetRows.forEach((p) => {
+        const card = document.createElement("button");
+        card.type = "button"; card.className = "preset-card" + (p.id === chosenPreset ? " active" : "");
+        card.setAttribute("role", "radio"); card.setAttribute("aria-checked", p.id === chosenPreset ? "true" : "false");
+        const t = document.createElement("strong"); t.textContent = p.title.toUpperCase();
+        const d = document.createElement("span"); d.textContent = p.description;
+        card.appendChild(t); card.appendChild(d);
+        card.addEventListener("click", () => { chosenPreset = p.id; loadPresets(); });
+        host.appendChild(card);
+      });
+      $("custom-picker").hidden = chosenPreset !== "custom";
+      $("instance-install").textContent = "Download " + ((presetRows.find((p) => p.id === chosenPreset) || {}).title || "");
+    }
+    function renderPicked() {
+      $("custom-picked").textContent = customPicks.size ? "Picked: " + [...customPicks.values()].join(", ") : "No extra mods picked.";
+    }
+    async function customSearch() {
+      const version = $("instance-version").value;
+      const host = $("custom-results");
+      host.innerHTML = '<p class="hint">Searching Modrinth…</p>';
+      const res = await post("/api/instances/mod-search", { version: version, query: $("custom-query").value });
+      const d = res.data || {};
+      host.replaceChildren();
+      if (!d.ok) { host.innerHTML = ""; toast(d.error || "Search failed.", "bad"); return; }
+      if (!(d.results || []).length) { host.innerHTML = '<p class="hint">No Fabric mods found for ' + version + '.</p>'; return; }
+      d.results.forEach((m) => {
+        const row = document.createElement("label"); row.className = "custom-mod";
+        const box = document.createElement("input"); box.type = "checkbox"; box.checked = customPicks.has(m.slug);
+        box.addEventListener("change", () => { if (box.checked) customPicks.set(m.slug, m.title); else customPicks.delete(m.slug); renderPicked(); });
+        const img = document.createElement("img"); img.src = m.icon || "/assets/servers/placeholder.png"; img.alt = ""; img.loading = "lazy";
+        const txt = document.createElement("span"); txt.innerHTML = "<b></b><small></small>";
+        txt.querySelector("b").textContent = m.title; txt.querySelector("small").textContent = m.description || "";
+        row.appendChild(box); row.appendChild(img); row.appendChild(txt); host.appendChild(row);
+      });
+    }
+    $("custom-search").addEventListener("click", () => customSearch());
+    $("custom-query").addEventListener("keydown", (e) => { if (e.key === "Enter") customSearch(); });
+    $("instance-version").addEventListener("change", () => { customPicks.clear(); renderPicked(); $("custom-results").replaceChildren(); });
+
     $("instance-install").addEventListener("click", async () => {
       const version = $("instance-version").value;
-      const loader = $("instance-loader").value;
       if (!version) return;
       const row = instanceRows.find((item) => item.id === version);
-      if (loader === "fabric" && row && !row.fabric) {
-        setStatus("instance-status", "Fabric has no build for " + version + ". Choose Vanilla.", "bad");
+      if (chosenPreset !== "vanilla" && row && !row.fabric) {
+        toast("Fabric has no build for " + version + ". Choose Vanilla.", "bad");
         return;
       }
       $("instance-install").disabled = true;
-      const result = await post("/api/instances/install", { version: version, loader: loader });
+      const result = await post("/api/instances/install", {
+        version: version, preset: chosenPreset, loader: chosenPreset === "vanilla" ? "vanilla" : "fabric",
+        mods: [...customPicks.keys()], includeFast: $("custom-fast").checked
+      });
       const data = result.data || {};
       if (!data.ok) {
         $("instance-install").disabled = false;
-        setStatus("instance-status", data.error || "Could not start the download.", "bad");
+        toast(data.error || "Could not start the download.", "bad");
         return;
       }
+      toast("Downloading Minecraft " + version + " (" + chosenPreset + ")…", "");
       showInstanceJob(data.job || {});
       watchInstanceJob((data.job || {}).id);
     });
-    $("add-instance").addEventListener("toggle", () => {
-      if ($("add-instance").open && !instanceRows.length) {
-        loadInstanceVersions().catch(() => setStatus("instance-status", "Could not load versions.", "bad"));
+    $("add-instance-panel").addEventListener("toggle", () => {
+      if ($("add-instance-panel").open) {
+        if (!presetRows.length) loadPresets().catch(() => {});
+        if (!instanceRows.length) loadInstanceVersions().catch(() => toast("Could not load the version list.", "bad"));
       }
     });
 
@@ -2896,6 +3020,184 @@
     $("browse-refresh").addEventListener("click", () => loadPopularServers());
     $("browse-filter").addEventListener("input", () => renderPopular());
     loadPopularServers().catch(() => setStatus("popular-status", "Could not load servers.", "bad"));
+
+    // ---- Game-running indicator, crash summary, live game log ----
+    let gameWasRunning = false;
+    async function pollGame() {
+      const res = await api("/api/game");
+      const g = res.data || {};
+      $("game-pill").hidden = !g.running;
+      $("stop-game").hidden = !g.running;
+      $("play").classList.toggle("running", !!g.running);
+      $("play").textContent = g.running ? "RUNNING" : "PLAY";
+      if (g.running && g.since) {
+        const mins = Math.max(0, Math.floor((Date.now() / 1000 - g.since) / 60));
+        $("game-pill-text").textContent = "Minecraft running · " + mins + " min";
+      }
+      if (gameWasRunning && !g.running && !g.crash) toast("Minecraft closed.", "");
+      gameWasRunning = !!g.running;
+      const c = g.crash;
+      $("crash-card").hidden = !c;
+      if (c) {
+        $("crash-title").textContent = "Minecraft crashed: " + (c.title || "unknown reason");
+        $("crash-hint").textContent = c.hint || "";
+        $("crash-exception").textContent = c.exception || "";
+      }
+      if (logMode === "game") {
+        const lines = g.log || [];
+        $("log").textContent = lines.length ? lines.join("\n") : "No game log yet. Press PLAY to start Minecraft.";
+        const box = $("log"); box.scrollTop = box.scrollHeight;
+      }
+    }
+    setInterval(() => pollGame().catch(() => {}), 2000);
+    pollGame().catch(() => {});
+    $("game-pill").addEventListener("click", () => { showTab("play"); setLogMode("game"); $("log-panel").scrollIntoView({ behavior: "smooth" }); });
+    $("stop-game").addEventListener("click", async () => {
+      if (!confirm("Stop Minecraft? Unsaved progress in singleplayer may be lost.")) return;
+      const r = await post("/api/game/stop", {});
+      toast((r.data && r.data.stopped) ? "Minecraft stopped." : ((r.data && r.data.error) || "Could not stop Minecraft."), (r.data && r.data.stopped) ? "good" : "bad");
+      pollGame();
+    });
+    $("crash-dismiss").addEventListener("click", async () => { await post("/api/game/dismiss-crash", {}); $("crash-card").hidden = true; });
+    $("crash-log").addEventListener("click", () => { setLogMode("game"); $("log-panel").scrollIntoView({ behavior: "smooth" }); });
+    $("crash-folder").addEventListener("click", () => openFolder("crash-reports"));
+    function setLogMode(mode) {
+      logMode = mode;
+      $("log-tab-vanta").classList.toggle("active", mode === "vanta");
+      $("log-tab-game").classList.toggle("active", mode === "game");
+      refreshLogs().catch(() => {});
+    }
+    $("log-tab-vanta").addEventListener("click", () => setLogMode("vanta"));
+    $("log-tab-game").addEventListener("click", () => setLogMode("game"));
+    $("copy-log").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText($("log").textContent); toast("Log copied.", "good"); }
+      catch (e) { toast("Select the log text and press Ctrl+C.", ""); }
+    });
+
+    // ---- Updates (GitHub Releases, hash-checked) ----
+    let updateInfo = null;
+    async function checkUpdates() {
+      const r = await api("/api/updates");
+      updateInfo = r.data || {};
+      const pill = $("update-pill");
+      pill.hidden = !updateInfo.available;
+      if (updateInfo.available) pill.textContent = "Update to " + updateInfo.latest;
+    }
+    $("update-pill").addEventListener("click", async () => {
+      if (!updateInfo || !updateInfo.available) return;
+      if (!confirm("Update Vanta to " + updateInfo.latest + "?\n\nOnly launcher code and UI files are replaced, each checked against GitHub's hash. Accounts, worlds and game mods are not touched. Restart Vanta afterwards.")) return;
+      const r = await post("/api/updates/apply", {});
+      if (!r.data || !r.data.ok) { toast((r.data && r.data.error) || "Update failed to start.", "bad"); return; }
+      const pill = $("update-pill"); pill.disabled = true;
+      const timer = setInterval(async () => {
+        const j = ((await api("/api/updates/job")).data || {}).job || {};
+        pill.textContent = "Updating… " + (j.percent || 0) + "%";
+        if (j.state === "done" || j.state === "failed") {
+          clearInterval(timer); pill.disabled = false;
+          if (j.state === "done") { pill.textContent = "Restart Vanta to finish"; toast("Updated " + ((j.result && j.result.updated) || []).length + " files. Close and reopen Vanta.", "good", 12000); }
+          else { pill.textContent = "Update failed"; toast("Update failed: " + (j.error || "unknown"), "bad"); }
+        }
+      }, 1000);
+    });
+    setTimeout(() => checkUpdates().catch(() => {}), 4000);
+
+    // ---- INSTANCES tab ----
+    function instValue() {
+      const parts = ($("inst-select").value || "").split("|");
+      return { versionNumber: parts[0] || "", loader: parts[1] || "" };
+    }
+    async function openFolder(sub) {
+      const v = $("inst-select").value ? instValue() : selectedVersionValue();
+      const r = await post("/api/instances/open-folder", Object.assign({ sub: sub || "" }, v));
+      if (!r.data || !r.data.ok) toast((r.data && r.data.error) || "Could not open the folder.", "bad");
+      else toast("Opened " + r.data.folder, "");
+    }
+    async function loadInstancesTab() {
+      const sel = $("inst-select");
+      const keep = sel.value || $("version").value;
+      sel.replaceChildren();
+      versions.filter((v) => v.supported).forEach((v) => {
+        const o = document.createElement("option");
+        o.value = v.versionNumber + "|" + v.loader;
+        o.textContent = v.versionNumber + " · " + v.loader + (v.downloaded ? "" : " (main)");
+        sel.appendChild(o);
+      });
+      if (keep && [...sel.options].some((o) => o.value === keep)) sel.value = keep;
+      await loadInstanceInfo();
+    }
+    async function loadInstanceInfo() {
+      const v = instValue();
+      if (!v.versionNumber) { $("inst-summary").textContent = "No instances installed yet. Use PLAY › Add instance."; return; }
+      const r = await api("/api/instances/info?versionNumber=" + encodeURIComponent(v.versionNumber) + "&loader=" + encodeURIComponent(v.loader));
+      const d = r.data || {};
+      if (!d.ok) { $("inst-summary").textContent = d.error || "Could not read this instance."; return; }
+      $("inst-summary").textContent = (d.main ? "Main instance. " : "") + "Type: " + d.preset + " · " + d.mods.filter((m) => m.enabled).length + " mods on · folder " + d.folder
+        + (d.skipped && d.skipped.length ? " · Not available for this version: " + d.skipped.join("; ") : "");
+      const tr = $("inst-trailer");
+      tr.checked = !!d.trailer; tr.disabled = d.main || v.loader !== "fabric";
+      setStatus("inst-trailer-status", d.main ? "Always on for the main 1.21.11 instance." : (v.loader !== "fabric" ? "Needs a Fabric instance." : ""), "");
+      $("inst-ram").value = d.settings.ramGb || 0;
+      $("inst-jvm").value = d.settings.jvmArgs || "";
+      const mods = $("inst-mods"); mods.replaceChildren();
+      $("inst-mods-note").textContent = d.main ? "(manage the main instance's mods in the MODS tab)" : "";
+      if (!d.mods.length) mods.innerHTML = '<p class="hint">No mods in this instance.</p>';
+      d.mods.forEach((m) => {
+        const row = document.createElement("label"); row.className = "inst-mod" + (m.enabled ? "" : " off");
+        const box = document.createElement("input"); box.type = "checkbox"; box.checked = m.enabled; box.disabled = !d.modsEditable;
+        box.addEventListener("change", async () => {
+          const res = await post("/api/instances/mod-toggle", Object.assign({ file: m.file }, v));
+          if (!res.data || !res.data.ok) { toast((res.data && res.data.error) || "Could not change that mod.", "bad"); box.checked = !box.checked; return; }
+          m.file = res.data.file; row.classList.toggle("off", !res.data.enabled);
+        });
+        const name = document.createElement("span"); name.textContent = m.file.replace(/\.jar(\.disabled)?$/, "");
+        row.appendChild(box); row.appendChild(name); mods.appendChild(row);
+      });
+      const shots = $("inst-shots"); shots.replaceChildren();
+      if (!d.screenshots.length) shots.innerHTML = '<p class="hint">No screenshots yet. Press F2 in game to take one.</p>';
+      d.screenshots.forEach((s) => {
+        const a = document.createElement("a");
+        const url = "/api/instances/screenshot?versionNumber=" + encodeURIComponent(v.versionNumber) + "&loader=" + encodeURIComponent(v.loader) + "&name=" + encodeURIComponent(s.name);
+        a.href = url; a.target = "_blank"; a.title = s.name;
+        const img = document.createElement("img"); img.src = url; img.loading = "lazy"; img.alt = s.name;
+        a.appendChild(img); shots.appendChild(a);
+      });
+    }
+    $("inst-select").addEventListener("change", () => loadInstanceInfo());
+    $("inst-open").addEventListener("click", () => openFolder(""));
+    $("inst-shots-open").addEventListener("click", () => openFolder("screenshots"));
+    $("inst-save").addEventListener("click", async () => {
+      const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value }, instValue()));
+      if (r.data && r.data.ok) { setStatus("inst-settings-status", "Saved.", "good"); toast("Instance settings saved.", "good"); }
+      else setStatus("inst-settings-status", (r.data && r.data.error) || "Could not save.", "bad");
+    });
+    $("inst-trailer").addEventListener("change", async () => {
+      const on = $("inst-trailer").checked;
+      $("inst-trailer").disabled = true;
+      setStatus("inst-trailer-status", on ? "Downloading trailer mods and packs… this can take a minute." : "Turning trailer style off…", "");
+      const r = await post("/api/instances/trailer", Object.assign({ on: on }, instValue()));
+      $("inst-trailer").disabled = false;
+      const d = r.data || {};
+      if (!d.ok) { $("inst-trailer").checked = !on; setStatus("inst-trailer-status", d.error || "Failed.", "bad"); return; }
+      setStatus("inst-trailer-status", (on ? "Trailer style on." : "Trailer style off.") + (d.skipped && d.skipped.length ? " Not available for this version: " + d.skipped.join("; ") : ""), "good");
+      toast(on ? "Trailer style on. Press B in game for night vision." : "Trailer style off.", "good");
+      loadInstanceInfo();
+    });
+
+    // ---- Keyboard shortcuts ----
+    document.addEventListener("keydown", (e) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "");
+      if (e.key === "Escape") { $("kbd-help").hidden = true; document.activeElement && document.activeElement.blur && document.activeElement.blur(); return; }
+      if ((e.ctrlKey || e.metaKey) && /^[1-9]$/.test(e.key)) {
+        const tabs = [...document.querySelectorAll(".tab")];
+        const t = tabs[Number(e.key) - 1];
+        if (t) { e.preventDefault(); showTab(t.dataset.tab); }
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); showTab("play"); $("play").click(); return; }
+      if (typing) return;
+      if (e.key === "?") { $("kbd-help").hidden = !$("kbd-help").hidden; }
+      if (e.key === "/") { e.preventDefault(); showTab("browse"); $("browse-filter").focus(); }
+    });
   </script>
 </body>
 </html>

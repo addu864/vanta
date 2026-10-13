@@ -137,7 +137,33 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         text = app.last_error()
         return 200, text.encode("utf-8"), TEXT
     if method == "GET" and path == "/api/updates":
-        return _ok(app.updates())
+        return _ok(app.updates(_query_dict(raw_path)))
+    if method == "POST" and path == "/api/updates/apply":
+        return _from_ok(app.apply_update(_payload(body)))
+    if method == "GET" and path == "/api/updates/job":
+        return _ok(app.update_job())
+    if method == "GET" and path == "/api/game":
+        return _ok(app.game_status())
+    if method == "POST" and path == "/api/game/stop":
+        return _ok(app.stop_game())
+    if method == "POST" and path == "/api/game/dismiss-crash":
+        return _ok(app.dismiss_crash())
+    if method == "GET" and path == "/api/instances/presets":
+        return _ok(app.instance_presets())
+    if method == "POST" and path == "/api/instances/mod-search":
+        return _from_ok(app.instance_mod_search(_payload(body)))
+    if method == "GET" and path == "/api/instances/info":
+        return _from_ok(app.instance_info(_query_dict(raw_path)))
+    if method == "POST" and path == "/api/instances/trailer":
+        return _from_ok(app.instance_trailer(_payload(body)))
+    if method == "POST" and path == "/api/instances/settings":
+        return _from_ok(app.save_instance_settings(_payload(body)))
+    if method == "POST" and path == "/api/instances/mod-toggle":
+        return _from_ok(app.toggle_instance_mod(_payload(body)))
+    if method == "POST" and path == "/api/instances/open-folder":
+        return _from_ok(app.open_folder(_payload(body)))
+    if method == "GET" and path == "/api/instances/screenshot":
+        return app.screenshot_file(_query_dict(raw_path))
     if method == "POST" and path == "/api/accounts/local":
         result = app.create_local_account(_payload(body))
         return _from_ok(result)

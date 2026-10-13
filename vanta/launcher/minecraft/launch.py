@@ -79,6 +79,16 @@ def prepare_command(version: dict[str, Any], account: dict[str, Any], ram_gb: in
     return {"ok": True, "java": java, "javaRequired": required_java(jar.parent, str(version["versionNumber"])), "command": command, "official": official}
 
 
+def instance_jvm_args(instance: Path) -> list[str]:
+    """Extra -X/-XX:/-D flags saved per instance (vanta-settings.json)."""
+    path = Path(instance) / "vanta-settings.json"
+    try:
+        raw = str(json.loads(path.read_text(encoding="utf-8")).get("jvmArgs") or "") if path.is_file() else ""
+    except (OSError, ValueError):
+        return []
+    return [a for a in raw.split() if a.startswith(("-X", "-XX:", "-D"))][:40]
+
+
 def detect_java() -> dict[str, Any]:
     from vanta.shared.java import find_java
 
@@ -348,6 +358,7 @@ def _launch_local(
         from vanta.launcher.servers.popular import join_arguments
 
         command.extend(join_arguments(str(version.get("versionNumber") or ""), str(join["host"]), join.get("port")))
+    command[1:1] = instance_jvm_args(jar.parent)
     log_path = data_dir / "client.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handle = log_path.open("a", encoding="utf-8")

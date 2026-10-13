@@ -712,3 +712,62 @@ textarea {
 .server-versions { margin: 0; font-size: 12px; }
 #browse-filter { width: 100%; margin-top: 8px; }
 .popular-cards { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+
+/* ---- v1.3: polish ---- */
+.panel:not([hidden]) { animation: panel-in 180ms ease-out; }
+@keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+button { transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease, opacity 150ms ease; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.55; cursor: progress; }
+:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.pill { border-radius: 999px; padding: 6px 12px; font-size: 12px; border: 1px solid var(--line); background: var(--bg-sink); color: var(--text); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.game-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.update-pill { background: var(--violet-dim); border-color: var(--violet); }
+.action.play.running { background: linear-gradient(180deg, rgba(155, 231, 168, 0.35), rgba(60, 120, 80, 0.45)); }
+.stop-game { width: 100%; margin-top: 6px; }
+.crash-card { border: 1px solid var(--bad); background: rgba(80, 20, 20, 0.45); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; margin-bottom: 10px; }
+.crash-card code { font-size: 11px; color: var(--muted); word-break: break-word; }
+.crash-card p { margin: 0; }
+.toasts { position: fixed; right: 18px; bottom: 18px; display: grid; gap: 8px; z-index: 50; max-width: min(420px, 90vw); }
+.toast { padding: 10px 14px; border-radius: 12px; background: rgba(24, 16, 40, 0.92); border: 1px solid var(--line); backdrop-filter: blur(12px); box-shadow: 0 8px 28px rgba(0,0,0,0.45); font-size: 13px; cursor: pointer; animation: toast-in 200ms ease-out; transition: opacity 300ms, transform 300ms; }
+.toast.good { border-color: var(--good); }
+.toast.bad { border-color: var(--bad); }
+.toast.out { opacity: 0; transform: translateY(6px); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.kbd-help { position: fixed; left: 50%; top: 20%; transform: translateX(-50%); z-index: 60; padding: 16px 20px; max-width: 520px; }
+kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 11px; background: var(--bg-sink); }
+.tech-details summary, .more-accounts summary { cursor: pointer; color: var(--muted); font-size: 12px; margin: 6px 0; }
+.preset-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.preset-card { text-align: left; display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-sink); color: var(--text); cursor: pointer; }
+.preset-card span { font-size: 11px; color: var(--muted); line-height: 1.45; }
+.preset-card strong { letter-spacing: 0.08em; font-size: 12px; }
+.preset-card.active { border-color: var(--violet); background: var(--violet-dim); box-shadow: 0 0 0 1px var(--violet) inset; }
+.custom-picker { display: grid; gap: 8px; margin-bottom: 10px; }
+.custom-results { display: grid; gap: 6px; max-height: 260px; overflow: auto; }
+.custom-mod { display: grid; grid-template-columns: auto 28px 1fr; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px; background: var(--bg-sink); border: 1px solid transparent; cursor: pointer; }
+.custom-mod:hover { border-color: var(--line); }
+.custom-mod img { width: 28px; height: 28px; border-radius: 6px; }
+.custom-mod span { display: grid; min-width: 0; }
+.custom-mod small { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check, .switch { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.inst-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0; }
+.inst-box { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg-sink); display: grid; gap: 8px; align-content: start; }
+.inst-box h3 { margin: 0; }
+.inst-mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; margin: 8px 0 16px; }
+.inst-mod { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: var(--bg-sink); font-size: 12px; overflow: hidden; }
+.inst-mod span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inst-mod.off span { opacity: 0.5; text-decoration: line-through; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
+.shots img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); transition: transform 150ms; }
+.shots a:hover img { transform: scale(1.02); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg-btn { border: 0; background: transparent; color: var(--muted); padding: 6px 14px; font-size: 12px; cursor: pointer; }
+.seg-btn.active { background: var(--violet-dim); color: var(--text); }
+.progress { height: 8px; border-radius: 999px; background: var(--bg-sink); overflow: hidden; border: 1px solid var(--line); margin-top: 8px; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--violet-dim), var(--violet)); transition: width 400ms ease; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+[hidden] { display: none !important; }
+label.switch, label.check, label.inst-mod, label.custom-mod { flex-direction: row; justify-content: flex-start; text-align: left; }
+.switch input, .check input, .inst-mod input, .custom-mod input { width: auto; min-height: 0; margin: 0; flex: none; accent-color: var(--violet); }
+.inst-mod span, .custom-mod span { text-align: left; }

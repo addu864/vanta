@@ -10,6 +10,7 @@ touched by this module.
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 import traceback
@@ -29,6 +30,37 @@ DEFAULT_MODS: tuple[tuple[str, str], ...] = (
     ("lithium", "Lithium"),
     ("modmenu", "Mod Menu"),
 )
+# Download types shown as cards in Add instance.
+FAST_MODS: tuple[tuple[str, str], ...] = (
+    ("fabric-api", "Fabric API"),
+    ("sodium", "Sodium"),
+    ("lithium", "Lithium"),
+    ("modernfix", "ModernFix"),
+    ("immediatelyfast", "ImmediatelyFast"),
+    ("entityculling", "Entity Culling"),
+    ("ferrite-core", "FerriteCore"),
+    ("modmenu", "Mod Menu"),
+)
+TRAILER_MODS: tuple[tuple[str, str], ...] = (
+    ("iris", "Iris Shaders"),
+    ("entity-model-features", "Entity Model Features"),
+    ("entitytexturefeatures", "Entity Texture Features"),
+    ("not-enough-animations", "Not Enough Animations"),
+    ("visuality", "Visuality"),
+    ("gamma-utils", "Gamma Utils"),
+)
+PRESETS: dict[str, dict[str, Any]] = {
+    "vanilla": {"title": "Vanilla", "loader": "vanilla",
+                "description": "Plain Minecraft exactly as Mojang ships it. No mod loader, no mods."},
+    "fast": {"title": "Fast", "loader": "fabric",
+             "description": "Fabric with performance mods: Fabric API, Sodium, Lithium, ModernFix, ImmediatelyFast, Entity Culling, FerriteCore and Mod Menu (where they exist for the version)."},
+    "custom": {"title": "Custom", "loader": "fabric",
+               "description": "Fabric plus mods you pick from Modrinth for that version. Optionally start from the Fast set."},
+    "trailer": {"title": "Trailer style", "loader": "fabric",
+                "description": "The Fast set plus Iris with Complementary shaders, Bare Bones + Fresh Animations packs, EMF/ETF, Not Enough Animations, Visuality and Gamma Utils night vision on B."},
+}
+# Gamma Utils renamed its key between versions; Minecraft ignores the one it doesn't know.
+NIGHT_VISION_KEYS = ("key_key.gammautils.nightVisionToggle", "key_key.gamma_utils.night_vision_toggle")
 CACHE_SECONDS = 600
 
 _cache: dict[str, Any] = {}
@@ -143,8 +175,15 @@ def start_install(
     mods_installer: Callable[..., dict[str, Any]] | None = None,
     loader_version: Callable[[], str] = latest_fabric_loader,
     background: bool = True,
+    preset: str = "",
+    extra_mods: list[str] | None = None,
+    include_fast: bool = True,
+    visual_installer: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    loader = "fabric" if loader == "fabric" else "vanilla"
+    if preset not in PRESETS:
+        preset = "fast" if loader == "fabric" else "vanilla"
+    loader = PRESETS[preset]["loader"]
+    picks = [str(m).strip() for m in (extra_mods or []) if str(m).strip()][:60]
     if not in_range(version):
         return {"ok": False, "error": f"Version {version} is outside 1.18 to 26.3."}
     name = instance_name(version, loader)
@@ -154,7 +193,7 @@ def start_install(
         current = _jobs.get(name)
         if current and current.get("state") in {"queued", "downloading"}:
             return {"ok": True, "job": dict(current), "already": True}
-        _jobs[name] = {"id": name, "version": version, "loader": loader, "state": "queued", "step": "queued", "done": 0, "total": 1, "percent": 0, "error": ""}
+        _jobs[name] = {"id": name, "version": version, "loader": loader, "preset": preset, "state": "queued", "step": "queued", "done": 0, "total": 1, "percent": 0, "error": ""}
 
     def update(**fields: Any) -> None:
         with _jobs_lock:
@@ -183,10 +222,16 @@ def start_install(
                 default_mods=False,
             )
             mods: dict[str, Any] = {"installed": [], "skipped": []}
+            visual: dict[str, Any] = {}
             if loader == "fabric":
                 progress("mods", 0, 1)
-                runner = mods_installer or install_default_mods
-                mods = runner(root / name / "mods", version)
+                slugs = preset_mod_list(preset, picks, include_fast)
+                if mods_installer is not None:
+                    mods = mods_installer(root / name / "mods", version)
+                else:
+                    mods = install_mod_list(root / name / "mods", version, slugs)
+                if preset == "trailer":
+                    visual = apply_trailer_visuals(root / name, version, installer=visual_installer)
             meta = {
                 "id": name,
                 "versionNumber": version,
@@ -195,7 +240,10 @@ def start_install(
                 "javaMajor": result.get("javaMajor"),
                 "assetsRoot": str(result.get("assetsRoot") or root / "assets"),
                 "defaultMods": [m.get("title") for m in mods.get("installed", []) + mods.get("kept", [])],
-                "skippedMods": [f"{m.get('title')}: {m.get('reason')}" for m in mods.get("skipped", [])],
+                "skippedMods": [f"{m.get('title')}: {m.get('reason')}" for m in mods.get("skipped", [])]
+                + [f"{v.get('title')}: {v.get('reason')}" for v in visual.get("skipped", [])],
+                "preset": preset,
+                "trailer": preset == "trailer",
                 "complete": True,
                 "installedAt": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             }
@@ -211,8 +259,113 @@ def start_install(
     return {"ok": True, "job": job(name)}
 
 
+def preset_mod_list(preset: str, picks: list[str] | None = None, include_fast: bool = True) -> list[tuple[str, str]]:
+    if preset == "vanilla":
+        return []
+    out: list[tuple[str, str]] = []
+    if preset in {"fast", "trailer"} or (preset == "custom" and include_fast):
+        out += list(FAST_MODS)
+    elif preset == "custom":
+        out.append(("fabric-api", "Fabric API"))
+    if preset == "trailer":
+        out += list(TRAILER_MODS)
+    if preset == "custom":
+        out += [(slug, slug) for slug in (picks or [])]
+    seen: set[str] = set()
+    return [m for m in out if not (m[0] in seen or seen.add(m[0]))]
+
+
+def ensure_options(instance: Path) -> Path:
+    """New instances have no options.txt yet; seed the safe defaults Vanta relies on."""
+    options = Path(instance) / "options.txt"
+    if not options.is_file():
+        options.parent.mkdir(parents=True, exist_ok=True)
+        options.write_text("toggleUse:false\ntoggleCrouch:false\nlang:en_us\n", encoding="utf-8")
+    return options
+
+
+def set_option(options: Path, key: str, value: str) -> None:
+    lines = options.read_text(encoding="utf-8").splitlines() if options.is_file() else []
+    lines = [line for line in lines if not line.startswith(key + ":")] + [f"{key}:{value}"]
+    options.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def apply_trailer_visuals(instance: Path, version: str, installer: Callable[..., dict[str, Any]] | None = None) -> dict[str, Any]:
+    from vanta.launcher.mods import visual_set
+
+    options = ensure_options(instance)
+    for key in NIGHT_VISION_KEYS:
+        set_option(options, key, "key.keyboard.b")
+    run = installer or visual_set.install_visual_set
+    return run(Path(instance), game_version=version)
+
+
+TRAILER_FILE_HINTS = ("iris", "entity_model_features", "entity-model-features", "entity_texture_features",
+                      "entitytexturefeatures", "notenoughanimations", "not-enough-animations", "visuality", "gamma-utils", "gammautils")
+
+
+def set_trailer(instance: Path, version: str, on: bool, *, mods_runner: Callable[..., dict[str, Any]] | None = None,
+                visual_installer: Callable[..., dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Turn Trailer style on (download/enable mods + packs) or off (disable mods, unlist packs) for an instance."""
+    from vanta.launcher.mods import visual_set
+
+    instance = Path(instance)
+    if instance.name in PROTECTED:
+        return {"ok": False, "error": "The main 1.21.11 instance always has the trailer set; it is not toggled here."}
+    if instance.name.endswith("-vanilla"):
+        return {"ok": False, "error": "Trailer style needs Fabric. Vanilla instances can't load mods."}
+    mods = instance / "mods"
+    mods.mkdir(parents=True, exist_ok=True)
+    changed: list[str] = []
+    for jar in list(mods.iterdir()):
+        low = jar.name.lower()
+        if not any(h in low for h in TRAILER_FILE_HINTS):
+            continue
+        if on and low.endswith(".jar.disabled"):
+            jar.rename(jar.with_name(jar.name[: -len(".disabled")])); changed.append(jar.name)
+        elif not on and low.endswith(".jar"):
+            jar.rename(jar.with_name(jar.name + ".disabled")); changed.append(jar.name)
+    result: dict[str, Any] = {"ok": True, "trailer": on, "changed": changed, "skipped": []}
+    options = ensure_options(instance)
+    if on:
+        runner = mods_runner or install_mod_list
+        mods_res = runner(mods, version, list(TRAILER_MODS))
+        vis = apply_trailer_visuals(instance, version, installer=visual_installer)
+        result["skipped"] = [f"{m.get('title')}: {m.get('reason')}" for m in mods_res.get("skipped", [])] + [
+            f"{v.get('title')}: {v.get('reason')}" for v in vis.get("skipped", [])]
+    else:
+        lines = options.read_text(encoding="utf-8").splitlines()
+        manifest = instance / "resourcepacks" / visual_set.MANIFEST_NAME
+        names = []
+        if manifest.is_file():
+            names = [f"file/{v['filename']}" for v in json.loads(manifest.read_text(encoding="utf-8")).get("placed", {}).values() if v.get("kind") == "resourcepack"]
+        for i, line in enumerate(lines):
+            if line.startswith("resourcePacks:"):
+                try:
+                    cur = json.loads(line.split(":", 1)[1])
+                except ValueError:
+                    cur = ["vanilla"]
+                lines[i] = "resourcePacks:" + json.dumps([x for x in cur if x not in names], separators=(",", ":"))
+        options.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        iris = instance / "config" / "iris.properties"
+        if iris.is_file():
+            text = re.sub(r"(?m)^enableShaders=.*$", "", iris.read_text(encoding="utf-8")).rstrip() + "\nenableShaders=false\n"
+            iris.write_text(text, encoding="utf-8")
+    meta_path = instance / META_NAME
+    if meta_path.is_file():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta["trailer"] = on
+        meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return result
+
+
 def install_default_mods(mods_dir: Path, game_version: str, repository: Any = None) -> dict[str, Any]:
     """Fabric API, Sodium, Lithium, Mod Menu for this version, where Modrinth has a build."""
+    return install_mod_list(mods_dir, game_version, list(DEFAULT_MODS), repository)
+
+
+def install_mod_list(mods_dir: Path, game_version: str, mods: list[tuple[str, str]], repository: Any = None) -> dict[str, Any]:
+    """Place each (slug, title) for this version where Modrinth has a build; missing ones are skipped."""
     from vanta.launcher.mods import required
     from vanta.launcher.mods.modrinth import ModrinthRepository
 
@@ -224,7 +377,7 @@ def install_default_mods(mods_dir: Path, game_version: str, repository: Any = No
     kept: list[dict[str, Any]] = []
     seen: set[str] = set()
     extra: list[tuple[str, str, str]] = []
-    for slug, title in DEFAULT_MODS:
+    for slug, title in mods:
         required._place_one(
             repo, folder, mod_id=slug, slug=slug, title=title, game_version=game_version, loader="fabric",
             installed=installed, skipped=skipped, kept=kept, seen_projects=seen, extra=extra, previous={},
@@ -234,5 +387,13 @@ def install_default_mods(mods_dir: Path, game_version: str, repository: Any = No
             repo, folder, mod_id=mod_id, slug=slug, title=title, game_version=game_version, loader="fabric",
             installed=installed, skipped=skipped, kept=kept, seen_projects=seen, extra=None, previous={},
         )
+    previous = folder / required.MANIFEST_NAME
+    if previous.is_file():
+        try:
+            old = json.loads(previous.read_text(encoding="utf-8"))
+            known = {str(i.get("filename")) for i in installed + kept}
+            kept = kept + [i for i in (old.get("installed") or []) + (old.get("kept") or []) if str(i.get("filename")) not in known]
+        except (OSError, ValueError):
+            pass
     required._write_manifest(folder, installed, kept)
     return {"ok": True, "installed": installed, "kept": kept, "skipped": skipped}

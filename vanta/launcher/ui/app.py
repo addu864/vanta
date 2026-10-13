@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import os
+import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -23,9 +27,9 @@ from vanta.launcher.skins.manager import SkinManager
 from vanta.launcher.skins.models import LOCAL_APPLY_NOTE
 from vanta.launcher.skins.repository import SkinRepository
 from vanta.launcher.servers.manager import ServerManager
-from vanta.launcher.updates.stub import check_for_updates
+from vanta.launcher.updates import github as updater
 from vanta import __version__ as VANTA_VERSION
-from vanta.shared.config.paths import default_data_dir
+from vanta.shared.config.paths import default_data_dir, repo_root
 from vanta.shared.config.store import ConfigStore
 from vanta.shared.logging.log import VantaLog
 from vanta.shared.utilities.guard import contains_token_key
@@ -66,7 +70,6 @@ class VantaApp:
             "version": VANTA_VERSION,
             "milestone": "1.0",
             "status": "ok",
-            "updates": "not implemented in 0.1",
             "dataDir": str(self.data_dir),
             "defaultVersion": settings["defaultVersion"],
             "defaultLoader": settings["defaultLoader"],
@@ -100,7 +103,10 @@ class VantaApp:
         body = payload or {}
         version = str(body.get("version") or "").strip()
         loader = str(body.get("loader") or "fabric").strip().lower()
-        result = instances.start_install(self._game_root(), version, loader)
+        preset = str(body.get("preset") or "").strip().lower()
+        mods = [str(m) for m in (body.get("mods") or []) if isinstance(m, str)]
+        result = instances.start_install(self._game_root(), version, loader, preset=preset, extra_mods=mods,
+                                         include_fast=bool(body.get("includeFast", True)))
         if result.get("ok"):
             self.log.info(f"Downloading Minecraft {version} ({loader}) into its own instance folder.")
         else:
@@ -523,6 +529,15 @@ class VantaApp:
         return {"ok": True, "settings": saved, "jvmArgsExecuted": False}
 
     def play(self, payload: dict[str, Any] | None) -> dict[str, Any]:
+        payload = dict(payload or {})
+        try:
+            folder, _ = self._instance_dir(payload)
+            if folder is not None:
+                ram = self._instance_settings(folder)["ramGb"]
+                if ram:
+                    payload["ramGb"] = ram
+        except Exception:  # noqa: BLE001 - settings are optional
+            pass
         return attempt_play(
             config=self.config,
             accounts=self.accounts,
@@ -604,8 +619,191 @@ class VantaApp:
     def last_error(self) -> str:
         return self.log.last_error
 
-    def updates(self) -> dict[str, Any]:
-        return check_for_updates()
+    def updates(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        return updater.check_for_updates(force=str((payload or {}).get("force") or "") == "1")
+
+    def apply_update(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        info = updater.check_for_updates()
+        if not info.get("ok") or not info.get("available"):
+            return {"ok": False, "error": info.get("message") or "No update available."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first, then update."}
+        job = updater.start_update(repo_root(), str(info["latest"]))
+        self.log.info(f"Updating Vanta to {info['latest']} (hash-checked files from GitHub).")
+        return {"ok": True, "job": job}
+
+    def update_job(self) -> dict[str, Any]:
+        return {"ok": True, "job": updater.update_job()}
+
+    # ---- game monitor ----
+    def _game_running(self) -> bool:
+        from vanta.launcher.minecraft import monitor
+        return bool(monitor.game_status(self.data_dir, lines=1)["running"])
+
+    def game_status(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import monitor
+        return monitor.game_status(self.data_dir)
+
+    def stop_game(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft.launch import stop_client
+        return stop_client(self.data_dir)
+
+    def dismiss_crash(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import monitor
+        monitor.dismiss_crash()
+        return {"ok": True}
+
+    # ---- per-instance tools ----
+    def _instance_dir(self, body: dict[str, Any]) -> tuple[Path | None, dict[str, Any] | None]:
+        settings = self.config.get()
+        version = get_version(str(body.get("versionNumber") or settings.get("defaultVersion") or ""),
+                              str(body.get("loader") or settings.get("defaultLoader") or ""), str(settings["gameDirectory"]))
+        if version is None:
+            return None, None
+        return Path(str(version["gameDirectory"])), version
+
+    def instance_presets(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+        return {"ok": True, "presets": [{"id": k, **v, "mods": [t for _, t in instances.preset_mod_list(k)]} for k, v in instances.PRESETS.items()]}
+
+    def instance_mod_search(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        version = str(body.get("version") or "").strip()
+        query = str(body.get("query") or "").strip()
+        if not version:
+            return {"ok": False, "error": "Choose a Minecraft version first."}
+        key = (version, query.lower())
+        hit = self._mod_search_cache.get(key) if hasattr(self, "_mod_search_cache") else None
+        if hit and time.time() - hit[0] < 300:
+            return hit[1]
+        try:
+            projects = self.mod_repository.search(query, game_version=version, loader="fabric", limit=24)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": f"Modrinth search failed: {exc}"[:200]}
+        result = {"ok": True, "version": version, "results": [
+            {"slug": p.slug, "title": p.title, "description": p.description, "icon": p.icon_url, "downloads": p.download_count}
+            for p in projects]}
+        if not hasattr(self, "_mod_search_cache"):
+            self._mod_search_cache = {}
+        self._mod_search_cache[key] = (time.time(), result)
+        return result
+
+    def instance_trailer(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+        body = payload or {}
+        folder, version = self._instance_dir(body)
+        if folder is None or version is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first; mods can't change while it's running."}
+        on = bool(body.get("on"))
+        try:
+            result = instances.set_trailer(folder, str(version["versionNumber"]), on)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": f"Trailer style change failed: {exc}"[:300]}
+        if result.get("ok"):
+            self.log.info(f"Trailer style {'on' if on else 'off'} for {folder.name}.")
+        return result
+
+    def instance_info(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+        body = payload or {}
+        folder, version = self._instance_dir(body)
+        if folder is None or version is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        meta = {}
+        if (folder / instances.META_NAME).is_file():
+            meta = json.loads((folder / instances.META_NAME).read_text(encoding="utf-8"))
+        cfg = self._instance_settings(folder)
+        mods = []
+        if (folder / "mods").is_dir():
+            for jar in sorted((folder / "mods").iterdir(), key=lambda p: p.name.lower()):
+                if jar.name.endswith((".jar", ".jar.disabled")):
+                    mods.append({"file": jar.name, "enabled": jar.name.endswith(".jar"), "sizeKb": jar.stat().st_size // 1024})
+        shots = []
+        if (folder / "screenshots").is_dir():
+            for png in sorted((folder / "screenshots").glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)[:60]:
+                shots.append({"name": png.name, "at": int(png.stat().st_mtime)})
+        main = folder.name in instances.PROTECTED
+        return {"ok": True, "id": folder.name, "folder": str(folder), "main": main, "downloaded": bool(version.get("downloaded")),
+                "preset": meta.get("preset") or ("trailer" if main else ("vanilla" if folder.name.endswith("-vanilla") else "fast")),
+                "trailer": True if main else bool(meta.get("trailer")), "skipped": meta.get("skippedMods") or [],
+                "settings": cfg, "mods": mods, "modsEditable": not main, "screenshots": shots}
+
+    def _instance_settings(self, folder: Path) -> dict[str, Any]:
+        path = folder / "vanta-settings.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+        except (OSError, ValueError):
+            data = {}
+        return {"ramGb": int(data.get("ramGb") or 0), "jvmArgs": str(data.get("jvmArgs") or "")}
+
+    def save_instance_settings(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        try:
+            ram = int(body.get("ramGb") or 0)
+        except (TypeError, ValueError):
+            ram = 0
+        if ram and not 1 <= ram <= 64:
+            return {"ok": False, "error": "RAM must be between 1 and 64 GB (0 = use the PLAY slider)."}
+        args = " ".join(str(body.get("jvmArgs") or "").split())[:600]
+        bad = [a for a in args.split() if not a.startswith(("-X", "-XX:", "-D"))]
+        if bad:
+            return {"ok": False, "error": "JVM arguments must start with -X, -XX: or -D. Not allowed: " + " ".join(bad[:3])}
+        (folder / "vanta-settings.json").write_text(json.dumps({"ramGb": ram, "jvmArgs": args}, indent=2), encoding="utf-8")
+        return {"ok": True, "settings": {"ramGb": ram, "jvmArgs": args}}
+
+    def toggle_instance_mod(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        name = str(body.get("file") or "")
+        if folder is None or not name or "/" in name or "\\" in name or ".." in name:
+            return {"ok": False, "error": "Unknown mod."}
+        if folder.name in instances.PROTECTED:
+            return {"ok": False, "error": "Use the MODS tab for the main 1.21.11 instance."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first."}
+        jar = folder / "mods" / name
+        if not jar.is_file():
+            return {"ok": False, "error": "That mod file is gone."}
+        target = jar.with_name(name[:-len(".disabled")]) if name.endswith(".disabled") else jar.with_name(name + ".disabled")
+        jar.rename(target)
+        return {"ok": True, "file": target.name, "enabled": target.name.endswith(".jar")}
+
+    def screenshot_file(self, payload: dict[str, Any] | None = None) -> tuple[int, bytes, str]:
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        name = str(body.get("name") or "")
+        if folder is None or not re.fullmatch(r"[\w .()-]+\.png", name):
+            return 404, b"Not found", "text/plain"
+        path = folder / "screenshots" / name
+        return (200, path.read_bytes(), "image/png") if path.is_file() else (404, b"Not found", "text/plain")
+
+    def open_folder(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        import subprocess
+        import sys
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        sub = str(body.get("sub") or "")
+        if sub in {"screenshots", "mods", "resourcepacks", "shaderpacks", "saves", "logs", "crash-reports"}:
+            folder = folder / sub
+            folder.mkdir(parents=True, exist_ok=True)
+        try:
+            if os.name == "nt":
+                os.startfile(str(folder))  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(folder)])
+            else:
+                subprocess.Popen(["xdg-open", str(folder)])
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": f"Could not open the folder: {exc}", "folder": str(folder)}
+        return {"ok": True, "folder": str(folder)}
 
     def _selected_profile_name(self, payload: dict[str, Any] | None = None) -> str | None:
         body = payload or {}
