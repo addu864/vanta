@@ -11,3 +11,6 @@ Not included (downloaded on first launch from the official sources, on your comp
 - All mods (Modrinth), and the Trailer-look packs: Bare Bones, Fresh Animations,
   Bare Bones x Fresh Animations, Complementary Reimagined and Complementary Unbound (Modrinth).
   These are covered by their authors' own licenses and terms.
+- Skins: Skindex skins are downloaded from skindex.pro when you open them and cached
+  on your computer; Minecraft's default skins are read from your own Minecraft files.
+  Vanta ships only its own original skins.
