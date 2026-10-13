@@ -119,9 +119,11 @@ class InstalledMod:
     game_versions: list[str] = field(default_factory=list)
     loaders: list[str] = field(default_factory=list)
     dependencies: list[dict[str, Any]] = field(default_factory=list)
+    project_type: str = "mod"
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "projectType": self.project_type,
             "projectId": self.project_id,
             "slug": self.slug,
             "title": self.title,

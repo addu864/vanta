@@ -215,6 +215,18 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         result = app.play(_payload(body))
         status = 200 if result.get("status") in {"Ready", "Started"} else 400
         return status, _json_bytes(result), JSON
+    if path.startswith("/api/browse/"):
+        b = _payload(body) if method == "POST" else {}
+        if method == "GET" and path == "/api/browse/categories":
+            return _from_ok(app.browse_categories())
+        if method == "GET" and path == "/api/browse/job":
+            from urllib.parse import parse_qs, urlparse as _urlparse
+            return _from_ok(app.browse_job((parse_qs(_urlparse(raw_path).query).get("id") or [""])[0]))
+        routes = {"/api/browse/rows": app.browse_rows, "/api/browse/search": app.browse_search,
+                  "/api/browse/details": app.browse_details, "/api/browse/installed": app.browse_installed,
+                  "/api/browse/install": app.browse_install, "/api/browse/remove": app.browse_remove}
+        if method == "POST" and path in routes:
+            return _from_ok(routes[path](b))
     if method == "GET" and path == "/api/mods/search":
         from urllib.parse import parse_qs, urlparse as _urlparse
         query = parse_qs(_urlparse(raw_path).query)

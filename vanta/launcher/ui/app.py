@@ -20,6 +20,7 @@ from vanta.launcher.hud.store import ClientUiStore
 from vanta.launcher.settings.profiles import ProfileStore
 from vanta.launcher.mods.manager import ModManager
 from vanta.launcher.mods.modrinth import ModrinthRepository
+from vanta.launcher.mods.browser import BrowserError, ModBrowser
 from vanta.launcher.mods.repository import ModRepository, ModRepositoryError
 from vanta.launcher.mods.utilities import UtilityManager
 from vanta.launcher.skins.builtin import VantaSkinLibrary
@@ -55,6 +56,7 @@ class VantaApp:
         self.profiles = ProfileStore(self.data_dir, default_ram=int(self.config.get()["defaultRamGb"]))
         self.mod_repository = mod_repository or ModrinthRepository()
         self.mods = ModManager(self.data_dir, self.mod_repository)
+        self.browser = ModBrowser(self.data_dir / "cache" / "modrinth", curated_file=Path(os.environ.get("VANTA_CURATED_MODS", str(self.data_dir / "curated-mods.md"))))
         self.utilities = UtilityManager(self.data_dir, self.mod_repository)
         self.skin_repository = skin_repository or VantaSkinLibrary(data_dir=self.data_dir)
         self.skins = SkinManager(self.data_dir, self.skin_repository)
@@ -830,6 +832,84 @@ class VantaApp:
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": f"Could not open the folder: {exc}", "folder": str(folder)}
         return {"ok": True, "folder": str(folder)}
+
+    # ---- Modrinth browser (v1.4.0) ----
+    def _browse_ctx(self, body: dict[str, Any]) -> tuple[Path | None, str, str]:
+        folder, version = self._instance_dir(body)
+        if folder is None or version is None:
+            return None, str(body.get("versionNumber") or ""), "fabric"
+        loader = str(version.get("loader") or "fabric").lower()
+        return folder, str(version["versionNumber"]), "fabric" if loader in {"vanilla", ""} else loader
+
+    def browse_rows(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, game, loader = self._browse_ctx(body)
+        if not game:
+            return {"ok": False, "error": "Choose an instance first."}
+        rows = self.browser.rows(game, loader)
+        installed = self.browser.installed(folder, game, loader) if folder else {}
+        return {"ok": True, "gameVersion": game, "loader": loader, "rows": rows, "installed": installed,
+                "instance": folder.name if folder else ""}
+
+    def browse_search(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        _, game, loader = self._browse_ctx(body)
+        try:
+            items = self.browser.search(str(body.get("query") or ""), game_version=str(body.get("gameVersion") or game),
+                                        loader=str(body.get("loader") or loader), project_type=str(body.get("type") or "mod"),
+                                        category=str(body.get("category") or ""), index=str(body.get("sort") or "relevance"),
+                                        limit=int(body.get("limit") or 30), offset=int(body.get("offset") or 0))
+        except (BrowserError, ValueError) as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "results": items}
+
+    def browse_details(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        _, game, loader = self._browse_ctx(body)
+        try:
+            return {"ok": True, "project": self.browser.details(str(body.get("project") or ""), game, loader)}
+        except BrowserError as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def browse_categories(self) -> dict[str, Any]:
+        try:
+            return {"ok": True, "categories": self.browser.categories()}
+        except BrowserError as exc:
+            return {"ok": False, "error": str(exc), "categories": []}
+
+    def browse_installed(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, game, loader = self._browse_ctx(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        return {"ok": True, "installed": self.browser.installed(folder, game, loader, check_updates=bool(body.get("updates")))}
+
+    def browse_install(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, game, loader = self._browse_ctx(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed yet. Install it in INSTANCES first."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first; files can't change while it's running."}
+        project = str(body.get("project") or "")
+        if not re.fullmatch(r"[\w\-]{1,64}", project):
+            return {"ok": False, "error": "Unknown project."}
+        job = self.browser.start_install(folder, project, game, loader, str(body.get("versionId") or ""))
+        self.log.info(f"Modrinth install {project} -> {folder.name}.")
+        return {"ok": True, "job": job}
+
+    def browse_job(self, job_id: str) -> dict[str, Any]:
+        job = self.browser.jobs.get(job_id)
+        return {"ok": True, **job} if job else {"ok": False, "error": "Unknown job."}
+
+    def browse_remove(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, game, loader = self._browse_ctx(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first."}
+        return self.browser.remove(folder, str(body.get("projectId") or ""), game, loader)
 
     def _selected_profile_name(self, payload: dict[str, Any] | None = None) -> str | None:
         body = payload or {}

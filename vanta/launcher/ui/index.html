@@ -148,7 +148,27 @@
         <div class="profiles" id="profiles"></div>
       </section>
 
-      <section class="panel" data-panel="mods" id="panel-mods" hidden>
+      <section class="panel mb" data-panel="mods" id="panel-mods" hidden>
+        <div class="mb-head">
+          <h1>MODS</h1>
+          <label class="mb-inst">Instance <select id="mb-instance"></select></label>
+        </div>
+        <div class="mb-search glass">
+          <input id="mb-query" maxlength="100" placeholder="Search Modrinth: mods, shaders, resource packs" autocomplete="off">
+          <select id="mb-type"><option value="mod">Mods</option><option value="shader">Shaders</option><option value="resourcepack">Resource packs</option></select>
+          <select id="mb-category"><option value="">Any category</option></select>
+          <select id="mb-loader"><option value="fabric">Fabric</option><option value="quilt">Quilt</option><option value="neoforge">NeoForge</option><option value="forge">Forge</option></select>
+          <input id="mb-gamever" maxlength="12" placeholder="Game version" title="Defaults to the selected instance version">
+          <select id="mb-sort"><option value="relevance">Relevance</option><option value="downloads">Downloads</option><option value="follows">Follows</option><option value="updated">Updated</option><option value="newest">Newest</option></select>
+          <button type="button" class="action" id="mb-go">Search</button>
+          <button type="button" class="ghost" id="mb-clear" hidden>Back to rows</button>
+        </div>
+        <div class="status" id="mb-status"></div>
+        <div id="mb-results" class="mb-grid" hidden></div>
+        <div id="mb-rows"></div>
+        <div class="mb-overlay" id="mb-overlay" hidden><div class="mb-detail glass" id="mb-detail" role="dialog" aria-modal="true"></div></div>
+        <p class="hint mb-credit">Data from the public <a href="https://modrinth.com" target="_blank" rel="noopener">Modrinth</a> API. Files are downloaded from Modrinth's CDN and hash-checked.</p>
+        <details class="mb-classic"><summary>Profile mods (classic)</summary>
         <h1>MODS</h1>
         <p class="hint">Browse Modrinth for Minecraft 1.21.11 / Fabric. Each profile keeps its own installed and enabled mods.</p>
         <div class="mods-toolbar">
@@ -172,6 +192,7 @@
           </div>
         </div>
         <div class="mod-details" id="mod-details" hidden></div>
+              </details>
       </section>
 
       <section class="panel" data-panel="skins" id="panel-skins" hidden>
@@ -616,6 +637,7 @@
         panel.hidden = panel.dataset.panel !== name;
       });
       if (name === "mods") {
+        mbOpen().catch(() => {});
         loadInstalledMods().catch(() => {});
       }
       if (name === "skins") {
@@ -3268,6 +3290,200 @@
       if (e.key === "?") { $("kbd-help").hidden = !$("kbd-help").hidden; }
       if (e.key === "/") { e.preventDefault(); showTab("browse"); $("browse-filter").focus(); }
     });
+    // ---- MODS browser (Modrinth, v1.4.0) ----
+    const mb = { rows: null, installed: {}, ctx: {}, loadedFor: "", jobs: {} };
+    function mbEsc(t) { const d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+    function mbNum(n) { n = Number(n) || 0; return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "K" : String(n); }
+    function mbSafeUrl(u) { return /^https:\/\/[^\s"'<>]+$/.test(u || "") ? u : ""; }
+    function mbInstanceBody() {
+      const parts = ($("mb-instance").value || "").split("|");
+      return { versionNumber: parts[0] || "", loader: parts[1] || "" };
+    }
+    function mbFillInstances() {
+      const sel = $("mb-instance");
+      const keep = sel.value || ($("version") && $("version").value) || "";
+      sel.replaceChildren();
+      (versions || []).forEach((v) => {
+        const o = document.createElement("option");
+        o.value = v.versionNumber + "|" + v.loader;
+        o.textContent = v.versionNumber + " / " + v.loader + (v.downloaded === false ? " (not installed)" : "");
+        sel.appendChild(o);
+      });
+      if (keep && [...sel.options].some((o) => o.value === keep)) sel.value = keep;
+    }
+    function mbIsInstalled(id) { return mb.installed && mb.installed[id]; }
+    function mbCard(item) {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "mb-card";
+      const inst = mbIsInstalled(item.id);
+      const icon = mbSafeUrl(item.icon);
+      el.innerHTML =
+        '<div class="mb-icon">' + (icon ? '<img loading="lazy" alt="" src="' + mbEsc(icon) + '">' : '<span>' + mbEsc((item.title || "?").slice(0, 1)) + '</span>') + '</div>' +
+        '<div class="mb-meta"><strong>' + mbEsc(item.title) + '</strong><small>by ' + mbEsc(item.author || "unknown") + ' · ⬇ ' + mbNum(item.downloads) + '</small>' +
+        '<p>' + mbEsc(item.description) + '</p></div>' + (inst ? '<span class="mb-badge">Installed</span>' : '');
+      el.addEventListener("click", () => mbDetail(item.slug || item.id));
+      return el;
+    }
+    function mbRenderRows() {
+      const host = $("mb-rows");
+      host.replaceChildren();
+      (mb.rows || []).forEach((row) => {
+        const sec = document.createElement("section");
+        sec.className = "mb-row" + (row.key === "specials" ? " mb-specials" : "");
+        const h = document.createElement("div");
+        h.className = "mb-row-head";
+        h.innerHTML = "<h2>" + mbEsc(row.title) + "</h2>" + (row.key === "specials" ? '<small class="hint">New picks every day</small>' : "");
+        const track = document.createElement("div");
+        track.className = "mb-track";
+        if (!row.items.length) {
+          track.innerHTML = '<p class="hint">' + mbEsc(row.error || "Nothing for this version yet.") + "</p>";
+        }
+        row.items.forEach((it) => track.appendChild(mbCard(it)));
+        const prev = document.createElement("button"); prev.type = "button"; prev.className = "mb-arrow l"; prev.textContent = "‹";
+        const next = document.createElement("button"); next.type = "button"; next.className = "mb-arrow r"; next.textContent = "›";
+        prev.addEventListener("click", () => track.scrollBy({ left: -track.clientWidth * 0.9, behavior: "smooth" }));
+        next.addEventListener("click", () => track.scrollBy({ left: track.clientWidth * 0.9, behavior: "smooth" }));
+        const wrap = document.createElement("div"); wrap.className = "mb-track-wrap";
+        wrap.append(prev, track, next);
+        sec.append(h, wrap);
+        host.appendChild(sec);
+      });
+    }
+    async function mbOpen(force) {
+      mbFillInstances();
+      const key = $("mb-instance").value;
+      if (!force && mb.loadedFor === key && mb.rows) return;
+      setStatus("mb-status", "Loading Modrinth…", "");
+      const res = await post("/api/browse/rows", mbInstanceBody());
+      if (!res.data || !res.data.ok) { setStatus("mb-status", (res.data && res.data.error) || "Modrinth is unreachable.", "bad"); return; }
+      mb.rows = res.data.rows; mb.installed = res.data.installed || {}; mb.loadedFor = key;
+      mb.ctx = { gameVersion: res.data.gameVersion, loader: res.data.loader };
+      if (!$("mb-gamever").dataset.touched) $("mb-gamever").value = res.data.gameVersion || "";
+      if ([...$("mb-loader").options].some((o) => o.value === res.data.loader)) $("mb-loader").value = res.data.loader;
+      setStatus("mb-status", "Minecraft " + res.data.gameVersion + " · " + res.data.loader + (res.data.instance ? " · instance " + res.data.instance : " · instance not installed yet"), "good");
+      mbRenderRows();
+      mbLoadCategories();
+    }
+    async function mbLoadCategories() {
+      if ($("mb-category").options.length > 1) return mbFilterCategories();
+      const res = await api("/api/browse/categories");
+      if (!res.data || !res.data.ok) return;
+      mb.categories = res.data.categories || [];
+      mbFilterCategories();
+    }
+    function mbFilterCategories() {
+      const type = $("mb-type").value, sel = $("mb-category"), keep = sel.value;
+      sel.replaceChildren(new Option("Any category", ""));
+      (mb.categories || []).filter((c) => c.type === type).forEach((c) => sel.appendChild(new Option(c.name.replace(/-/g, " "), c.name)));
+      sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
+    }
+    async function mbSearch() {
+      const body = Object.assign(mbInstanceBody(), {
+        query: $("mb-query").value, type: $("mb-type").value, category: $("mb-category").value,
+        loader: $("mb-loader").value, gameVersion: $("mb-gamever").value.trim(), sort: $("mb-sort").value, limit: 40
+      });
+      setStatus("mb-status", "Searching…", "");
+      const res = await post("/api/browse/search", body);
+      if (!res.data || !res.data.ok) { setStatus("mb-status", (res.data && res.data.error) || "Search failed.", "bad"); return; }
+      const grid = $("mb-results");
+      grid.replaceChildren();
+      res.data.results.forEach((it) => grid.appendChild(mbCard(it)));
+      grid.hidden = false; $("mb-rows").hidden = true; $("mb-clear").hidden = false;
+      setStatus("mb-status", res.data.results.length + " result(s) for Minecraft " + (body.gameVersion || mb.ctx.gameVersion), res.data.results.length ? "good" : "");
+    }
+    function mbMarkdown(md) {
+      // Everything is escaped first; only a small safe subset is turned back into markup.
+      const lines = mbEsc(md).split("\n");
+      const out = []; let list = false;
+      lines.forEach((raw) => {
+        let line = raw.replace(/!\[([^\]]*)\]\((https:\/\/[^)\s]+)\)/g, (m, alt, u) => '<img loading="lazy" alt="' + alt + '" src="' + u + '">')
+          .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, (m, t, u) => '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + t + "</a>")
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
+        const li = /^\s*[-*]\s+(.*)$/.exec(line);
+        if (li) { if (!list) { out.push("<ul>"); list = true; } out.push("<li>" + li[1] + "</li>"); return; }
+        if (list) { out.push("</ul>"); list = false; }
+        const h = /^(#{1,4})\s+(.*)$/.exec(line);
+        if (h) out.push("<h" + (h[1].length + 2) + ">" + h[2] + "</h" + (h[1].length + 2) + ">");
+        else if (line.trim()) out.push("<p>" + line + "</p>");
+      });
+      if (list) out.push("</ul>");
+      return out.join("");
+    }
+    async function mbDetail(project) {
+      const box = $("mb-detail");
+      $("mb-overlay").hidden = false;
+      box.innerHTML = '<p class="hint">Loading…</p>';
+      const res = await post("/api/browse/details", Object.assign(mbInstanceBody(), { project: project }));
+      if (!res.data || !res.data.ok) { box.innerHTML = '<p class="status bad">' + mbEsc((res.data && res.data.error) || "Could not load.") + "</p>"; return; }
+      const p = res.data.project;
+      const inst = mbIsInstalled(p.id);
+      const icon = mbSafeUrl(p.icon);
+      const gallery = (p.gallery || []).map((g) => mbSafeUrl(g.url) ? '<img loading="lazy" alt="' + mbEsc(g.title) + '" src="' + mbEsc(g.url) + '">' : "").join("");
+      const vers = (p.versions || []).map((v) => '<option value="' + mbEsc(v.id) + '">' + mbEsc(v.number + " · " + v.type) + "</option>").join("");
+      const deps = (p.dependencies || []).map((d) => '<li>' + mbEsc(d.title) + ' <small>' + (d.required ? "required, installed automatically" : "optional") + (mbIsInstalled(d.id) ? " · installed" : "") + "</small></li>").join("");
+      const folder = p.type === "shader" ? "shaderpacks" : p.type === "resourcepack" ? "resourcepacks" : "mods";
+      box.innerHTML =
+        '<button type="button" class="mb-close" aria-label="Close">×</button>' +
+        '<div class="mb-dhead">' + (icon ? '<img class="mb-dicon" alt="" src="' + mbEsc(icon) + '">' : "") +
+        '<div><h2>' + mbEsc(p.title) + '</h2><small>by ' + mbEsc(p.author || "unknown") + " · ⬇ " + mbNum(p.downloads) + " · " + mbEsc(p.type) + ' · goes to ' + folder + '/</small><p>' + mbEsc(p.description) + "</p></div></div>" +
+        (gallery ? '<div class="mb-gallery">' + gallery + "</div>" : "") +
+        '<div class="mb-actions">' +
+        (vers ? '<select id="mb-ver">' + vers + "</select>" : '<span class="status bad">No build for Minecraft ' + mbEsc(mb.ctx.gameVersion) + "</span>") +
+        (vers ? '<button type="button" class="action" id="mb-install">' + (inst ? "Reinstall" : "Install") + "</button>" : "") +
+        (inst && inst.update ? '<button type="button" class="action" id="mb-update">Update to ' + mbEsc(inst.update.number || "latest") + "</button>" : "") +
+        (inst ? '<button type="button" class="ghost danger" id="mb-remove">Remove</button>' : "") +
+        '<a class="ghost" href="' + mbEsc(mbSafeUrl(p.url)) + '" target="_blank" rel="noopener">Modrinth page</a></div>' +
+        '<div class="mb-progress" id="mb-progress" hidden><div class="bar"><span></span></div><small></small></div>' +
+        (deps ? "<h3>Dependencies</h3><ul class=\"mb-deps\">" + deps + "</ul>" : "") +
+        '<h3>About</h3><div class="mb-body">' + mbMarkdown(p.body || p.description) + "</div>";
+      box.querySelector(".mb-close").addEventListener("click", mbClose);
+      const ib = $("mb-install"); if (ib) ib.addEventListener("click", () => mbInstall(p, $("mb-ver").value));
+      const ub = $("mb-update"); if (ub) ub.addEventListener("click", () => mbInstall(p, inst.update.versionId));
+      const rb = $("mb-remove"); if (rb) rb.addEventListener("click", () => mbRemove(p));
+    }
+    function mbClose() { $("mb-overlay").hidden = true; $("mb-detail").replaceChildren(); }
+    async function mbInstall(p, versionId) {
+      const res = await post("/api/browse/install", Object.assign(mbInstanceBody(), { project: p.id, versionId: versionId || "" }));
+      if (!res.data || !res.data.ok) { toast((res.data && res.data.error) || "Install failed.", "bad"); return; }
+      const bar = $("mb-progress"); if (bar) bar.hidden = false;
+      const id = res.data.job;
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 500));
+        const j = (await api("/api/browse/job?id=" + encodeURIComponent(id))).data || {};
+        const pb = $("mb-progress");
+        if (pb) { pb.querySelector("span").style.width = Math.round(100 * (j.done || 0) / (j.total || 1)) + "%"; pb.querySelector("small").textContent = j.step || ""; }
+        if (j.state === "done") {
+          const r = j.result || {};
+          toast("Installed " + (r.installed || []).map((x) => x.title).join(", ") + ((r.skipped || []).length ? " (skipped: " + r.skipped.join(", ") + ")" : ""), "good");
+          break;
+        }
+        if (j.state === "error" || !j.ok) { toast(j.error || "Install failed.", "bad"); break; }
+      }
+      await mbRefreshInstalled();
+      if (!$("mb-overlay").hidden) mbDetail(p.slug || p.id);
+    }
+    async function mbRemove(p) {
+      const res = await post("/api/browse/remove", Object.assign(mbInstanceBody(), { projectId: p.id }));
+      if (!res.data || !res.data.ok) { toast((res.data && res.data.error) || "Remove failed.", "bad"); return; }
+      toast("Removed " + p.title + ".", "good");
+      await mbRefreshInstalled();
+      mbDetail(p.slug || p.id);
+    }
+    async function mbRefreshInstalled() {
+      const res = await post("/api/browse/installed", Object.assign(mbInstanceBody(), { updates: true }));
+      if (res.data && res.data.ok) mb.installed = res.data.installed || {};
+      mbRenderRows();
+    }
+    $("mb-go").addEventListener("click", () => mbSearch().catch(() => setStatus("mb-status", "Search failed.", "bad")));
+    $("mb-query").addEventListener("keydown", (e) => { if (e.key === "Enter") mbSearch().catch(() => {}); });
+    $("mb-type").addEventListener("change", mbFilterCategories);
+    $("mb-gamever").addEventListener("input", () => { $("mb-gamever").dataset.touched = "1"; });
+    $("mb-clear").addEventListener("click", () => { $("mb-results").hidden = true; $("mb-rows").hidden = false; $("mb-clear").hidden = true; });
+    $("mb-instance").addEventListener("change", () => { delete $("mb-gamever").dataset.touched; mbOpen(true).catch(() => {}); });
+    $("mb-overlay").addEventListener("click", (e) => { if (e.target === $("mb-overlay")) mbClose(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("mb-overlay").hidden) mbClose(); });
+    window.setTimeout(() => mbRefreshInstalled().catch(() => {}), 0);
   </script>
 </body>
 </html>

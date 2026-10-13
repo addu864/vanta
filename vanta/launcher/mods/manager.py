@@ -206,7 +206,7 @@ class ModManager:
                 compatible = [
                     item
                     for item in versions
-                    if is_compatible(item, game_version=self.game_version, loader=self.loader)
+                    if self._fits(item, project.project_type)
                 ]
                 if not compatible:
                     return {
@@ -222,7 +222,7 @@ class ModManager:
         except ModRepositoryError as exc:
             return {"ok": False, "error": exc.message, "state": None, "downloaded": False}
 
-        if not is_compatible(version, game_version=self.game_version, loader=self.loader):
+        if not self._fits(version, project.project_type):
             return {
                 "ok": False,
                 "error": (
@@ -290,15 +290,16 @@ class ModManager:
                 "downloaded": False,
             }
 
-        mods_dir = self.mods_dir(profile_name)
+        ptype = project.project_type if project.project_type in {"shader", "resourcepack"} else "mod"
+        mods_dir = self.folder_for(profile_name, ptype)
         safe_name = SAFE_NAME.sub("_", primary.filename).strip("._") or f"{project.slug}.jar"
-        if not safe_name.lower().endswith(".jar"):
+        if ptype == "mod" and not safe_name.lower().endswith(".jar"):
             safe_name += ".jar"
         target = mods_dir / safe_name
         # Replace any prior file for this project.
         existing = self.get_installed(profile_name, project.id)
         if existing is not None:
-            self._delete_file(mods_dir, existing.filename, existing.enabled)
+            self._delete_file(self.folder_for(profile_name, existing.project_type), existing.filename, existing.enabled)
 
         target.write_bytes(payload)
         record = InstalledMod(
@@ -315,6 +316,7 @@ class ModManager:
             game_versions=list(version.game_versions),
             loaders=list(version.loaders),
             dependencies=[dep.to_dict() for dep in version.dependencies],
+            project_type=ptype,
         )
         self._upsert(profile_name, record)
         return {
@@ -330,7 +332,7 @@ class ModManager:
         installed = self.get_installed(profile_name, project_id)
         if installed is None:
             return {"ok": False, "error": "That mod is not installed on this profile."}
-        self._delete_file(self.mods_dir(profile_name), installed.filename, installed.enabled)
+        self._delete_file(self.folder_for(profile_name, installed.project_type), installed.filename, installed.enabled)
         remaining = [item for item in self.list_installed(profile_name) if item.project_id != project_id]
         self._write_manifest(profile_name, remaining)
         return {"ok": True, "removed": installed.to_dict()}
@@ -339,7 +341,7 @@ class ModManager:
         installed = self.get_installed(profile_name, project_id)
         if installed is None:
             return {"ok": False, "error": "That mod is not installed on this profile."}
-        mods_dir = self.mods_dir(profile_name)
+        mods_dir = self.folder_for(profile_name, installed.project_type)
         active = mods_dir / installed.filename
         disabled = mods_dir / (installed.filename + ".disabled")
         if enabled and not installed.enabled:
@@ -363,7 +365,8 @@ class ModManager:
             cards.append(
                 {
                     **item.to_dict(),
-                    "installState": STATE_INSTALLED if item.enabled else STATE_INSTALLED,
+                    "installState": STATE_INSTALLED,
+                    "status": "enabled" if item.enabled else "disabled",
                     "supportedMcVersion": ", ".join(item.game_versions) or self.game_version,
                     "loader": ", ".join(item.loaders) or self.loader,
                     "description": "",
@@ -442,6 +445,11 @@ class ModManager:
         items.append(record)
         self._write_manifest(profile_name, items)
 
+    def _fits(self, version: ModVersion, project_type: str) -> bool:
+        if project_type in {"shader", "resourcepack"}:
+            return self.game_version in {str(v).strip() for v in version.game_versions}
+        return is_compatible(version, game_version=self.game_version, loader=self.loader)
+
     def _write_manifest(self, profile_name: str, items: list[InstalledMod]) -> None:
         write_json(
             self.manifest_path(profile_name),
@@ -471,5 +479,15 @@ class ModManager:
             game_versions=[str(v) for v in (raw.get("gameVersions") or [])],
             loaders=[str(v) for v in (raw.get("loaders") or [])],
             dependencies=list(raw.get("dependencies") or []),
+            project_type=str(raw.get("projectType") or "mod"),
         )
+
+    def folder_for(self, profile_name: str, project_type: str) -> Path:
+        """mods/ for mods, shaderpacks/ for shaders, resourcepacks/ for resource packs."""
+        sub = {"shader": "shaderpacks", "resourcepack": "resourcepacks"}.get(project_type)
+        if sub is None:
+            return self.mods_dir(profile_name)
+        path = self.profile_dir(profile_name) / sub
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 

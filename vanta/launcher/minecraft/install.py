@@ -160,6 +160,12 @@ def install_client(
 
         report("mods", 0, 1)
         required_mods = install_required_mods(instance / "mods")
+        try:
+            from vanta.launcher.mods.companion import ensure_companion
+
+            ensure_companion(instance / "mods", version, "fabric")
+        except Exception:  # noqa: BLE001
+            pass
         report("mods", 1, 1)
         # Seeds options.txt (toggleUse:false, B = night vision) first, so the
         # downloaded packs are enabled on a brand-new install too.

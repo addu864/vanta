@@ -366,6 +366,14 @@ def _launch_local(
     handle.write(
         f"\n--- local start {datetime.now().astimezone().isoformat(timespec='seconds')} ---\n"
     )
+    if minecraft_client and str(version.get("loader") or "").lower() == "fabric":
+        # Vanta Companion (in-game Vanta menu) for versions its jar supports; never fatal.
+        try:
+            from vanta.launcher.mods.companion import ensure_companion
+
+            ensure_companion(jar.parent / "mods", str(version.get("versionNumber") or ""))
+        except Exception:  # noqa: BLE001
+            pass
     if str(version.get("versionNumber")) == MAIN_VERSION and not version.get("downloaded"):
         # Profile mods target 1.21.11; never copy them into other versions' instances.
         _sync_profile_mods(str(saved_profile.get("name") or ""), jar.parent, data_dir)

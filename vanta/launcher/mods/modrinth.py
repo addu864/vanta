@@ -12,7 +12,8 @@ from vanta.launcher.mods.models import ModDependency, ModFile, ModProject, ModVe
 from vanta.launcher.mods.repository import ModRepository, ModRepositoryError
 
 DEFAULT_BASE = "https://api.modrinth.com/v2"
-USER_AGENT = "Vanta/0.2 (local launcher; Advay/ADDU; no-premium; contact=local)"
+from vanta import __version__ as _V
+USER_AGENT = f"addu864/vanta/{_V} (Minecraft launcher; github.com/addu864/vanta)"
 
 
 class ModrinthRepository(ModRepository):
@@ -37,14 +38,14 @@ class ModrinthRepository(ModRepository):
         loader: str,
         limit: int = 20,
         offset: int = 0,
+        project_type: str = "mod",
     ) -> list[ModProject]:
-        facets = json.dumps(
-            [
-                ["project_type:mod"],
-                [f"versions:{game_version}"],
-                [f"categories:{loader}"],
-            ]
-        )
+        if project_type not in {"mod", "shader", "resourcepack"}:
+            project_type = "mod"
+        groups = [[f"project_type:{project_type}"], [f"versions:{game_version}"]]
+        if project_type == "mod":
+            groups.append([f"categories:{loader}"])
+        facets = json.dumps(groups)
         params = {
             "query": query or "",
             "limit": str(max(1, min(limit, 100))),
