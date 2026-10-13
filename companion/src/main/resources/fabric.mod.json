@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "vanta-companion",
+  "version": "${version}",
+  "name": "Vanta Companion",
+  "description": "In-game companion for the Vanta launcher: mods, visuals, HUD, performance and fullbright in one glass panel.",
+  "authors": ["ADDU"],
+  "license": "MIT",
+  "icon": "assets/vanta-companion/icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["addu.vanta.companion.VantaCompanion"] },
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.11", "java": ">=21", "fabric-api": ">=0.141.6" },
+  "suggests": { "iris": "*", "modmenu": "*", "gammautils": "*" }
+}
