@@ -1,0 +1,9 @@
+{
+  "id": "vanta-smooth",
+  "name": "Vanta Smooth",
+  "owner": "Vanta",
+  "goal": "A soft, even grade with gentle contrast. This is a Vanta description, not a shader program.",
+  "performanceWarning": "A smooth full-screen pass can still cost frames on a low-end GPU. Vanta does not run this preset.",
+  "bundlesThirdPartyShader": false,
+  "shaderCodeIncluded": false
+}

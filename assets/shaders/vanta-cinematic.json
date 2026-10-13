@@ -1,0 +1,9 @@
+{
+  "id": "vanta-cinematic",
+  "name": "Vanta Cinematic",
+  "owner": "Vanta",
+  "goal": "Deeper shadows and a slightly wider sense of depth. Description only. Not a shader program.",
+  "performanceWarning": "Cinematic looks are usually the heavier choice and can cost more frame time. Vanta does not run this preset.",
+  "bundlesThirdPartyShader": false,
+  "shaderCodeIncluded": false
+}
