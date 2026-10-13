@@ -1609,7 +1609,7 @@
       preview.className = "skin-preview";
       const texture = document.createElement("img");
       texture.className = "skin-texture";
-      texture.alt = "2D skin texture";
+      texture.alt = "2D skin texture"; texture.loading = "lazy";
       texture.src = skin.previewPath || "";
       const canvas = document.createElement("canvas");
       canvas.className = "skin-canvas";
@@ -1703,6 +1703,21 @@
           const heading = document.createElement("h3");
           heading.className = "skin-category";
           heading.textContent = cat;
+          const fromSkindex = items.some((x) => (x.sourceNote || "").indexOf("skindex.pro") !== -1);
+          const fromGameFiles = cat === "Minecraft defaults";
+          if (fromSkindex || fromGameFiles) {
+            const credit = document.createElement("small");
+            credit.className = "skin-credit";
+            if (fromSkindex) {
+              credit.append(" · downloaded from ");
+              const a = document.createElement("a");
+              a.href = "https://www.skindex.pro/"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Skindex (skindex.pro)";
+              credit.append(a);
+            } else {
+              credit.append(" · from your own Minecraft files");
+            }
+            heading.appendChild(credit);
+          }
           const grid = document.createElement("div");
           grid.className = "mod-cards library-cards";
           items.forEach((skin) => grid.appendChild(renderSkinCard(skin)));

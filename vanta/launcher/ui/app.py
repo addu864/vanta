@@ -56,7 +56,7 @@ class VantaApp:
         self.mod_repository = mod_repository or ModrinthRepository()
         self.mods = ModManager(self.data_dir, self.mod_repository)
         self.utilities = UtilityManager(self.data_dir, self.mod_repository)
-        self.skin_repository = skin_repository or VantaSkinLibrary()
+        self.skin_repository = skin_repository or VantaSkinLibrary(data_dir=self.data_dir)
         self.skins = SkinManager(self.data_dir, self.skin_repository)
         self.servers = ServerManager(self.data_dir)
         self.client_ui = ClientUiStore(self.data_dir)

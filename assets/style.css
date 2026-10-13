@@ -775,3 +775,5 @@ label.switch, label.check, label.inst-mod, label.custom-mod { flex-direction: ro
 .first-run strong { display: block; }
 .first-run .hint { margin: 6px 0 0; }
 .first-run button { margin-top: 8px; }
+.skin-credit { font-weight: 400; font-size: 12px; color: var(--muted, #b9b0cc); margin-left: 4px; }
+.skin-credit a { color: inherit; }
