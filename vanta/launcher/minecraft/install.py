@@ -53,7 +53,14 @@ def install_client(
     an optional callable ``progress(step, done, total)``. ``assets_root`` lets
     several instances share one assets folder.
     """
-    report = progress or (lambda step, done, total: None)
+    def report(step: str, done: int, total: int) -> None:
+        if progress is None:
+            return
+        try:
+            progress(step, done, total)
+        except Exception:  # noqa: BLE001 - progress display must never break an install
+            pass
+
     suffix = "fabric" if loader else "vanilla"
     instance = Path(game_directory) / (instance_name or f"{version}-{suffix}")
     instance.mkdir(parents=True, exist_ok=True)

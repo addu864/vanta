@@ -67,9 +67,10 @@ def enabled() -> bool:
 
 def status(data_dir: Path) -> dict[str, Any]:
     """What the PLAY tab shows while the first-run download is going."""
-    path = Path(data_dir) / STATUS_NAME
+    from vanta.shared.utilities.jsonio import read_json
+
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = read_json(Path(data_dir) / STATUS_NAME, {"state": "idle"})
     except (OSError, ValueError):
         data = {"state": "idle"}
     if not isinstance(data, dict):
@@ -99,10 +100,11 @@ def maybe_start(data_dir: Path, *, installer: Callable[..., dict[str, Any]] | No
         status.parent.mkdir(parents=True, exist_ok=True)
 
         def _write(state: str, **extra: Any) -> None:
+            from vanta.shared.utilities.jsonio import write_json
+
             payload = {"state": state, "time": datetime.now().astimezone().isoformat(timespec="seconds"), **extra}
-            tmp = status.with_name(status.name + ".tmp")
-            tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            os.replace(tmp, status)
+            # Windows denies a replace while the UI is reading the file; write_json retries.
+            write_json(status, payload)
 
         _write("downloading", step="metadata", done=0, total=1, percent=0)
         last = [0.0]
@@ -115,7 +117,10 @@ def maybe_start(data_dir: Path, *, installer: Callable[..., dict[str, Any]] | No
             if now - last[0] < 0.5 and done not in (0, total):
                 return
             last[0] = now
-            _write("downloading", step=step, done=done, total=total, percent=int(lo + (hi - lo) * min(1.0, frac)))
+            try:
+                _write("downloading", step=step, done=done, total=total, percent=int(lo + (hi - lo) * min(1.0, frac)))
+            except OSError:
+                pass  # a missed progress update must never stop the download
 
         try:
             run = installer

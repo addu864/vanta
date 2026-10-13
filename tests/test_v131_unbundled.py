@@ -102,3 +102,37 @@ def test_interrupted_first_run_resumes(tmp_path: Path, monkeypatch: pytest.Monke
     (tmp_path / first_run.STATUS_NAME).write_text(json.dumps({"state": "downloading"}))
     assert first_run.needs_install(tmp_path) is True
     assert first_run.status(tmp_path)["state"] == "interrupted"
+
+
+def test_progress_errors_never_fail_first_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """On Windows the status write can hit WinError 5 while the UI reads it."""
+    monkeypatch.setenv("VANTA_AUTO_INSTALL", "1")
+    from vanta.shared.utilities import jsonio
+    real = jsonio.write_json
+    calls = [0]
+
+    def flaky(path, data, **kw):
+        calls[0] += 1
+        if data.get("state") == "downloading" and data.get("step") == "assets":
+            raise PermissionError(5, "Access is denied")
+        return real(path, data, **kw)
+
+    monkeypatch.setattr(jsonio, "write_json", flaky)
+
+    def fake(root: Path, *, download_assets: bool, progress) -> dict:
+        progress("assets", 0, 10)
+        progress("assets", 10, 10)
+        jar = root / "1.21.11-fabric" / "client.jar"
+        jar.parent.mkdir(parents=True)
+        jar.write_bytes(b"x")
+        return {"instance": str(jar.parent)}
+
+    first_run.maybe_start(tmp_path, installer=fake, background=False)
+    assert first_run.status(tmp_path)["state"] == "done"
+
+
+def test_install_client_progress_errors_are_swallowed() -> None:
+    import inspect
+    from vanta.launcher.minecraft import install
+    src = inspect.getsource(install.install_client)
+    assert "progress display must never break an install" in src
