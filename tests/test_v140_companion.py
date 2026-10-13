@@ -1,7 +1,16 @@
 """v1.4.0: Vanta Companion jar ships with the app and lands in 1.21.11 Fabric instances."""
 from pathlib import Path
 
+import json
+import zipfile
+
 from vanta.launcher.mods import companion
+
+
+def _api(mods, version="0.141.6+1.21.11"):
+    mods.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(mods / "fabric-api-x.jar", "w") as z:
+        z.writestr("fabric.mod.json", json.dumps({"id": "fabric-api", "version": version}))
 
 
 def test_bundled_jar_metadata():
@@ -17,11 +26,11 @@ def test_bundled_jar_metadata():
 
 def test_installs_and_replaces(tmp_path):
     mods = tmp_path / "mods"
-    mods.mkdir()
+    _api(mods)
     (mods / "vanta-companion-0.9.0.jar").write_bytes(b"old")
     r = companion.ensure_companion(mods, "1.21.11")
     assert r["installed"] and r["changed"]
-    names = sorted(p.name for p in mods.iterdir())
+    names = sorted(p.name for p in mods.iterdir() if p.name.startswith("vanta-companion"))
     assert names == [companion.bundled_jar().name]
     assert companion.ensure_companion(mods, "1.21.11")["changed"] is False
 
@@ -34,3 +43,12 @@ def test_respects_disabled_and_other_versions(tmp_path):
     other = tmp_path / "m2"
     assert companion.ensure_companion(other, "1.20.1")["installed"] is False
     assert not other.exists()
+
+
+def test_needs_new_enough_fabric_api(tmp_path):
+    mods = tmp_path / "mods"
+    assert companion.ensure_companion(mods, "1.21.11")["installed"] is False
+    _api(mods, "0.140.0+1.21.11")
+    assert companion.ensure_companion(mods, "1.21.11")["installed"] is False
+    _api(mods, "0.141.6+1.21.11")
+    assert companion.ensure_companion(mods, "1.21.11")["installed"] is True
