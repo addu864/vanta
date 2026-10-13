@@ -215,6 +215,12 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         result = app.play(_payload(body))
         status = 200 if result.get("status") in {"Ready", "Started"} else 400
         return status, _json_bytes(result), JSON
+    if path.startswith("/api/friends/"):
+        action = path[len("/api/friends/"):]
+        if method == "GET" and action == "state":
+            return 200, _json_bytes(app.friends_call("state")), JSON
+        if method == "POST":
+            return _from_ok(app.friends_call(action, _payload(body)))
     if path.startswith("/api/browse/"):
         b = _payload(body) if method == "POST" else {}
         if method == "GET" and path == "/api/browse/categories":

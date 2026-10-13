@@ -57,6 +57,8 @@ class VantaApp:
         self.mod_repository = mod_repository or ModrinthRepository()
         self.mods = ModManager(self.data_dir, self.mod_repository)
         self.browser = ModBrowser(self.data_dir / "cache" / "modrinth", curated_file=Path(os.environ.get("VANTA_CURATED_MODS", str(self.data_dir / "curated-mods.md"))))
+        from vanta.launcher.friends.service import FriendsService
+        self.friends = FriendsService(self.data_dir)
         self.utilities = UtilityManager(self.data_dir, self.mod_repository)
         self.skin_repository = skin_repository or VantaSkinLibrary(data_dir=self.data_dir)
         self.skins = SkinManager(self.data_dir, self.skin_repository)
@@ -910,6 +912,77 @@ class VantaApp:
         if self._game_running():
             return {"ok": False, "error": "Close Minecraft first."}
         return self.browser.remove(folder, str(body.get("projectId") or ""), game, loader)
+
+    # ---- Friends (Supabase; off until a project is configured) ----
+    def friends_call(self, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.friends.client import FriendsError
+        body = payload or {}
+        f = self.friends
+        try:
+            if action == "state":
+                return f.state()
+            if not f.enabled:
+                return {"ok": False, "enabled": False, "error": "Friends isn't switched on yet."}
+            if action == "register":
+                return f.register(str(body.get("email") or ""), str(body.get("password") or ""))
+            if action == "resend":
+                return f.resend(str(body.get("email") or ""))
+            if action == "signin":
+                return f.sign_in(str(body.get("email") or ""), str(body.get("password") or ""))
+            if action == "signout":
+                return f.sign_out()
+            if action == "username":
+                return f.claim_username(str(body.get("username") or ""))
+            if action == "add":
+                return f.add(str(body.get("target") or ""))
+            if action == "respond":
+                return f.respond(int(body.get("id") or 0), bool(body.get("accept")))
+            if action == "remove":
+                return f.remove(str(body.get("id") or ""))
+            if action == "overview":
+                running = self._game_running()
+                settings = self.config.get()
+                if running:
+                    f.set_presence(status="playing", game_version=str(settings.get("defaultVersion") or ""),
+                                   playing=f"Minecraft {settings.get('defaultVersion') or ''}".strip())
+                else:
+                    f.set_presence(status="online", playing=None, join_address=None)
+                f.start_heartbeat()
+                return f.overview()
+            if action == "share":
+                folder, version = self._instance_dir(body)
+                if folder is None or version is None:
+                    return {"ok": False, "error": "That instance is not installed."}
+                return f.share_world(folder, str(version["versionNumber"]), str(body.get("address") or ""))
+            if action == "unshare":
+                return f.stop_sharing()
+            if action == "join":
+                return self._join_friend(body)
+        except FriendsError as exc:
+            return {"ok": False, "error": str(exc)}
+        except (TypeError, ValueError):
+            return {"ok": False, "error": "Bad request."}
+        return {"ok": False, "error": "Unknown Friends action."}
+
+    def _join_friend(self, body: dict[str, Any]) -> dict[str, Any]:
+        """PLAY straight into a friend's e4all world, using an installed instance of their version."""
+        overview = self.friends.overview()
+        friend = next((x for x in overview["friends"] if str(x.get("id")) == str(body.get("id") or "")), None)
+        if not friend or not friend.get("join_address"):
+            return {"ok": False, "error": "That friend isn't sharing a world right now."}
+        settings = self.config.get()
+        want = str(friend.get("game_version") or settings.get("defaultVersion") or "")
+        rows = [v for v in list_versions(str(settings["gameDirectory"])) if v.get("supported") and str(v["versionNumber"]) == want]
+        if not rows:
+            return {"ok": False, "error": f"{friend.get('username')} is on Minecraft {want}. Install {want} in INSTANCES first."}
+        row = next((v for v in rows if str(v.get("loader")) == "fabric"), rows[0])
+        addr = str(friend["join_address"])
+        host, _, port = addr.partition(":")
+        play = {"versionNumber": want, "loader": row["loader"], "joinServer": {"host": host, "port": int(port) if port else None},
+                "targetMode": "local"}
+        result = self.play(play)
+        result["joining"] = {"friend": friend.get("username"), "address": addr}
+        return result
 
     def _selected_profile_name(self, payload: dict[str, Any] | None = None) -> str | None:
         body = payload or {}
