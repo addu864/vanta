@@ -7,8 +7,8 @@ await q(`create role anon; create role authenticated; create schema auth;
 create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.sub', true), '')::uuid $$;
 grant usage on schema auth to authenticated; grant select on auth.users to authenticated;`);
-await q(fs.readFileSync("new URL("./schema.sql", import.meta.url)", "utf8"));
-await q(fs.readFileSync("new URL("./schema.sql", import.meta.url)", "utf8")); // re-run safe
+await q(fs.readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
+await q(fs.readFileSync(new URL("./schema.sql", import.meta.url), "utf8")); // re-run safe
 await q(`grant usage on schema public to authenticated; grant select, insert, update, delete on all tables in schema public to authenticated;`);
 const A='11111111-1111-1111-1111-111111111111', B='22222222-2222-2222-2222-222222222222', X='33333333-3333-3333-3333-333333333333';
 await q(`insert into auth.users values ('${A}','a@x',now()),('${B}','b@x',now()),('${X}','x@x',null)`);
