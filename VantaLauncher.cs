@@ -25,10 +25,22 @@ class Program
     static void Main()
     {
         bool createdNew;
-        _mutex = new Mutex(true, "Local\\VantaDesktopWindow", out createdNew);
+        // One Vanta per Windows session. A second launch brings the open window forward and exits,
+        // so two copies never fight over the WebView2 user data folder (0x800700AA).
+        // Global (not Local) so a copy started in another Windows session (remote tools, a
+        // second sign-in) also counts; Local is the fallback if Global is not allowed.
+        try { _mutex = new Mutex(true, "Global\\VantaDesktopWindow", out createdNew); }
+        catch (UnauthorizedAccessException) { _mutex = new Mutex(true, "Local\\VantaDesktopWindow", out createdNew); }
         if (!createdNew)
         {
-            FocusExisting();
+            if (!FocusExisting())
+                MessageBox.Show("Vanta is already open.\r\n\r\nUse the Vanta window that is already running (check the taskbar).", "VANTA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        IntPtr open = FindWindow(null, "VANTA");
+        if (open != IntPtr.Zero)
+        {
+            ForceForeground(open);
             return;
         }
 
@@ -164,7 +176,7 @@ class Program
         catch { }
     }
 
-    static void FocusExisting()
+    static bool FocusExisting()
     {
         DateTime deadline = DateTime.UtcNow.AddSeconds(8);
         while (DateTime.UtcNow < deadline)
@@ -173,10 +185,11 @@ class Program
             if (hwnd != IntPtr.Zero)
             {
                 ForceForeground(hwnd);
-                return;
+                return true;
             }
             Thread.Sleep(200);
         }
+        return false;
     }
 
     static void ForceForeground(IntPtr hwnd)
@@ -339,6 +352,49 @@ class VantaWindow : Form
 
     void OnShown(object sender, EventArgs e)
     {
+        StartWebView(1);
+    }
+
+    // 0x800700AA ERROR_BUSY: the WebView2 user data folder is still held, usually by
+    // another Vanta window or by WebView2 helpers of a copy that is closing.
+    const int MaxWebViewAttempts = 5;
+
+    static bool IsBusy(Exception ex)
+    {
+        for (Exception e = ex; e != null; e = e.InnerException)
+        {
+            if (e.HResult == unchecked((int)0x800700AA)) return true;
+            AggregateException agg = e as AggregateException;
+            if (agg != null)
+                foreach (Exception inner in agg.InnerExceptions)
+                    if (IsBusy(inner)) return true;
+        }
+        return false;
+    }
+
+    void WebViewFailed(Exception ex, int attempt)
+    {
+        if (IsBusy(ex) && attempt < MaxWebViewAttempts)
+        {
+            _status.Text = "Opening Vanta... (waiting for the previous window to close, try " + (attempt + 1) + " of " + MaxWebViewAttempts + ")";
+            System.Windows.Forms.Timer t = new System.Windows.Forms.Timer();
+            t.Interval = 1500 * attempt;
+            t.Tick += delegate { t.Stop(); t.Dispose(); StartWebView(attempt + 1); };
+            t.Start();
+            return;
+        }
+        if (IsBusy(ex))
+        {
+            _status.Text = "Vanta is already open.";
+            MessageBox.Show(this, "Vanta is already open.\r\n\r\nUse the Vanta window that is already running (check the taskbar). If you just closed it, wait a few seconds and open Vanta again.", "VANTA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Close();
+            return;
+        }
+        _status.Text = "WebView2 failed to start. A browser was not opened.\r\n" + (ex == null ? "unknown error" : ex.GetBaseException().Message);
+    }
+
+    void StartWebView(int attempt)
+    {
         string userData = Path.Combine(_dir, ".vanta-data", "webview2");
         Directory.CreateDirectory(userData);
         try
@@ -349,7 +405,7 @@ class VantaWindow : Form
                 {
                     if (task.IsFaulted || task.IsCanceled)
                     {
-                        _status.Text = "WebView2 failed to start. A browser was not opened.\r\n" + BaseError(task);
+                        WebViewFailed(task.Exception, attempt);
                         return;
                     }
                     _web.EnsureCoreWebView2Async(task.Result).ContinueWith(delegate(System.Threading.Tasks.Task ready)
@@ -358,7 +414,7 @@ class VantaWindow : Form
                         {
                             if (ready.IsFaulted || ready.IsCanceled)
                             {
-                                _status.Text = "WebView2 failed to start. A browser was not opened.\r\n" + BaseError(ready);
+                                WebViewFailed(ready.Exception, attempt);
                                 return;
                             }
                             _web.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
@@ -375,7 +431,7 @@ class VantaWindow : Form
         }
         catch (Exception ex)
         {
-            _status.Text = "WebView2 failed to start. A browser was not opened.\r\n" + ex.Message;
+            WebViewFailed(ex, attempt);
         }
     }
 

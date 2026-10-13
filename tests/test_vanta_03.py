@@ -320,7 +320,7 @@ def test_local_account_play_dry_run_still_succeeds(tmp_path: Path, monkeypatch: 
     assert result["gameStarted"] is False
     assert result["dryRun"] is True
     assert calls == []
-    assert app.status()["version"] == "1.4.0"
+    assert app.status()["version"] == "1.4.1"
     assert app.status()["milestone"] == "1.0"
     assert app.status()["skinsRepository"]["name"] == "fake"
 
@@ -363,7 +363,7 @@ def test_skins_http_ui_replaces_placeholder(tmp_path: Path) -> None:
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/status") as response:
             status_body = json.loads(response.read().decode("utf-8"))
-        assert status_body["version"] == "1.4.0"
+        assert status_body["version"] == "1.4.1"
         assert status_body["milestone"] == "1.0"
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/") as response:
             page = response.read().decode("utf-8")
