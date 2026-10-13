@@ -162,6 +162,11 @@ def start_update(root: Path, tag: str) -> dict[str, Any]:
     return dict(_job)
 
 
+def mark_logged() -> None:
+    with _lock:
+        _job["logged"] = True
+
+
 def update_job() -> dict[str, Any]:
     with _lock:
         return dict(_job)

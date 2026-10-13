@@ -12,7 +12,7 @@ from vanta.launcher.minecraft import launch
 START_MARK = "--- local start "
 HINTS: tuple[tuple[str, str], ...] = (
     (r"OutOfMemoryError|Java heap space", "Minecraft ran out of memory. Raise RAM for this instance (or close other apps)."),
-    (r"Incompatible mods? found|requires .* of mod|Mod resolution failed|depends on", "A mod is missing a dependency or doesn't match this Minecraft version. Open Mods and disable the last mod you added."),
+    (r"Incompatible mods? found|requires .* of mod|Mod resolution failed|depends on|mods are incompatible", "A mod is missing a dependency or doesn't match this Minecraft version. Open Mods and disable the last mod you added."),
     (r"UnsupportedClassVersionError|class file version", "This Minecraft version needs a newer Java. Install Java 21 (1.20.5+) or Java 25 (26.x)."),
     (r"GLFW error|OpenGL|Pixel format not accelerated|WGL", "The graphics driver couldn't start OpenGL. Update the GPU driver; on laptops, run Java on the dedicated GPU."),
     (r"Mixin apply failed|MixinApplyError|InvalidInjectionException", "Two mods conflict (a Mixin failed). Disable recently added mods one by one."),
@@ -54,8 +54,17 @@ def summarize_crash(lines: list[str], crash_report: str = "") -> dict[str, Any]:
         if message and re.search(pattern, text, re.I):
             hint = message
             break
-    title = desc or (exc.split(":")[0].rsplit(".", 1)[-1] if exc else "Minecraft closed unexpectedly")
-    return {"title": title, "exception": exc, "hint": hint or "Open the log below for details, or copy it when asking for help."}
+    details: list[str] = []
+    if re.search(r"Incompatible mods? found|mods are incompatible", text, re.I):
+        # Fabric's own explanation, e.g. "Mod 'X' (x) 1.0 requires ... which is missing!"
+        details = [m.strip() for m in re.findall(r"(?m)^\s*- (.+)$", text)][:6]
+        title = "Mods are incompatible"
+    else:
+        title = desc or (exc.split(":")[0].rsplit(".", 1)[-1] if exc else "Minecraft closed unexpectedly")
+    if details:
+        exc = "\n".join(details)
+    return {"title": title, "exception": exc, "hint": hint or "Open the log below for details, or copy it when asking for help.",
+            "details": details}
 
 
 def newest_crash_report(instance: Path, since: float) -> Path | None:
@@ -77,16 +86,25 @@ def game_status(data_dir: Path, *, lines: int = 200) -> dict[str, Any]:
     running = bool(pid and launch._pid_alive(pid) and launch._cmdline_matches(pid, jar))
     log_lines = _tail_since_start(data_dir / "client.log")
     if running and _state["pid"] != pid:
-        _state.update(pid=pid, since=time.time(), jar=jar, crash=None)
+        _state.update(pid=pid, since=float(session.get("started") or time.time()), jar=jar, crash=None)
+    elif not running and pid and not _state["pid"]:
+        # The game exited before anyone polled (a crash within a second or two),
+        # or Vanta restarted while it ran: judge that session now.
+        _state.update(pid=pid, since=float(session.get("started") or time.time() - 600), jar=jar, crash=None)
     if not running and _state["pid"]:
         # It was running and stopped: decide if that was a crash.
         instance = Path(_state["jar"]).parent if _state["jar"] else None
         report = newest_crash_report(instance, _state["since"]) if instance else None
         joined = "\n".join(log_lines[-80:])
-        crashed = bool(report) or bool(re.search(r"Minecraft Crash Report|has crashed|Exception in thread \"(?:main|Render thread)\"|exit code (?!0)\d+", joined))
+        code = launch.exit_code(_state["pid"])
+        if _state["pid"] in launch.STOPPED_BY_USER:
+            code = None
+        crashed = (_state["pid"] not in launch.STOPPED_BY_USER) and ((code not in (None, 0)) or bool(report) or bool(re.search(
+            r"Minecraft Crash Report|has crashed|Exception in thread \"(?:main|Render thread)\"|exit code (?!0)\d+|Incompatible mods? found|Mod resolution failed", joined)))
         if crashed:
             body = report.read_text(encoding="utf-8", errors="replace")[:20000] if report else ""
-            _state["crash"] = summarize_crash(log_lines, body) | {"report": str(report) if report else "", "at": int(time.time())}
+            _state["crash"] = summarize_crash(log_lines, body) | {"report": str(report) if report else "", "at": int(time.time()),
+                                                                 "exitCode": code}
         _state.update(pid=0)
         launch._clear_session(data_dir)
     return {

@@ -771,3 +771,7 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-si
 label.switch, label.check, label.inst-mod, label.custom-mod { flex-direction: row; justify-content: flex-start; text-align: left; }
 .switch input, .check input, .inst-mod input, .custom-mod input { width: auto; min-height: 0; margin: 0; flex: none; accent-color: var(--violet); }
 .inst-mod span, .custom-mod span { text-align: left; }
+.first-run { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 10px 0; background: rgba(138,92,240,0.08); }
+.first-run strong { display: block; }
+.first-run .hint { margin: 6px 0 0; }
+.first-run button { margin-top: 8px; }

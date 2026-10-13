@@ -1,0 +1,13 @@
+Vanta - what is (and isn't) in this download
+
+Included:
+- Vanta's own code and UI (vanta/, assets/). No license file has been chosen for Vanta yet; all rights reserved by its author unless stated otherwise.
+- Python runtime (LICENSE.txt in the Windows build is Python's PSF license).
+- Windows: Microsoft WebView2 SDK loader/WinForms DLLs (redistributable per the WebView2 SDK license).
+- skinview3d (MIT, assets/vendor/skinview3d.LICENSE.txt).
+
+Not included (downloaded on first launch from the official sources, on your computer):
+- Minecraft client, libraries and assets (Mojang) and the Fabric loader.
+- All mods (Modrinth), and the Trailer-look packs: Bare Bones, Fresh Animations,
+  Bare Bones x Fresh Animations, Complementary Reimagined and Complementary Unbound (Modrinth).
+  These are covered by their authors' own licenses and terms.

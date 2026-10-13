@@ -67,6 +67,12 @@
               <code id="crash-exception"></code>
               <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
             </div>
+            <div class="first-run" id="first-run" hidden role="status" aria-live="polite">
+              <strong id="first-run-title">Setting up Minecraft 1.21.11</strong>
+              <div class="progress"><div class="progress-bar" id="first-run-bar"></div></div>
+              <p class="hint" id="first-run-step">Starting…</p>
+              <button type="button" class="ghost" id="first-run-retry" hidden>Try again</button>
+            </div>
             <button type="button" class="action play" id="play">PLAY</button>
             <button type="button" class="ghost stop-game" id="stop-game" hidden>Stop Minecraft</button>
             <div class="status" id="play-status"></div>
@@ -228,6 +234,7 @@
               <h3>Trailer style</h3>
               <p class="hint">Iris + Complementary shaders, Bare Bones + Fresh Animations, EMF/ETF, Not Enough Animations, Visuality, Gamma Utils night vision on B. Downloads what exists for this version.</p>
               <label class="switch"><input type="checkbox" id="inst-trailer"><span>Trailer style</span></label>
+              <div class="progress" id="inst-trailer-progress" hidden><div class="progress-bar" id="inst-trailer-bar"></div></div>
               <div class="status" id="inst-trailer-status"></div>
             </div>
             <div class="inst-box">
@@ -3101,6 +3108,41 @@
     });
     setTimeout(() => checkUpdates().catch(() => {}), 4000);
 
+    // ---- first-run download (Minecraft, mods and packs are downloaded on first launch, never bundled) ----
+    const FIRST_RUN_STEPS = { metadata: "Reading version info", client: "Downloading Minecraft", libraries: "Libraries", fabric: "Fabric loader",
+      assets: "Sounds and textures", mods: "Mods from Modrinth", packs: "Resource & shader packs from Modrinth" };
+    let firstRunTimer = null;
+    async function pollFirstRun() {
+      const f = (((await api("/api/first-run")).data || {}).firstRun) || {};
+      const box = $("first-run");
+      const show = f.needed || f.state === "downloading" || f.state === "failed" || f.state === "interrupted";
+      box.hidden = !show;
+      if (!show) {
+        if (firstRunTimer) { clearInterval(firstRunTimer); firstRunTimer = null; }
+        if (f.state === "done" && box.dataset.wasRunning) { toast("Minecraft 1.21.11 is ready. Press PLAY.", "good", 8000); delete box.dataset.wasRunning; }
+        return;
+      }
+      $("first-run-bar").style.width = Math.max(2, f.percent || 0) + "%";
+      const failed = f.state === "failed" || (f.state !== "downloading" && f.needed && !f.running);
+      $("first-run-retry").hidden = !failed;
+      if (failed) {
+        $("first-run-title").textContent = "Minecraft isn't downloaded yet";
+        $("first-run-step").textContent = f.error ? "Download stopped: " + f.error : "Check your internet connection, then try again.";
+      } else {
+        box.dataset.wasRunning = "1";
+        $("first-run-title").textContent = "Setting up Minecraft 1.21.11 · " + (f.percent || 0) + "%";
+        const count = f.total > 1 ? " (" + f.done + "/" + f.total + ")" : "";
+        $("first-run-step").textContent = (FIRST_RUN_STEPS[f.step] || "Downloading") + count + ". First launch only; this can take a few minutes.";
+      }
+      if (!firstRunTimer) firstRunTimer = setInterval(() => pollFirstRun().catch(() => {}), 1500);
+    }
+    $("first-run-retry").addEventListener("click", async () => {
+      $("first-run-retry").hidden = true;
+      await post("/api/first-run/retry", {});
+      pollFirstRun().catch(() => {});
+    });
+    pollFirstRun().catch(() => {});
+
     // ---- INSTANCES tab ----
     function instValue() {
       const parts = ($("inst-select").value || "").split("|");
@@ -3173,8 +3215,21 @@
     $("inst-trailer").addEventListener("change", async () => {
       const on = $("inst-trailer").checked;
       $("inst-trailer").disabled = true;
-      setStatus("inst-trailer-status", on ? "Downloading trailer mods and packs… this can take a minute." : "Turning trailer style off…", "");
+      setStatus("inst-trailer-status", on ? "Downloading trailer mods and packs from Modrinth… this can take a minute." : "Turning trailer style off…", "");
+      let trailerTimer = null;
+      if (on) {
+        $("inst-trailer-progress").hidden = false; $("inst-trailer-bar").style.width = "2%";
+        trailerTimer = setInterval(async () => {
+          const p = (((await api("/api/instances/trailer/progress")).data || {}).progress) || {};
+          if (p.state !== "running") return;
+          $("inst-trailer-bar").style.width = Math.max(2, p.percent || 0) + "%";
+          const what = p.step === "packs" ? "Resource & shader packs (" + Math.min(p.done + 1, p.total) + "/" + p.total + ")" : "Trailer mods";
+          setStatus("inst-trailer-status", "Downloading from Modrinth: " + what + " · " + (p.percent || 0) + "%", "");
+        }, 700);
+      }
       const r = await post("/api/instances/trailer", Object.assign({ on: on }, instValue()));
+      if (trailerTimer) clearInterval(trailerTimer);
+      $("inst-trailer-progress").hidden = true;
       $("inst-trailer").disabled = false;
       const d = r.data || {};
       if (!d.ok) { $("inst-trailer").checked = !on; setStatus("inst-trailer-status", d.error || "Failed.", "bad"); return; }

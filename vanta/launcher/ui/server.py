@@ -142,6 +142,12 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(app.apply_update(_payload(body)))
     if method == "GET" and path == "/api/updates/job":
         return _ok(app.update_job())
+    if method == "GET" and path == "/api/first-run":
+        return _ok(app.first_run_status())
+    if method == "POST" and path == "/api/first-run/retry":
+        return _ok(app.first_run_retry())
+    if method == "GET" and path == "/api/instances/trailer/progress":
+        return _ok(app.trailer_progress())
     if method == "GET" and path == "/api/game":
         return _ok(app.game_status())
     if method == "POST" and path == "/api/game/stop":

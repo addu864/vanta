@@ -242,6 +242,7 @@ def stop_client(data_dir: Path) -> dict[str, Any]:
             "pid": pid,
             "error": "The recorded pid is alive but it is not the Vanta client process. It was not killed.",
         }
+    STOPPED_BY_USER.add(pid)
     _signal_stop(pid)
     alive = _pid_alive(pid) and _cmdline_matches(pid, jar)
     if alive:
@@ -382,6 +383,7 @@ def _launch_local(
         popen_kwargs["start_new_session"] = True
     try:
         process = subprocess.Popen(command, **popen_kwargs)
+        _PROCESSES[process.pid] = process
     except FileNotFoundError:
         handle.close()
         return _fail(log, data_dir, [JAVA_MISSING])
@@ -396,6 +398,7 @@ def _launch_local(
         {
             "pid": process.pid,
             "jar": str(jar),
+            "started": time.time(),
             "command": command,
             "minecraftClient": minecraft_client,
         },
@@ -583,6 +586,18 @@ def _fail(log: VantaLog, data_dir: Path, errors: list[str]) -> dict[str, Any]:
 
 def _session_path(data_dir: Path) -> Path:
     return Path(data_dir) / SESSION_NAME
+
+
+# Games this Vanta process started, so the monitor can read the real exit code.
+_PROCESSES: dict[int, "subprocess.Popen[Any]"] = {}
+# Pids stopped with Vanta's Stop button: their non-zero exit is not a crash.
+STOPPED_BY_USER: set[int] = set()
+
+
+def exit_code(pid: int) -> int | None:
+    """Exit code of a game this Vanta started, or None if unknown/still running."""
+    process = _PROCESSES.get(int(pid or 0))
+    return process.poll() if process is not None else None
 
 
 def _read_session(data_dir: Path) -> dict[str, Any]:

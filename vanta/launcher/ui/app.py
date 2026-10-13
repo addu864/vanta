@@ -633,7 +633,30 @@ class VantaApp:
         return {"ok": True, "job": job}
 
     def update_job(self) -> dict[str, Any]:
-        return {"ok": True, "job": updater.update_job()}
+        job = updater.update_job()
+        if job.get("state") in {"done", "failed"} and not job.get("logged"):
+            res = job.get("result") or {}
+            self.log.info(f"Update to {job.get('tag')} {job.get('state')}: {len(res.get('updated') or [])} files replaced, "
+                          f"{len(res.get('failed') or [])} failed. Restart Vanta to finish.")
+            updater.mark_logged()
+        return {"ok": True, "job": job}
+
+    def trailer_progress(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+        return {"ok": True, "progress": instances.trailer_progress()}
+
+    def first_run_status(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import first_run
+        return {"ok": True, "firstRun": first_run.status(self.data_dir)}
+
+    def first_run_retry(self) -> dict[str, Any]:
+        from vanta.launcher.minecraft import first_run
+        if not first_run.needs_install(self.data_dir):
+            return {"ok": True, "started": False, "message": "Minecraft is already installed."}
+        started = first_run.maybe_start(self.data_dir)
+        if started:
+            self.log.info("First-run download restarted.")
+        return {"ok": True, "started": started}
 
     # ---- game monitor ----
     def _game_running(self) -> bool:
@@ -697,10 +720,13 @@ class VantaApp:
         if self._game_running():
             return {"ok": False, "error": "Close Minecraft first; mods can't change while it's running."}
         on = bool(body.get("on"))
+        report = instances.track_trailer(folder.name)
         try:
-            result = instances.set_trailer(folder, str(version["versionNumber"]), on)
+            result = instances.set_trailer(folder, str(version["versionNumber"]), on, progress=report if on else None)
         except Exception as exc:  # noqa: BLE001
+            instances.finish_trailer(False)
             return {"ok": False, "error": f"Trailer style change failed: {exc}"[:300]}
+        instances.finish_trailer(bool(result.get("ok")))
         if result.get("ok"):
             self.log.info(f"Trailer style {'on' if on else 'off'} for {folder.name}.")
         return result

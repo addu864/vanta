@@ -4,6 +4,8 @@ Resource packs (Bare Bones, Fresh Animations, Bare Bones x Fresh Animations)
 go to resourcepacks/ and are enabled in options.txt with the compat patch on
 top. Complementary Reimagined (default) and Unbound go to shaderpacks/ and
 Iris is pointed at Reimagined. Official Modrinth files only, hash-checked.
+These packs are never bundled in Vanta's downloads (their licenses don't allow
+redistribution); they are always fetched from Modrinth on the player's machine.
 The matching mods (Iris, EMF, ETF, Not Enough Animations, Visuality) are in
 the required mod set.
 """
@@ -15,7 +17,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from vanta.launcher.mods.models import TARGET_GAME_VERSION, ModFile, ModVersion
@@ -52,12 +54,16 @@ def install_visual_set(
     *,
     repository: ModRepository | None = None,
     game_version: str = TARGET_GAME_VERSION,
+    progress: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, Any]:
     instance = Path(instance)
+    report = progress or (lambda step, done, total: None)
+    packs = (*RESOURCE_PACKS, *SHADER_PACKS)
     repo = repository or ModrinthRepository(timeout=120)
     placed: dict[str, dict[str, Any]] = {}
     skipped: list[dict[str, str]] = []
-    for pack in (*RESOURCE_PACKS, *SHADER_PACKS):
+    for index, pack in enumerate(packs):
+        report("packs", index, len(packs))
         folder = instance / ("resourcepacks" if pack.kind == "resourcepack" else "shaderpacks")
         folder.mkdir(parents=True, exist_ok=True)
         try:
@@ -88,6 +94,7 @@ def install_visual_set(
             "versionNumber": version.version_number,
             "filename": name,
         }
+    report("packs", len(packs), len(packs))
     order = [placed[p.key]["filename"] for p in RESOURCE_PACKS if p.key in placed]
     options_changed = enable_resource_packs(instance / "options.txt", order)
     shader = placed.get(DEFAULT_SHADER)

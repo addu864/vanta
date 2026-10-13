@@ -151,11 +151,15 @@ def install_client(
     if version == GAME_VERSION and loader and default_mods:
         from vanta.launcher.mods.required import install_required_mods
 
+        report("mods", 0, 1)
         required_mods = install_required_mods(instance / "mods")
-        from vanta.launcher.mods.visual_set import install_visual_set
+        report("mods", 1, 1)
+        # Seeds options.txt (toggleUse:false, B = night vision) first, so the
+        # downloaded packs are enabled on a brand-new install too.
+        from vanta.launcher.minecraft.instances import apply_trailer_visuals
 
         try:
-            visual_set = install_visual_set(instance)
+            visual_set = apply_trailer_visuals(instance, version, progress=report)
         except Exception as exc:  # packs are optional; never fail the install
             visual_set = {"ok": False, "error": str(exc)}
 

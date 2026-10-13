@@ -199,7 +199,7 @@ def start_install(
         with _jobs_lock:
             _jobs[name].update(fields)
 
-    weights = {"metadata": (0, 2), "client": (2, 8), "libraries": (8, 30), "fabric": (30, 35), "assets": (35, 90), "mods": (90, 99)}
+    weights = {"metadata": (0, 2), "client": (2, 8), "libraries": (8, 30), "fabric": (30, 35), "assets": (35, 88), "mods": (88, 94), "packs": (94, 99)}
 
     def progress(step: str, done: int, total: int) -> None:
         lo, hi = weights.get(step, (0, 100))
@@ -231,7 +231,8 @@ def start_install(
                 else:
                     mods = install_mod_list(root / name / "mods", version, slugs)
                 if preset == "trailer":
-                    visual = apply_trailer_visuals(root / name, version, installer=visual_installer)
+                    visual = apply_trailer_visuals(root / name, version, installer=visual_installer,
+                                                   progress=None if visual_installer else progress)
             meta = {
                 "id": name,
                 "versionNumber": version,
@@ -290,13 +291,16 @@ def set_option(options: Path, key: str, value: str) -> None:
     options.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def apply_trailer_visuals(instance: Path, version: str, installer: Callable[..., dict[str, Any]] | None = None) -> dict[str, Any]:
+def apply_trailer_visuals(instance: Path, version: str, installer: Callable[..., dict[str, Any]] | None = None,
+                          progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:
     from vanta.launcher.mods import visual_set
 
     options = ensure_options(instance)
     for key in NIGHT_VISION_KEYS:
         set_option(options, key, "key.keyboard.b")
     run = installer or visual_set.install_visual_set
+    if progress is not None:
+        return run(Path(instance), game_version=version, progress=progress)
     return run(Path(instance), game_version=version)
 
 
@@ -305,7 +309,8 @@ TRAILER_FILE_HINTS = ("iris", "entity_model_features", "entity-model-features", 
 
 
 def set_trailer(instance: Path, version: str, on: bool, *, mods_runner: Callable[..., dict[str, Any]] | None = None,
-                visual_installer: Callable[..., dict[str, Any]] | None = None) -> dict[str, Any]:
+                visual_installer: Callable[..., dict[str, Any]] | None = None,
+                progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:
     """Turn Trailer style on (download/enable mods + packs) or off (disable mods, unlist packs) for an instance."""
     from vanta.launcher.mods import visual_set
 
@@ -329,8 +334,12 @@ def set_trailer(instance: Path, version: str, on: bool, *, mods_runner: Callable
     options = ensure_options(instance)
     if on:
         runner = mods_runner or install_mod_list
+        if progress:
+            progress("mods", 0, 1)
         mods_res = runner(mods, version, list(TRAILER_MODS))
-        vis = apply_trailer_visuals(instance, version, installer=visual_installer)
+        if progress:
+            progress("mods", 1, 1)
+        vis = apply_trailer_visuals(instance, version, installer=visual_installer, progress=progress)
         result["skipped"] = [f"{m.get('title')}: {m.get('reason')}" for m in mods_res.get("skipped", [])] + [
             f"{v.get('title')}: {v.get('reason')}" for v in vis.get("skipped", [])]
     else:
@@ -397,3 +406,32 @@ def install_mod_list(mods_dir: Path, game_version: str, mods: list[tuple[str, st
             pass
     required._write_manifest(folder, installed, kept)
     return {"ok": True, "installed": installed, "kept": kept, "skipped": skipped}
+
+
+# Live progress of a Trailer-style change, for the INSTANCES tab to poll.
+_trailer_lock = threading.Lock()
+_trailer_progress: dict[str, Any] = {"state": "idle"}
+
+
+def trailer_progress() -> dict[str, Any]:
+    with _trailer_lock:
+        return dict(_trailer_progress)
+
+
+def track_trailer(name: str) -> Callable[[str, int, int], None]:
+    with _trailer_lock:
+        _trailer_progress.clear()
+        _trailer_progress.update(state="running", instance=name, step="mods", done=0, total=1, percent=0)
+    weights = {"mods": (0, 40), "packs": (40, 100)}
+
+    def report(step: str, done: int, total: int) -> None:
+        lo, hi = weights.get(step, (0, 100))
+        frac = (done / total) if total else 1.0
+        with _trailer_lock:
+            _trailer_progress.update(step=step, done=done, total=total, percent=int(lo + (hi - lo) * min(1.0, frac)))
+    return report
+
+
+def finish_trailer(ok: bool) -> None:
+    with _trailer_lock:
+        _trailer_progress.update(state="done" if ok else "failed", percent=100)
