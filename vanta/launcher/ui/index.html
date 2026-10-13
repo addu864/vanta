@@ -33,7 +33,7 @@
       <section class="panel home-panel" data-panel="play" id="panel-play">
         <div class="glass scene-picker">
           <h2>Background</h2>
-          <p class="hint">One still image, dimmed behind the glass. A custom image stays until Clear, which returns the default.</p>
+          <p class="hint">One still image. It is dimmed behind the glass. A custom image stays until Clear, which returns the default.</p>
           <div class="scene-choices" role="group" aria-label="Background">
             <button type="button" class="ghost" id="pick-background">Custom image</button>
             <button type="button" class="ghost" id="clear-background">Clear</button>
@@ -82,7 +82,7 @@
               <div class="meta" id="version-meta"></div>
               <details class="add-instance" id="add-instance">
                 <summary>Add instance (Minecraft 1.18 to 26.3)</summary>
-                <p class="hint">Real releases from Mojang's version list. Each version downloads into its own folder with Fabric (or vanilla), libraries, natives and sounds. Fabric instances also get Fabric API, Sodium, Lithium and Mod Menu where Modrinth has a build. Your 1.21.11 instance is not changed.</p>
+                <p class="hint">Real releases from the official Minecraft version list. Each version downloads into its own folder with Fabric (or vanilla), libraries, natives and sounds. Fabric instances also get Fabric API, Sodium, Lithium and Mod Menu where Modrinth has a build. Your 1.21.11 instance is not changed.</p>
                 <div class="row">
                   <select id="instance-version" aria-label="Minecraft version"><option value="">Loading versions…</option></select>
                   <select id="instance-loader" aria-label="Loader"><option value="fabric">Fabric</option><option value="vanilla">Vanilla</option></select>
@@ -1990,7 +1990,7 @@
       if (!data.ok) {
         setStatus("servers-status", data.error || "Could not download the server jar.", "bad");
       } else {
-        setStatus("servers-status", "Installed " + ((data.jar && data.jar.name) || "server.jar") + ". Press Start.", "good");
+        setStatus("servers-status", "Installed " + ((data.jar && data.jar.name) || "server.jar") + ". Click Start to run it.", "good");
       }
       await selectServer(selectedServerId);
     }
@@ -2011,7 +2011,7 @@
         return;
       }
       if (data.jar && data.jar.ok) {
-        setStatus("servers-status", "Created " + data.server.name + " on port " + data.server.port + " and installed " + (data.jar.jar.name || "server.jar") + ". Press Start.", "good");
+        setStatus("servers-status", "Created " + data.server.name + " on port " + data.server.port + " and installed " + (data.jar.jar.name || "server.jar") + ". Click Start to run it.", "good");
       } else {
         setStatus("servers-status", "Created " + data.server.name + ", but the server jar did not download: " + ((data.jar && data.jar.error) || "unknown error") + ". Use Download server jar to retry.", "bad");
       }
@@ -2629,7 +2629,7 @@
       const select = $("instance-version");
       select.replaceChildren();
       if (!data.ok) {
-        setStatus("instance-status", data.error || "Could not load Mojang's version list.", "bad");
+        setStatus("instance-status", data.error || "Could not load the Minecraft version list.", "bad");
         return;
       }
       instanceRows = data.versions || [];
