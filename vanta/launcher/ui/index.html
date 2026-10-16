@@ -26,7 +26,7 @@
         <button type="button" class="tab" data-tab="browse">BROWSE SERVERS</button>
         <button type="button" class="tab" data-tab="servers">SERVERS</button>
         <button type="button" class="tab" data-tab="hud">HUD</button>
-        <button type="button" class="tab" data-tab="friends" id="tab-friends" hidden>FRIENDS</button>
+        <button type="button" class="tab" data-tab="friends" id="tab-friends">FRIENDS</button>
       </nav>
       <button type="button" class="pill game-pill" id="game-pill" hidden title="Minecraft is running"><span class="dot"></span><span id="game-pill-text">Minecraft running</span></button>
       <button type="button" class="pill update-pill" id="update-pill" hidden>Update</button>
@@ -198,42 +198,32 @@
 
       <section class="panel fr" data-panel="friends" id="panel-friends" hidden>
         <div class="mb-head"><h1>FRIENDS</h1><span class="hint" id="fr-me"></span></div>
+        <p class="hint">No account, no email, no server. Your friend list lives on this PC. Friends on the same Wi-Fi show up live; friends elsewhere join with a world invite.</p>
         <div class="status" id="fr-status"></div>
-        <div class="glass fr-box" id="fr-off" hidden><h2>Friends is coming soon</h2><p class="hint" id="fr-off-why"></p></div>
-        <div class="glass fr-box" id="fr-auth" hidden>
-          <h2>Sign in to Friends</h2>
-          <p class="hint">Friends uses your email only to verify you and sign you in. Your Minecraft account stays local, and no Microsoft sign-in is needed.</p>
-          <div class="fr-form">
-            <input id="fr-email" type="email" maxlength="120" placeholder="Email" autocomplete="email">
-            <input id="fr-pass" type="password" maxlength="72" placeholder="Password (8+ characters)" autocomplete="current-password">
-            <button type="button" class="action" id="fr-signin">Sign in</button>
-            <button type="button" class="ghost" id="fr-register">Create account</button>
-            <button type="button" class="ghost" id="fr-resend">Resend verification email</button>
+        <div class="fr-top">
+          <div class="glass fr-box">
+            <h2>Your friend code</h2>
+            <p class="fr-code-row"><code id="fr-code"></code></p>
+            <div class="fr-form"><button type="button" class="action tiny" id="fr-copy-code">Copy code</button><button type="button" class="ghost tiny" id="fr-copy-link">Copy vanta:// link</button></div>
+            <h2 class="fr-h2">Add a friend</h2>
+            <div class="fr-form"><input id="fr-target" maxlength="400" placeholder="Paste a friend code, vanta:// link or world invite"><button type="button" class="action" id="fr-add">Add</button></div>
+          </div>
+          <div class="glass fr-box">
+            <h2>Invite to your world</h2>
+            <p class="hint">In Minecraft press Esc → <b>Open to LAN</b>, Online Mode off → Start. e4all gives your world a public address; Vanta turns it into an invite code that works for 6 hours.</p>
+            <div class="fr-form"><input id="fr-addr" maxlength="120" placeholder="e4all address (found automatically)"><button type="button" class="action" id="fr-invite">Copy invite</button></div>
+            <p class="hint fr-inv-out" id="fr-inv-out" hidden></p>
           </div>
         </div>
-        <div class="glass fr-box" id="fr-name" hidden>
-          <h2>Pick your Vanta username</h2>
-          <p class="hint">Friends find you by this name. It's usually your Minecraft name.</p>
-          <div class="fr-form"><input id="fr-username" maxlength="16" placeholder="itz_alone10"><button type="button" class="action" id="fr-claim">Save username</button></div>
+        <div class="glass fr-box" id="fr-joinbox" hidden>
+          <h2>World invite</h2>
+          <div class="fr-req"><span id="fr-join-what"></span><button type="button" class="action" id="fr-join-go">Join world</button><button type="button" class="ghost tiny" id="fr-join-x">Dismiss</button></div>
         </div>
-        <div id="fr-main" hidden>
-          <div class="fr-top">
-            <div class="glass fr-box">
-              <h2>Add a friend</h2>
-              <div class="fr-form"><input id="fr-target" maxlength="80" placeholder="Vanta username or invite code"><button type="button" class="action" id="fr-add">Send request</button></div>
-              <p class="hint">Your invite code: <code id="fr-code"></code> <button type="button" class="ghost tiny" id="fr-copy">Copy invite link</button></p>
-            </div>
-            <div class="glass fr-box">
-              <h2>Share your world</h2>
-              <p class="hint">In Minecraft, press Esc, choose <b>Open to LAN</b> with Online Mode off, then click Share. Vanta finds your e4all address.</p>
-              <div class="fr-form"><input id="fr-addr" maxlength="120" placeholder="Address (optional, found automatically)"><button type="button" class="action" id="fr-share">Share</button><button type="button" class="ghost" id="fr-unshare">Stop sharing</button></div>
-            </div>
-          </div>
-          <div class="glass fr-box" id="fr-requests-box" hidden><h2>Requests</h2><div id="fr-requests"></div></div>
-          <h2 class="fr-h">Friends</h2>
-          <div class="fr-list" id="fr-list"></div>
-          <p class="hint"><button type="button" class="ghost tiny" id="fr-signout">Sign out of Friends</button></p>
-        </div>
+        <div class="glass fr-box" id="fr-nearby-box" hidden><h2>On your network</h2><div id="fr-nearby"></div></div>
+        <h2 class="fr-h">Friends</h2>
+        <div class="fr-list" id="fr-list"></div>
+        <p class="hint" id="fr-lan-note"></p>
+        <p class="hint">Online status only works on your local network. Vanta has no server, so friends outside it always show as "Not on your network" even when they're playing. Ask them for a world invite.</p>
       </section>
 
       <section class="panel" data-panel="skins" id="panel-skins" hidden>
@@ -3529,100 +3519,95 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("mb-overlay").hidden) mbClose(); });
     window.setTimeout(() => mbRefreshInstalled().catch(() => {}), 0);
 
-    // ---- FRIENDS (Supabase; hidden until a project is configured) ----
-    let frTimer = null;
-    function frShow(id) { ["fr-off", "fr-auth", "fr-name", "fr-main"].forEach((x) => { $(x).hidden = x !== id; }); }
-    async function frState() {
-      const r = await api("/api/friends/state");
-      const d = r.data || {};
-      $("tab-friends").hidden = !d.enabled;
-      return d;
-    }
+    // ---- FRIENDS (serverless: local list + LAN beacons + e4all invites) ----
+    let frTimer = null, frInvite = null;
+    function frCopy(text, label) { navigator.clipboard.writeText(text).then(() => toast("Copied " + label, "good"), () => { window.prompt("Copy this:", text); }); }
+    function frBtn(text, cls, fn) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); return b; }
     async function frLoad() {
-      const d = await frState();
-      if (!d.enabled) { frShow("fr-off"); $("fr-off-why").textContent = d.reason || ""; return; }
-      if (!d.signedIn) { frShow("fr-auth"); if (d.error) setStatus("fr-status", d.error, "bad"); return; }
-      if (!d.profile || !d.profile.username) {
-        frShow("fr-name");
-        if (!$("fr-username").value) { const acc = (localAccounts || [])[0]; if (acc && acc.username) $("fr-username").value = acc.username; }
-        return;
-      }
-      frShow("fr-main");
-      $("fr-me").textContent = "Signed in as " + d.profile.username + " · " + (d.email || "");
-      $("fr-code").textContent = d.profile.inviteCode || "";
       await frRefresh();
-      if (!frTimer) frTimer = setInterval(() => { if (!$("panel-friends").hidden) frRefresh().catch(() => {}); }, 20000);
+      if (!frTimer) frTimer = setInterval(() => { if (!$("panel-friends").hidden) frRefresh().catch(() => {}); }, 5000);
     }
     async function frRefresh() {
-      const r = await post("/api/friends/overview", {});
+      const r = await post("/api/friends/overview", selectedVersionValue());
       const d = r.data || {};
       if (!d.ok) { setStatus("fr-status", d.error || "Could not load friends.", "bad"); return; }
-      const reqHost = $("fr-requests");
-      reqHost.replaceChildren();
-      (d.requests || []).forEach((q) => {
+      $("fr-me").textContent = "You are " + d.me.name + (d.presence && d.presence.port ? " · hosting " + (d.presence.world || "a world") + " on LAN" : "");
+      $("fr-code").textContent = d.me.code; $("fr-code").dataset.link = d.me.link;
+      const near = $("fr-nearby"); near.replaceChildren();
+      (d.nearby || []).forEach((p) => {
         const row = document.createElement("div"); row.className = "fr-req";
-        const name = document.createElement("span"); name.textContent = (q.direction === "incoming" ? "From " : "To ") + q.username;
-        row.appendChild(name);
-        if (q.direction === "incoming") {
-          const ok = document.createElement("button"); ok.type = "button"; ok.className = "action tiny"; ok.textContent = "Accept";
-          const no = document.createElement("button"); no.type = "button"; no.className = "ghost tiny"; no.textContent = "Decline";
-          ok.addEventListener("click", () => frAct("respond", { id: q.id, accept: true }));
-          no.addEventListener("click", () => frAct("respond", { id: q.id, accept: false }));
-          row.append(ok, no);
-        } else { const w = document.createElement("small"); w.className = "hint"; w.textContent = "waiting"; row.appendChild(w); }
-        reqHost.appendChild(row);
+        const n = document.createElement("span"); n.textContent = p.name + (p.addedYou ? " added you" : " is using Vanta nearby") + (p.mc ? " · " + p.mc : "");
+        row.append(n, frBtn(p.addedYou ? "Add back" : "Add friend", "action tiny", () => frAdd(p.code)));
+        near.appendChild(row);
       });
-      $("fr-requests-box").hidden = !(d.requests || []).length;
-      const list = $("fr-list");
-      list.replaceChildren();
-      if (!(d.friends || []).length) { list.innerHTML = '<p class="hint">No friends yet. Send a request or share your invite code.</p>'; }
+      $("fr-nearby-box").hidden = !(d.nearby || []).length;
+      const list = $("fr-list"); list.replaceChildren();
+      if (!(d.friends || []).length) list.innerHTML = '<p class="hint">No friends yet. Send someone your friend code, or paste theirs above.</p>';
       (d.friends || []).forEach((f) => {
         const card = document.createElement("div"); card.className = "fr-card glass" + (f.online ? " on" : "");
-        const dot = document.createElement("span"); dot.className = "fr-dot " + (f.join_address ? "share" : f.online ? "on" : "off");
+        const dot = document.createElement("span"); dot.className = "fr-dot " + (f.join ? "share" : f.online ? "on" : "off");
         const meta = document.createElement("div"); meta.className = "fr-meta";
-        const n = document.createElement("strong"); n.textContent = f.username;
-        const sub = document.createElement("small"); sub.textContent = f.online ? (f.playing || "Online in Vanta") : "Offline";
-        meta.append(n, sub);
-        card.append(dot, meta);
-        if (f.join_address) {
-          const j = document.createElement("button"); j.type = "button"; j.className = "action"; j.textContent = "Join world";
-          j.title = f.join_address;
-          j.addEventListener("click", async () => {
-            const res = await post("/api/friends/join", { id: f.id });
-            if (res.data && res.data.ok !== false && (res.data.status === "Started" || res.data.status === "Ready")) toast("Joining " + f.username + "'s world…", "good");
-            else toast((res.data && res.data.error) || "Could not join.", "bad");
-          });
-          card.appendChild(j);
-        }
-        const rm = document.createElement("button"); rm.type = "button"; rm.className = "ghost tiny fr-rm"; rm.textContent = "Remove";
-        rm.addEventListener("click", () => { if (confirm("Remove " + f.username + " from your friends?")) frAct("remove", { id: f.id }); });
-        card.appendChild(rm);
+        const n = document.createElement("strong"); n.textContent = f.name;
+        const sub = document.createElement("small");
+        sub.textContent = !f.online ? "Not on your network (status unknown)" : f.join ? "Hosting " + (f.world || "a world") + " · " + f.mc : f.status === "playing" ? "Playing Minecraft " + f.mc : "Online in Vanta";
+        if (f.online && !f.mutual) sub.textContent += " · hasn't added you yet";
+        meta.append(n, sub); card.append(dot, meta);
+        if (f.join) card.appendChild(frBtn("Join", "action", () => frJoin("joinlan", { id: f.id }, f.name)));
+        card.appendChild(frBtn("Remove", "ghost tiny fr-rm", () => { if (confirm("Remove " + f.name + " from your friends?")) frPost("remove", { id: f.id }, "Removed."); }));
         list.appendChild(card);
       });
+      const lan = d.lan || {};
+      $("fr-lan-note").textContent = !lan.ok ? lan.error : lan.quiet ? "No other Vanta seen on this network yet. " + lan.hint : "LAN discovery is on.";
     }
-    async function frAct(action, body, okText) {
+    async function frPost(action, body, okText) {
       const r = await post("/api/friends/" + action, body || {});
       const d = r.data || {};
-      if (!d.ok) { setStatus("fr-status", d.error || "That didn't work.", "bad"); return d; }
-      setStatus("fr-status", okText || d.message || (typeof d.result === "string" ? "Request " + d.result + "." : ""), "good");
-      await frLoad();
+      if (!d.ok) { setStatus("fr-status", d.error || "That didn't work.", "bad"); return null; }
+      if (okText) setStatus("fr-status", okText, "good");
+      await frRefresh();
       return d;
     }
-    function frCreds() { return { email: $("fr-email").value, password: $("fr-pass").value }; }
-    $("fr-signin").addEventListener("click", () => frAct("signin", frCreds(), "Signed in."));
-    $("fr-register").addEventListener("click", () => frAct("register", frCreds()));
-    $("fr-resend").addEventListener("click", () => frAct("resend", { email: $("fr-email").value }, "Verification email sent again."));
-    $("fr-claim").addEventListener("click", () => frAct("username", { username: $("fr-username").value }, "Username saved."));
-    $("fr-add").addEventListener("click", () => frAct("add", { target: $("fr-target").value }).then(() => { $("fr-target").value = ""; }));
+    async function frAdd(text) {
+      text = (text || "").trim();
+      if (!text) return;
+      if (/^(vanta:\/\/join\/)?VW1\./i.test(text)) {
+        const r = await post("/api/friends/readinvite", { invite: text }); const d = r.data || {};
+        if (!d.ok) { setStatus("fr-status", d.error, "bad"); return; }
+        frInvite = text; const i = d.invite;
+        $("fr-join-what").textContent = (i.hostName || "A friend") + "'s world · Minecraft " + i.version + " · " + i.address;
+        $("fr-joinbox").hidden = false; $("fr-target").value = ""; setStatus("fr-status", "", ""); return;
+      }
+      const d = await frPost("add", { code: text });
+      if (d) { setStatus("fr-status", d.already ? d.friend.name + " is already your friend." : "Added " + d.friend.name + ". Ask them to add your code too.", "good"); $("fr-target").value = ""; }
+    }
+    async function frJoin(action, body, who) {
+      const r = await post("/api/friends/" + action, body); const d = r.data || {};
+      if (d.ok === false) { toast(d.error || "Could not join.", "bad"); return; }
+      if (d.installing) {
+        toast(d.message, "good");
+        const id = d.job && (d.job.id || d.job.name);
+        const t = setInterval(async () => {
+          const j = ((await api("/api/instances/job?id=" + encodeURIComponent(id))).data || {}).job || {};
+          if (j.state === "done") { clearInterval(t); frJoin(action, body, who); }
+          if (j.state === "failed" || j.state === "unknown") { clearInterval(t); toast("Install failed: " + (j.error || "unknown error"), "bad"); }
+        }, 3000);
+        return;
+      }
+      toast("Joining " + (who || "your friend") + "'s world…", "good");
+    }
+    $("fr-add").addEventListener("click", () => frAdd($("fr-target").value));
     $("fr-target").addEventListener("keydown", (e) => { if (e.key === "Enter") $("fr-add").click(); });
-    $("fr-share").addEventListener("click", () => frAct("share", Object.assign(selectedVersionValue(), { address: $("fr-addr").value }), "Your world is shared with friends."));
-    $("fr-unshare").addEventListener("click", () => frAct("unshare", {}, "Stopped sharing."));
-    $("fr-signout").addEventListener("click", () => frAct("signout", {}, "Signed out of Friends."));
-    $("fr-copy").addEventListener("click", () => {
-      const link = "vanta://invite/" + $("fr-code").textContent;
-      navigator.clipboard.writeText(link).then(() => toast("Copied " + link, "good"), () => toast(link, ""));
+    $("fr-copy-code").addEventListener("click", () => frCopy($("fr-code").textContent, "your friend code"));
+    $("fr-copy-link").addEventListener("click", () => frCopy($("fr-code").dataset.link || "", "your vanta:// link"));
+    $("fr-join-go").addEventListener("click", () => frInvite && frJoin("joininvite", { invite: frInvite }, ""));
+    $("fr-join-x").addEventListener("click", () => { $("fr-joinbox").hidden = true; frInvite = null; });
+    $("fr-invite").addEventListener("click", async () => {
+      const r = await post("/api/friends/invite", Object.assign(selectedVersionValue(), { address: $("fr-addr").value }));
+      const d = r.data || {};
+      if (!d.ok) { setStatus("fr-status", d.error, "bad"); return; }
+      $("fr-addr").value = d.address; $("fr-inv-out").hidden = false; $("fr-inv-out").textContent = d.invite;
+      frCopy(d.invite, "the world invite");
     });
-    frState().catch(() => {});
   </script>
 </body>
 </html>

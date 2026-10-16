@@ -848,3 +848,6 @@ button.ghost.danger { color: var(--bad); border-color: rgba(255, 141, 122, .5); 
 .fr-dot.share { background: var(--violet); box-shadow: 0 0 12px rgba(201, 180, 255, .8); }
 .fr-rm { opacity: .6; } .fr-rm:hover { opacity: 1; }
 button.tiny { padding: 4px 10px; font-size: .78rem; }
+.fr-code-row code { font-size: 1.15rem; letter-spacing: .04em; padding: 6px 10px; border-radius: 10px; background: rgba(140, 90, 255, .16); border: 1px solid rgba(180, 140, 255, .35); user-select: all; }
+.fr-h2 { margin-top: 14px !important; }
+.fr-inv-out { word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: .78rem; }

@@ -58,7 +58,7 @@ class VantaApp:
         self.mods = ModManager(self.data_dir, self.mod_repository)
         self.browser = ModBrowser(self.data_dir / "cache" / "modrinth", curated_file=Path(os.environ.get("VANTA_CURATED_MODS", str(self.data_dir / "curated-mods.md"))))
         from vanta.launcher.friends.service import FriendsService
-        self.friends = FriendsService(self.data_dir)
+        self.friends = FriendsService(self.data_dir, name=self._friend_name)
         self.utilities = UtilityManager(self.data_dir, self.mod_repository)
         self.skin_repository = skin_repository or VantaSkinLibrary(data_dir=self.data_dir)
         self.skins = SkinManager(self.data_dir, self.skin_repository)
@@ -913,75 +913,86 @@ class VantaApp:
             return {"ok": False, "error": "Close Minecraft first."}
         return self.browser.remove(folder, str(body.get("projectId") or ""), game, loader)
 
-    # ---- Friends (Supabase; off until a project is configured) ----
+    # ---- Friends (no server: local list, LAN beacons, e4all invites) ----
+    def _friend_name(self) -> str:
+        acc = self.accounts.get(self.config.get().get("selectedAccountId")) or next(iter(self.accounts.list()), None)
+        return str((acc or {}).get("username") or "Player")
+
+    def start_friends_lan(self) -> None:
+        """LAN beacons run while Vanta is open, so friends nearby see you on any tab."""
+        import threading
+        self.friends.ensure_lan()
+
+        def loop() -> None:
+            while True:
+                try:
+                    self._update_friend_presence({})
+                except Exception:  # noqa: BLE001 - presence is best effort
+                    pass
+                time.sleep(10)
+        threading.Thread(target=loop, name="vanta-friends-presence", daemon=True).start()
+
     def friends_call(self, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
-        from vanta.launcher.friends.client import FriendsError
+        from vanta.launcher.friends.codes import CodeError
         body = payload or {}
         f = self.friends
         try:
-            if action == "state":
-                return f.state()
-            if not f.enabled:
-                return {"ok": False, "enabled": False, "error": "Friends isn't switched on yet."}
-            if action == "register":
-                return f.register(str(body.get("email") or ""), str(body.get("password") or ""))
-            if action == "resend":
-                return f.resend(str(body.get("email") or ""))
-            if action == "signin":
-                return f.sign_in(str(body.get("email") or ""), str(body.get("password") or ""))
-            if action == "signout":
-                return f.sign_out()
-            if action == "username":
-                return f.claim_username(str(body.get("username") or ""))
+            if action in {"state", "overview"}:
+                f.ensure_lan()
+                self._update_friend_presence(body)
+                return f.overview()
             if action == "add":
-                return f.add(str(body.get("target") or ""))
-            if action == "respond":
-                return f.respond(int(body.get("id") or 0), bool(body.get("accept")))
+                return f.add(str(body.get("code") or ""))
             if action == "remove":
                 return f.remove(str(body.get("id") or ""))
-            if action == "overview":
-                running = self._game_running()
-                settings = self.config.get()
-                if running:
-                    f.set_presence(status="playing", game_version=str(settings.get("defaultVersion") or ""),
-                                   playing=f"Minecraft {settings.get('defaultVersion') or ''}".strip())
-                else:
-                    f.set_presence(status="online", playing=None, join_address=None)
-                f.start_heartbeat()
-                return f.overview()
-            if action == "share":
+            if action == "invite":
                 folder, version = self._instance_dir(body)
                 if folder is None or version is None:
-                    return {"ok": False, "error": "That instance is not installed."}
-                return f.share_world(folder, str(version["versionNumber"]), str(body.get("address") or ""))
-            if action == "unshare":
-                return f.stop_sharing()
-            if action == "join":
-                return self._join_friend(body)
-        except FriendsError as exc:
+                    return {"ok": False, "error": "Pick the installed instance you are hosting from first."}
+                return f.invite_for(folder, str(version["versionNumber"]), str(version.get("loader") or "fabric"),
+                                    str(body.get("address") or ""))
+            if action == "readinvite":
+                return {"ok": True, "invite": f.read_invite(str(body.get("invite") or ""))}
+            if action == "joininvite":
+                inv = f.read_invite(str(body.get("invite") or ""))
+                return self._join_address(inv["host"], inv["port"], inv["version"], inv["loader"], inv["hostName"])
+            if action == "joinlan":
+                t = f.lan_join_target(str(body.get("id") or ""))
+                return self._join_address(t["host"], t["port"], t["version"], "fabric", t["name"])
+        except CodeError as exc:
             return {"ok": False, "error": str(exc)}
         except (TypeError, ValueError):
             return {"ok": False, "error": "Bad request."}
         return {"ok": False, "error": "Unknown Friends action."}
 
-    def _join_friend(self, body: dict[str, Any]) -> dict[str, Any]:
-        """PLAY straight into a friend's e4all world, using an installed instance of their version."""
-        overview = self.friends.overview()
-        friend = next((x for x in overview["friends"] if str(x.get("id")) == str(body.get("id") or "")), None)
-        if not friend or not friend.get("join_address"):
-            return {"ok": False, "error": "That friend isn't sharing a world right now."}
+    def _update_friend_presence(self, body: dict[str, Any]) -> None:
+        from vanta.launcher.friends.service import find_lan_port, newest_world
+        if not self._game_running():
+            self.friends.set_presence(playing=False)
+            return
+        folder, version = self._instance_dir(body)
+        mc = str((version or {}).get("versionNumber") or self.config.get().get("defaultVersion") or "")
+        port = find_lan_port(folder) if folder else None
+        self.friends.set_presence(playing=True, mc=mc, world=newest_world(folder) if folder and port else "", port=port)
+
+    def _join_address(self, host: str, port: int | None, want: str, loader: str, who: str) -> dict[str, Any]:
+        """PLAY straight into a world: use an installed instance of that version, or start installing one."""
+        if self._game_running():
+            return {"ok": False, "error": "Minecraft is already running. Close it first, then join."}
         settings = self.config.get()
-        want = str(friend.get("game_version") or settings.get("defaultVersion") or "")
+        want = want or str(settings.get("defaultVersion") or "")
         rows = [v for v in list_versions(str(settings["gameDirectory"])) if v.get("supported") and str(v["versionNumber"]) == want]
         if not rows:
-            return {"ok": False, "error": f"{friend.get('username')} is on Minecraft {want}. Install {want} in INSTANCES first."}
-        row = next((v for v in rows if str(v.get("loader")) == "fabric"), rows[0])
-        addr = str(friend["join_address"])
-        host, _, port = addr.partition(":")
-        play = {"versionNumber": want, "loader": row["loader"], "joinServer": {"host": host, "port": int(port) if port else None},
-                "targetMode": "local"}
-        result = self.play(play)
-        result["joining"] = {"friend": friend.get("username"), "address": addr}
+            started = self.install_instance({"version": want, "loader": loader or "fabric"})
+            if not started.get("ok"):
+                return {"ok": False, "error": f"{who or 'Your friend'} is on Minecraft {want}, and Vanta couldn't install it: {started.get('error')}"}
+            return {"ok": True, "installing": True, "job": started.get("job") or started, "version": want,
+                    "message": f"Installing Minecraft {want} to join {who or 'your friend'}. Vanta joins when it's ready."}
+        row = next((v for v in rows if str(v.get("loader")) == (loader or "fabric")), None) or \
+            next((v for v in rows if str(v.get("loader")) == "fabric"), rows[0])
+        result = self.play({"versionNumber": want, "loader": row["loader"], "joinServer": {"host": host, "port": port},
+                            "targetMode": "local"})
+        result["joining"] = {"friend": who, "address": host + (f":{port}" if port else "")}
         return result
 
     def _selected_profile_name(self, payload: dict[str, Any] | None = None) -> str | None:

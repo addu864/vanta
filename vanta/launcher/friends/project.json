@@ -1,5 +1,0 @@
-{
-  "_comment": "Public Supabase settings for Vanta Friends. Only the project URL and the PUBLIC anon key belong here. Never put the service_role key in this file. Leave empty to keep Friends off.",
-  "url": "",
-  "anonKey": ""
-}

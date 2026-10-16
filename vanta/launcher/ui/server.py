@@ -40,6 +40,8 @@ def serve() -> None:
     bound = httpd.server_address[1]
     print(f"Vanta 1.0 listening on http://{host}:{bound}/", flush=True)
     print(f"Data directory: {app.data_dir}", flush=True)
+    if os.environ.get("VANTA_LAN", "1") != "0":
+        app.start_friends_lan()
     from vanta.launcher.minecraft.first_run import maybe_start
 
     if maybe_start(app.data_dir):

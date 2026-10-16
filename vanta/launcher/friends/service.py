@@ -1,217 +1,146 @@
-"""Vanta Friends service: session handling, friends/requests, presence heartbeat, world sharing."""
+"""Vanta Friends without a server: local friend list, LAN presence, e4all world invites."""
 
 from __future__ import annotations
 
-import json
 import re
-import threading
+import sys
 import time
 from pathlib import Path
 from typing import Any, Callable
 
-from vanta.launcher.friends.client import EMAIL_RE, USERNAME_RE, FriendsError, SupabaseClient, load_project
+from vanta.launcher.friends import lan as lanmod
+from vanta.launcher.friends.codes import CodeError, friend_link, make_invite, parse_friend_code, parse_invite
+from vanta.launcher.friends.store import FriendStore
 
 E4MC_RE = re.compile(r"\b((?:[a-z0-9-]+\.)+e4mc\.link)\b", re.I)
-HEARTBEAT_S = 30
+LAN_PORT_RE = re.compile(r"(?:Started serving on|hosted on port|Local game hosted on port)\D{0,20}(\d{2,5})", re.I)
+STOP_MARK = "Stopping singleplayer server"
+
+
+def _log_tail(instance: Path) -> str:
+    try:
+        return (Path(instance) / "logs" / "latest.log").read_text(encoding="utf-8", errors="replace")[-400_000:]
+    except OSError:
+        return ""
+
+
+def _after(text: str, needle: str) -> str:
+    return text.rsplit(needle, 1)[-1]
 
 
 def find_shared_address(instance: Path) -> str | None:
-    """Newest e4all/e4mc public address in the instance's latest.log (set when the host opens to LAN)."""
-    log = instance / "logs" / "latest.log"
-    try:
-        text = log.read_text(encoding="utf-8", errors="replace")[-400_000:]
-    except OSError:
-        return None
+    """Newest e4all/e4mc public address in latest.log, unless the world was closed after it."""
+    text = _log_tail(instance)
     found = E4MC_RE.findall(text)
-    if found and "Stopping singleplayer server" in text.rsplit(found[-1], 1)[-1]:
-        return None  # the world was closed after it was shared
-    return found[-1].lower() if found else None
+    if not found or STOP_MARK in _after(text, found[-1]):
+        return None
+    return found[-1].lower()
+
+
+def find_lan_port(instance: Path) -> int | None:
+    """Port of the world opened with Open to LAN, if it is still open."""
+    text = _log_tail(instance)
+    hits = list(LAN_PORT_RE.finditer(text))
+    if not hits or STOP_MARK in text[hits[-1].end():]:
+        return None
+    port = int(hits[-1].group(1))
+    return port if 0 < port < 65536 else None
+
+
+def newest_world(instance: Path) -> str:
+    try:
+        saves = [p for p in (Path(instance) / "saves").iterdir() if p.is_dir()]
+    except OSError:
+        return ""
+    return max(saves, key=lambda p: p.stat().st_mtime).name[:64] if saves else ""
+
+
+def firewall_hint() -> str:
+    if sys.platform.startswith("win"):
+        return ("If friends on the same Wi-Fi don't show up, allow Vanta on Private networks when Windows asks, "
+                "or in Windows Security → Firewall → Allow an app. Use the Private network profile at home.")
+    if sys.platform == "darwin":
+        return "If friends on the same Wi-Fi don't show up, allow incoming connections for Vanta in System Settings → Network → Firewall."
+    return "If friends on the same network don't show up, allow UDP port 47786 in your firewall."
 
 
 class FriendsService:
-    def __init__(self, data_dir: Path, *, client: Any = None, clock: Callable[[], float] = time.time) -> None:
-        self.data_dir = Path(data_dir)
-        self.folder = self.data_dir / "friends"
-        self.session_path = self.folder / "session.json"
+    def __init__(self, data_dir: Path, *, lan: lanmod.LanPresence | None = None,
+                 name: Callable[[], str] = lambda: "Player", clock: Callable[[], float] = time.time) -> None:
+        self.store = FriendStore(Path(data_dir))
+        self._name = name
         self._clock = clock
-        self._lock = threading.RLock()
-        self._client = client
-        self.autostart = client is None  # tests/mocks drive presence by hand
-        self._config_error = ""
-        self._heartbeat: threading.Thread | None = None
-        self._presence: dict[str, Any] = {"status": "online", "playing": None, "game_version": None, "join_address": None}
-        if client is None:
-            try:
-                project = load_project(self.data_dir)
-                if project["url"] and project["anonKey"]:
-                    self._client = SupabaseClient(project["url"], project["anonKey"])
-            except FriendsError as exc:
-                self._config_error = str(exc)
+        self._presence: dict[str, Any] = {"status": "online", "mc": "", "world": "", "port": None}
+        self.lan = lan if lan is not None else lanmod.LanPresence(self._beacon)
+        self._lan_started = lan is not None
+        self._started_at = time.monotonic()
 
-    # ---- feature flag ----
-    @property
-    def enabled(self) -> bool:
-        return self._client is not None
+    # ---- identity / beacon ----
+    def me(self) -> dict[str, str]:
+        ident = self.store.identity(self._name())
+        return {**ident, "link": friend_link(ident["code"])}
 
-    def _need(self) -> Any:
-        if self._client is None:
-            raise FriendsError(self._config_error or "Friends is not switched on yet: no Supabase project is configured.")
-        return self._client
+    def _beacon(self) -> dict[str, Any]:
+        me = self.store.identity(self._name())
+        return {"id": me["id"], "name": me["name"], "code": me["code"], **self._presence,
+                "knows": sorted(self.store.ids())[:64]}
 
-    # ---- session ----
-    def _read_session(self) -> dict[str, Any]:
-        try:
-            data = json.loads(self.session_path.read_text(encoding="utf-8"))
-            return data if isinstance(data, dict) else {}
-        except (OSError, ValueError):
-            return {}
+    def ensure_lan(self) -> None:
+        if not self._lan_started:
+            self._lan_started = True
+            self.lan.start()
 
-    def _write_session(self, data: dict[str, Any]) -> None:
-        self.folder.mkdir(parents=True, exist_ok=True)
-        tmp = self.session_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data), encoding="utf-8")
-        tmp.replace(self.session_path)
+    def set_presence(self, *, playing: bool, mc: str = "", world: str = "", port: int | None = None) -> None:
+        self._presence = {"status": "playing" if playing else "online", "mc": mc if playing else "",
+                          "world": world if playing and port else "", "port": port if playing else None}
 
-    def _store_auth(self, auth: dict[str, Any], email: str = "") -> dict[str, Any]:
-        user = auth.get("user") or {}
-        session = {"accessToken": auth.get("access_token"), "refreshToken": auth.get("refresh_token"),
-                   "expiresAt": self._clock() + float(auth.get("expires_in") or 3600),
-                   "userId": user.get("id"), "email": user.get("email") or email}
-        self._write_session(session)
-        return session
+    # ---- friends ----
+    def add(self, text: str, source: str = "code") -> dict[str, Any]:
+        return self.store.add(text, my_id=self.me()["id"], source=source)
 
-    def _token(self) -> tuple[str, str]:
-        client = self._need()
-        with self._lock:
-            s = self._read_session()
-            if not s.get("refreshToken"):
-                raise FriendsError("Sign in to Friends first.")
-            if self._clock() > float(s.get("expiresAt") or 0) - 60:
-                try:
-                    s = self._store_auth(client.refresh(s["refreshToken"]), s.get("email", ""))
-                except FriendsError:
-                    self.session_path.unlink(missing_ok=True)
-                    raise FriendsError("Your Friends sign-in expired. Sign in again.")
-            return str(s["accessToken"]), str(s["userId"])
-
-    # ---- public API ----
-    def state(self) -> dict[str, Any]:
-        if not self.enabled:
-            return {"ok": True, "enabled": False, "reason": self._config_error or "Friends is coming soon: the server isn't connected yet."}
-        s = self._read_session()
-        out: dict[str, Any] = {"ok": True, "enabled": True, "signedIn": bool(s.get("refreshToken")), "email": s.get("email")}
-        if out["signedIn"]:
-            try:
-                token, uid = self._token()
-                prof = self._need().my_profile(uid, token)
-                out["profile"] = {"username": prof.get("username"), "inviteCode": prof.get("invite_code")} if prof else None
-            except FriendsError as exc:
-                out.update(signedIn=bool(self._read_session().get("refreshToken")), error=str(exc))
-        return out
-
-    def register(self, email: str, password: str) -> dict[str, Any]:
-        email = (email or "").strip()
-        if not EMAIL_RE.match(email):
-            raise FriendsError("Enter a real email address.")
-        if len(password or "") < 8:
-            raise FriendsError("Use a password of at least 8 characters.")
-        auth = self._need().sign_up(email, password)
-        if auth.get("access_token"):  # project has email confirmation turned off
-            self._store_auth(auth, email)
-            return {"ok": True, "verified": True}
-        return {"ok": True, "verified": False, "message": f"Check {email} and click the verification link, then sign in."}
-
-    def resend(self, email: str) -> dict[str, Any]:
-        self._need().resend((email or "").strip())
+    def remove(self, ident: str) -> dict[str, Any]:
+        if not self.store.remove(str(ident or "").upper()):
+            raise CodeError("That friend isn't in your list.")
         return {"ok": True}
-
-    def sign_in(self, email: str, password: str) -> dict[str, Any]:
-        auth = self._need().sign_in((email or "").strip(), password or "")
-        self._store_auth(auth, email)
-        self.start_heartbeat()
-        return self.state()
-
-    def sign_out(self) -> dict[str, Any]:
-        s = self._read_session()
-        if s.get("accessToken") and self._client is not None:
-            try:
-                self._client.sign_out(s["accessToken"])
-            except FriendsError:
-                pass
-        self.session_path.unlink(missing_ok=True)
-        return {"ok": True}
-
-    def claim_username(self, username: str) -> dict[str, Any]:
-        if not USERNAME_RE.match(username or ""):
-            raise FriendsError("Usernames are 3–16 letters, numbers or _ (like your Minecraft name).")
-        token, _ = self._token()
-        row = self._need().rpc("claim_username", {"p_username": username}, token)
-        row = row[0] if isinstance(row, list) and row else row
-        return {"ok": True, "profile": {"username": (row or {}).get("username"), "inviteCode": (row or {}).get("invite_code")}}
-
-    def add(self, target: str) -> dict[str, Any]:
-        target = (target or "").strip()
-        m = re.search(r"(?:invite[=/]|^)([A-Za-z0-9_]{3,16})$", target)
-        if not m:
-            raise FriendsError("Enter a Vanta username or an invite code.")
-        token, _ = self._token()
-        result = self._need().rpc("send_friend_request", {"p_target": m.group(1)}, token)
-        return {"ok": True, "result": result}
-
-    def respond(self, request_id: int, accept: bool) -> dict[str, Any]:
-        token, _ = self._token()
-        return {"ok": True, "result": self._need().rpc("respond_friend_request", {"p_request": int(request_id), "p_accept": bool(accept)}, token)}
-
-    def remove(self, friend_id: str) -> dict[str, Any]:
-        token, _ = self._token()
-        return {"ok": True, "result": self._need().rpc("remove_friend", {"p_friend": str(friend_id)}, token)}
 
     def overview(self) -> dict[str, Any]:
-        token, _ = self._token()
-        client = self._need()
-        friends = client.rpc("my_friends", {}, token) or []
-        requests = client.rpc("my_requests", {}, token) or []
-        return {"ok": True, "friends": friends, "requests": requests, "me": dict(self._presence)}
+        me = self.me()
+        peers = self.lan.online()
+        friends = []
+        for f in self.store.friends():
+            p = peers.get(f["id"])
+            row = {**f, "lan": bool(p), "online": bool(p), "mutual": bool(p and me["id"] in p["knows"])}
+            if p:
+                row.update(status=p["status"], mc=p["mc"], world=p["world"], name=p["name"] or f["name"])
+                row["join"] = f"{p['ip']}:{p['port']}" if p.get("port") else None
+            friends.append(row)
+        friends.sort(key=lambda r: (not r["online"], not r.get("join"), r["name"].lower()))
+        known = self.store.ids()
+        nearby = [{"id": p["id"], "name": p["name"], "code": p["code"], "status": p["status"], "mc": p["mc"],
+                   "addedYou": me["id"] in p["knows"]} for p in peers.values() if p["id"] not in known and p.get("code")]
+        nearby.sort(key=lambda r: (not r["addedYou"], r["name"].lower()))
+        lan = {"ok": not self.lan.error, "error": self.lan.error, "sent": self.lan.sent, "received": self.lan.received,
+               "hint": firewall_hint()}
+        lan["quiet"] = lan["ok"] and self.lan.received == 0 and time.monotonic() - self._started_at > 20
+        return {"ok": True, "me": me, "friends": friends, "nearby": nearby, "lan": lan, "presence": dict(self._presence)}
 
-    # ---- presence ----
-    def set_presence(self, **fields: Any) -> None:
-        with self._lock:
-            for k in ("status", "playing", "game_version", "join_address"):
-                if k in fields:
-                    self._presence[k] = fields[k]
+    def lan_join_target(self, ident: str) -> dict[str, Any]:
+        f = next((x for x in self.overview()["friends"] if x["id"] == str(ident or "").upper()), None)
+        if not f:
+            raise CodeError("That friend isn't in your list.")
+        if not f.get("join"):
+            raise CodeError(f"{f['name']} isn't hosting a LAN world right now." if f["online"]
+                            else f"{f['name']} isn't on your network right now.")
+        host, _, port = f["join"].partition(":")
+        return {"host": host, "port": int(port), "version": f.get("mc") or "", "name": f["name"]}
 
-    def beat(self) -> bool:
-        try:
-            token, uid = self._token()
-            self._need().upsert_presence(uid, dict(self._presence), token)
-            return True
-        except FriendsError:
-            return False
-
-    def start_heartbeat(self) -> None:
-        if not self.enabled or not self.autostart or (self._heartbeat and self._heartbeat.is_alive()):
-            return
-
-        def loop() -> None:
-            while self._read_session().get("refreshToken"):
-                self.beat()
-                time.sleep(HEARTBEAT_S)
-
-        self._heartbeat = threading.Thread(target=loop, daemon=True, name="vanta-friends-heartbeat")
-        self._heartbeat.start()
-
-    def share_world(self, instance: Path, game_version: str, address: str = "") -> dict[str, Any]:
-        addr = (address or "").strip().lower() or find_shared_address(instance)
+    # ---- remote invites (e4all) ----
+    def invite_for(self, instance: Path, mc_version: str, loader: str = "fabric", address: str = "") -> dict[str, Any]:
+        addr = (address or "").strip() or find_shared_address(instance)
         if not addr:
-            raise FriendsError("No e4all address yet. In Minecraft, press Esc → Open to LAN (Online Mode off), then try again.")
-        if not re.fullmatch(r"[a-z0-9.-]{3,253}(:\d{1,5})?", addr):
-            raise FriendsError("That doesn't look like a server address.")
-        self.set_presence(status="playing", join_address=addr, game_version=game_version,
-                          playing=f"Minecraft {game_version} (sharing a world)")
-        self.beat()
-        return {"ok": True, "address": addr}
+            raise CodeError("No e4all address yet. In Minecraft press Esc → Open to LAN (Online Mode off) → Start, then try again.")
+        code = make_invite(addr, mc_version, self.me()["name"], loader=loader, now=self._clock())
+        return {"ok": True, "invite": code, "address": addr, "link": "vanta://join/" + code}
 
-    def stop_sharing(self) -> dict[str, Any]:
-        self.set_presence(join_address=None, status="online", playing=None)
-        self.beat()
-        return {"ok": True}
+    def read_invite(self, text: str) -> dict[str, Any]:
+        return parse_invite(text, now=self._clock())

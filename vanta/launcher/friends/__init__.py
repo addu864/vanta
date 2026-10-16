@@ -1,1 +1,1 @@
-"""Vanta Friends (Supabase backend). Off until a Supabase project URL + anon key are configured."""
+"""Vanta Friends: serverless (local list, LAN beacons, e4all world invites)."""

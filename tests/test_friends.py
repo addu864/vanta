@@ -1,229 +1,184 @@
-"""Vanta Friends: feature flag, email-verified auth, requests, presence, sharing and joining (mocked Supabase)."""
-from __future__ import annotations
-
-import base64
-import io
 import json
-from pathlib import Path
+import socket
+import time
 
 import pytest
 
-from vanta.launcher.friends import client as C
-from vanta.launcher.friends.client import FriendsError, SupabaseClient
-from vanta.launcher.friends.mock import MockSupabase
-from vanta.launcher.friends.service import FriendsService, find_shared_address
-
-REPO = Path(__file__).resolve().parents[1]
+from vanta.launcher.friends import codes, lan
+from vanta.launcher.friends.codes import CodeError
+from vanta.launcher.friends.service import FriendsService, find_lan_port, find_shared_address
+from vanta.launcher.friends.store import FriendStore
 
 
-def svc(tmp_path, backend, name):
-    return FriendsService(tmp_path / name, client=backend)
+# ---- friend codes ----
+def test_friend_code_roundtrip_and_link():
+    ident = codes.new_id()
+    code = codes.friend_code("itz_alone10", ident)
+    assert codes.parse_friend_code(code)["id"] == ident
+    assert codes.parse_friend_code(codes.friend_link(code)) == codes.parse_friend_code(code)
+    assert codes.parse_friend_code("  " + code.lower().replace("itz_alone10", "itz_alone10") + " ")["id"] == ident
 
 
-def signed_up(tmp_path, backend, name, email):
-    s = svc(tmp_path, backend, name)
-    assert s.register(email, "password1")["verified"] is False
-    with pytest.raises(FriendsError, match="Verify your email"):
-        s.sign_in(email, "password1")
-    backend.confirm(email)
-    s.sign_in(email, "password1")
-    s.claim_username(name)
-    return s
+def test_friend_code_rejects_typos_and_junk():
+    code = codes.friend_code("Steve", "ABCDEFGH23")
+    bad = code[:-4] + ("Z" if code[-4] != "Z" else "Y") + code[-3:]
+    for text in (bad, "", "hello", "Steve-ABC-12", "x" * 30 + "-ABCDEFGH23-AA"):
+        with pytest.raises(CodeError):
+            codes.parse_friend_code(text)
+    with pytest.raises(CodeError):
+        codes.friend_code("bad name!", "ABCDEFGH23")
 
 
-def test_off_without_project(tmp_path, monkeypatch):
-    monkeypatch.delenv("VANTA_SUPABASE_URL", raising=False)
-    monkeypatch.delenv("VANTA_SUPABASE_ANON_KEY", raising=False)
-    s = FriendsService(tmp_path)
-    assert s.enabled is False
-    st = s.state()
-    assert st["ok"] and st["enabled"] is False
-    with pytest.raises(FriendsError):
-        s.register("a@b.co", "password1")
+# ---- world invites ----
+def test_invite_roundtrip():
+    inv = codes.make_invite("Fox-Hat.EU.e4mc.link", "1.21.11", "itz_alone10", now=1000)
+    assert inv.startswith("VW1.") and "=" not in inv
+    out = codes.parse_invite(inv, now=1001)
+    assert out == {"host": "fox-hat.eu.e4mc.link", "port": None, "address": "fox-hat.eu.e4mc.link", "version": "1.21.11",
+                   "hostName": "itz_alone10", "loader": "fabric", "expires": 1000 + codes.INVITE_TTL_S}
+    assert codes.parse_invite("vanta://join/" + inv, now=1001)["host"] == "fox-hat.eu.e4mc.link"
+    assert codes.parse_invite(codes.make_invite("192.168.1.5:51234", "1.20.1", "a", now=0), now=1)["port"] == 51234
 
 
-def test_shipped_project_file_has_no_secret():
-    data = json.loads((REPO / "vanta/launcher/friends/project.json").read_text())
-    assert set(data) <= {"_comment", "url", "anonKey"}
-    values = json.dumps([data.get("url"), data.get("anonKey")])
-    assert "sb_secret_" not in values and C._jwt_role(data.get("anonKey") or "") != "service_role"
+def test_invite_expiry_and_damage():
+    inv = codes.make_invite("a.e4mc.link", "1.21.11", "Bob", ttl_s=60, now=0)
+    with pytest.raises(CodeError, match="expired"):
+        codes.parse_invite(inv, now=61)
+    import base64
+    def mk(obj):
+        return "VW1." + base64.urlsafe_b64encode(json.dumps(obj).encode()).decode().rstrip("=")
+    for text in ("VW1.!!!!", "VW2.abc", "nope", mk([1]), mk({"a": "evil host;rm", "v": "1.21"}),
+                 mk({"a": "x.e4mc.link:99999", "v": "1.21"}), mk({"a": "x.e4mc.link", "v": ""})):
+        with pytest.raises(CodeError):
+            codes.parse_invite(text, now=0)
+    weird = codes.parse_invite(mk({"a": "x.e4mc.link", "v": "1.21", "h": "<b>Bo b</b>", "l": "forge"}), now=0)
+    assert weird["hostName"] == "bBobb" and weird["loader"] == "fabric"
 
 
-def test_service_role_key_refused(tmp_path, monkeypatch):
-    payload = base64.urlsafe_b64encode(json.dumps({"role": "service_role"}).encode()).decode().rstrip("=")
-    monkeypatch.setenv("VANTA_SUPABASE_URL", "https://abcd.supabase.co")
-    monkeypatch.setenv("VANTA_SUPABASE_ANON_KEY", f"x.{payload}.y")
-    with pytest.raises(FriendsError, match="anon key"):
-        C.load_project(tmp_path)
+# ---- friend list ----
+def test_store_identity_add_remove(tmp_path):
+    s = FriendStore(tmp_path)
+    me = s.identity("itz_alone10")
+    assert me == s.identity("itz_alone10")  # stable id
+    assert (tmp_path / "friends" / "friends.json").exists()
+    assert s.identity("bad name")["name"] == "Player"
+    other = codes.friend_code("Alex", "QRSTVWXYZ2")
+    assert s.add(other, my_id=me["id"])["already"] is False
+    assert s.add(codes.friend_link(codes.friend_code("Alex2", "QRSTVWXYZ2")), my_id=me["id"])["already"] is True
+    assert [f["name"] for f in s.friends()] == ["Alex2"]  # renamed, not duplicated
+    with pytest.raises(CodeError, match="own"):
+        s.add(me["code"], my_id=me["id"])
+    assert FriendStore(tmp_path).friends()[0]["id"] == "QRSTVWXYZ2"  # persisted
+    assert s.remove("QRSTVWXYZ2") and not s.remove("QRSTVWXYZ2") and s.friends() == []
 
 
-def test_enabled_by_env(tmp_path, monkeypatch):
-    payload = base64.urlsafe_b64encode(json.dumps({"role": "anon"}).encode()).decode().rstrip("=")
-    monkeypatch.setenv("VANTA_SUPABASE_URL", "https://abcd.supabase.co")
-    monkeypatch.setenv("VANTA_SUPABASE_ANON_KEY", f"x.{payload}.y")
-    assert FriendsService(tmp_path).enabled
+# ---- LAN protocol ----
+def test_lan_decode_is_strict():
+    assert lan.decode(b"not json") is None
+    assert lan.decode(json.dumps({"t": "other", "id": "X"}).encode()) is None
+    assert lan.decode(b"x" * 2000) is None
+    m = lan.decode(lan.encode({"id": "abcdefghjk", "name": "N" * 40, "port": 70000, "knows": ["a"] * 100}))
+    assert m["id"] == "ABCDEFGHJK" and len(m["name"]) == 16 and m["port"] is None and len(m["knows"]) == 64
 
 
-def test_non_supabase_url_ignored(tmp_path, monkeypatch):
-    monkeypatch.setenv("VANTA_SUPABASE_URL", "http://evil.example")
-    monkeypatch.setenv("VANTA_SUPABASE_ANON_KEY", "k")
-    assert C.load_project(tmp_path)["url"] == ""
+def _free_udp_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(("127.0.0.1", 0))
+    p = s.getsockname()[1]
+    s.close()
+    return p
 
 
-def test_request_accept_and_presence(tmp_path):
-    b = MockSupabase()
-    a = signed_up(tmp_path, b, "itz_alone10", "a@x.co")
-    c = signed_up(tmp_path, b, "buddy", "b@x.co")
-    assert a.add("buddy")["result"] == "sent"
-    reqs = c.overview()["requests"]
-    assert reqs[0]["direction"] == "incoming" and reqs[0]["username"] == "itz_alone10"
-    assert c.respond(reqs[0]["id"], True)["result"] == "accepted"
-    assert [f["username"] for f in a.overview()["friends"]] == ["buddy"]
-    assert a.overview()["friends"][0]["online"] is False
-    c.set_presence(status="playing", playing="Minecraft 1.21.11")
-    assert c.beat()
-    f = a.overview()["friends"][0]
-    assert f["online"] and f["playing"] == "Minecraft 1.21.11"
+def _wait(fn, timeout=5.0):
+    end = time.time() + timeout
+    while time.time() < end:
+        if fn():
+            return True
+        time.sleep(0.05)
+    return False
 
 
-def test_decline_and_invite_code_and_mutual(tmp_path):
-    b = MockSupabase()
-    a = signed_up(tmp_path, b, "alpha", "a@x.co")
-    c = signed_up(tmp_path, b, "charlie", "c@x.co")
-    code = c.state()["profile"]["inviteCode"]
-    a.add(f"vanta://invite/{code}")
-    rid = c.overview()["requests"][0]["id"]
-    assert c.respond(rid, False)["result"] == "declined"
-    assert a.overview()["friends"] == []
-    a.add("charlie")
-    assert c.add("alpha")["result"] == "accepted"  # both asked -> friends
-    assert a.overview()["friends"][0]["username"] == "charlie"
-    a.remove(a.overview()["friends"][0]["id"])
-    assert c.overview()["friends"] == []
+def test_lan_two_installs_see_each_other_on_loopback(tmp_path):
+    port = _free_udp_port()
+    target = [("127.0.0.1", port)]
+    nodes = []
+    for name in ("itz_alone10", "Friend"):
+        holder = {}
+        node = lan.LanPresence(lambda h=holder: h["svc"]._beacon(), port=port, targets=target, interval_s=0.1, bind_host="127.0.0.1")
+        svc = FriendsService(tmp_path / name, lan=node, name=lambda n=name: n)
+        holder["svc"] = svc
+        nodes.append((svc, node))
+    (a, la), (b, lb) = nodes
+    try:
+        assert la.start() and lb.start()
+        # both bound to the same port with SO_REUSEADDR/PORT; each sends to it
+        assert _wait(lambda: a.overview()["nearby"] or b.overview()["nearby"])
+        # A adds B; B hosts a LAN world
+        a.add(b.me()["code"])
+        b.set_presence(playing=True, mc="1.21.11", world="Island", port=51234)
+        b.add(a.me()["code"])
+        ok = _wait(lambda: (lambda f: f and f[0].get("join") and f[0]["mutual"])(a.overview()["friends"]))
+        if not ok:  # some kernels deliver unicast to only one of two sockets sharing a port
+            raw = lan.encode(b._beacon())
+            la.handle(raw, "127.0.0.1", a.me()["id"])
+        f = a.overview()["friends"][0]
+        assert f["online"] and f["name"] == "Friend" and f["mc"] == "1.21.11" and f["world"] == "Island"
+        assert a.lan_join_target(f["id"]) == {"host": "127.0.0.1", "port": 51234, "version": "1.21.11", "name": "Friend"}
+    finally:
+        la.stop(); lb.stop()
 
 
-def test_username_rules(tmp_path):
-    b = MockSupabase()
-    signed_up(tmp_path, b, "taken", "t@x.co")
-    s = svc(tmp_path, b, "other")
-    s.register("o@x.co", "password1")
-    b.confirm("o@x.co")
-    s.sign_in("o@x.co", "password1")
-    with pytest.raises(FriendsError, match="3–16"):
-        s.claim_username("a b")
-    with pytest.raises(FriendsError, match="taken"):
-        s.claim_username("TAKEN")
-    with pytest.raises(FriendsError, match="no Vanta user"):
-        s.claim_username("ok_name")
-        s.add("nobody")
+def test_lan_dedicated_sockets_loopback(tmp_path):
+    """Strict check: a real UDP packet from one node reaches another bound on its own port."""
+    pa, pb = _free_udp_port(), _free_udp_port()
+    beacon_a = {"id": "AAAAAAAAAA", "name": "A", "code": "A-AAAAAAAAAA-XX", "status": "online"}
+    na = lan.LanPresence(lambda: beacon_a, port=pa, targets=[("127.0.0.1", pb)], interval_s=0.1, bind_host="127.0.0.1")
+    nb = lan.LanPresence(lambda: {"id": "BBBBBBBBBB"}, port=pb, targets=[("127.0.0.1", pa)], interval_s=0.1, bind_host="127.0.0.1")
+    try:
+        assert na.start() and nb.start()
+        assert _wait(lambda: "AAAAAAAAAA" in nb.online() and "BBBBBBBBBB" in na.online())
+        assert nb.online()["AAAAAAAAAA"]["ip"] == "127.0.0.1"
+    finally:
+        na.stop(); nb.stop()
 
 
-def test_register_validation(tmp_path):
-    s = svc(tmp_path, MockSupabase(), "x")
-    with pytest.raises(FriendsError, match="email"):
-        s.register("nope", "password1")
-    with pytest.raises(FriendsError, match="8 characters"):
-        s.register("a@b.co", "short")
+def test_lan_peer_times_out_and_busy_port_is_graceful():
+    t = [0.0]
+    node = lan.LanPresence(lambda: {"id": "MEMEMEMEME"}, port=0, targets=[], clock=lambda: t[0])
+    node.handle(lan.encode({"id": "PEERPEERPE", "name": "P"}), "10.0.0.2", "MEMEMEMEME")
+    node.handle(lan.encode({"id": "MEMEMEMEME"}), "10.0.0.3", "MEMEMEMEME")  # own echo ignored
+    assert list(node.online()) == ["PEERPEERPE"]
+    t[0] = lan.TIMEOUT_S + 1
+    assert node.online() == {}
+    blocker = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    blocker.bind(("127.0.0.1", 0))
+    busy = lan.LanPresence(lambda: {"id": "X"}, port=blocker.getsockname()[1], targets=[], bind_host="127.0.0.1")
+    busy._open = lambda: (_ for _ in ()).throw(OSError(10013, "access denied"))
+    assert busy.start() is False and "Friend codes and world invites still work" in busy.error
+    blocker.close()
 
 
-def test_session_refresh_and_signout(tmp_path):
-    b = MockSupabase()
-    now = [1000.0]
-    s = FriendsService(tmp_path / "s", client=b, clock=lambda: now[0])
-    s.register("r@x.co", "password1")
-    b.confirm("r@x.co")
-    s.sign_in("r@x.co", "password1")
-    old = json.loads(s.session_path.read_text())["accessToken"]
-    now[0] += 7200
-    s.claim_username("refresher")
-    assert json.loads(s.session_path.read_text())["accessToken"] != old
-    s.sign_out()
-    assert s.state()["signedIn"] is False
+# ---- log parsing / service ----
+def test_log_detection(tmp_path):
+    logs = tmp_path / "logs"; logs.mkdir()
+    (logs / "latest.log").write_text("[Render thread/INFO]: Started serving on 51234\n"
+                                     "[e4mc] Local game hosted on domain [cool-fox.eu.e4mc.link]\n", encoding="utf-8")
+    assert find_shared_address(tmp_path) == "cool-fox.eu.e4mc.link"
+    assert find_lan_port(tmp_path) == 51234
+    with (logs / "latest.log").open("a") as fh:
+        fh.write("[Server thread/INFO]: Stopping singleplayer server as player logged out\n")
+    assert find_shared_address(tmp_path) is None and find_lan_port(tmp_path) is None
 
 
-def test_share_world_and_detect_address(tmp_path):
-    inst = tmp_path / "inst"
-    (inst / "logs").mkdir(parents=True)
-    log = inst / "logs" / "latest.log"
-    log.write_text("[e4all] Local game hosted on domain [quiet-fox-42.ap.e4mc.link]\n")
-    assert find_shared_address(inst) == "quiet-fox-42.ap.e4mc.link"
-    b = MockSupabase()
-    a = signed_up(tmp_path, b, "host1", "h@x.co")
-    g = signed_up(tmp_path, b, "guest1", "g@x.co")
-    a.add("guest1")
-    g.respond(g.overview()["requests"][0]["id"], True)
-    assert a.share_world(inst, "1.21.11")["address"] == "quiet-fox-42.ap.e4mc.link"
-    f = g.overview()["friends"][0]
-    assert f["join_address"] == "quiet-fox-42.ap.e4mc.link" and f["game_version"] == "1.21.11"
-    log.write_text(log.read_text() + "[Server thread/INFO]: Stopping singleplayer server as player logged out\n")
-    assert find_shared_address(inst) is None
-    with pytest.raises(FriendsError, match="Open to LAN"):
-        a.share_world(inst, "1.21.11")
-    with pytest.raises(FriendsError):
-        a.share_world(inst, "1.21.11", "bad address!")
-
-
-def test_client_sends_anon_key_and_user_token():
-    seen = []
-
-    class R(io.BytesIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    def opener(req, timeout=0):
-        seen.append(req)
-        return R(b'["ok"]')
-
-    cl = SupabaseClient("https://abcd.supabase.co", "anon-key", opener=opener)
-    cl.rpc("my_friends", {}, "user-jwt")
-    req = seen[0]
-    assert req.full_url == "https://abcd.supabase.co/rest/v1/rpc/my_friends"
-    assert req.get_header("Apikey") == "anon-key" and req.get_header("Authorization") == "Bearer user-jwt"
-    with pytest.raises(FriendsError):
-        SupabaseClient("https://abcd.supabase.co", "sb_secret_123")
-
-
-def test_app_api_flag_off(tmp_path, monkeypatch):
-    monkeypatch.delenv("VANTA_SUPABASE_URL", raising=False)
-    from vanta.launcher.ui.app import VantaApp
-    from vanta.launcher.ui.server import dispatch
-    app = VantaApp(data_dir=tmp_path)
-    code, body, _ = dispatch(app, "GET", "/api/friends/state", None)
-    assert code == 200 and json.loads(body)["enabled"] is False
-    code, body, _ = dispatch(app, "POST", "/api/friends/add", b'{"target":"x"}')
-    assert code == 400
-
-
-def test_app_join_friend(tmp_path, monkeypatch):
-    from vanta.launcher.ui import app as appmod
-    b = MockSupabase()
-    a = appmod.VantaApp(data_dir=tmp_path / "a")
-    a.friends = FriendsService(tmp_path / "a", client=b)
-    a.friends.register("a@x.co", "password1"); b.confirm("a@x.co"); a.friends.sign_in("a@x.co", "password1")
-    a.friends.claim_username("joiner")
-    host = signed_up(tmp_path, b, "hoster", "h@x.co")
-    host.add("joiner")
-    a.friends.respond(a.friends.overview()["requests"][0]["id"], True)
-    host.share_world(tmp_path, "1.21.11", "abc.eu.e4mc.link")
-    monkeypatch.setattr(appmod, "list_versions", lambda d: [{"versionNumber": "1.21.11", "loader": "fabric", "supported": True}])
-    captured = {}
-    monkeypatch.setattr(a, "play", lambda body: captured.update(body) or {"status": "Started"})
-    fid = a.friends.overview()["friends"][0]["id"]
-    res = a.friends_call("join", {"id": fid})
-    assert res["status"] == "Started" and captured["joinServer"]["host"] == "abc.eu.e4mc.link"
-    assert captured["versionNumber"] == "1.21.11"
-
-
-def test_schema_has_rls_everywhere():
-    sql = (REPO / "supabase/schema.sql").read_text()
-    for table in ("profiles", "friend_requests", "friendships", "presence"):
-        assert f"alter table public.{table} enable row level security" in sql
-    assert "service_role" not in sql
-
-
-def test_ui_friends_tab():
-    html = (REPO / "vanta/launcher/ui/index.html").read_text()
-    assert 'data-tab="friends" id="tab-friends" hidden' in html and "/api/friends/overview" in html
+def test_service_invite_flow(tmp_path):
+    node = lan.LanPresence(lambda: {"id": "X"}, port=0, targets=[])
+    svc = FriendsService(tmp_path, lan=node, name=lambda: "itz_alone10", clock=lambda: 5000)
+    with pytest.raises(CodeError, match="Open to LAN"):
+        svc.invite_for(tmp_path, "1.21.11")
+    out = svc.invite_for(tmp_path, "1.21.11", address="cool-fox.eu.e4mc.link")
+    inv = svc.read_invite(out["invite"])
+    assert inv["hostName"] == "itz_alone10" and inv["version"] == "1.21.11" and out["link"].startswith("vanta://join/VW1.")
+    ov = svc.overview()
+    assert ov["friends"] == [] and ov["lan"]["ok"] and ov["me"]["link"].startswith("vanta://friend/itz_alone10-")
+    with pytest.raises(CodeError):
+        svc.remove("NOPE")

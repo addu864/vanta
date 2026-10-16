@@ -16,10 +16,10 @@
     var isWin = /Win/i.test(plat) || /Windows/.test(ua);
     if (!mobile && isWin) {
       main.href = main.dataset.win; main.textContent = "Download for Windows";
-      if (note) note.innerHTML = 'Windows 10/11 · v1.4.1 · 12 MB (game downloads on first launch). On a Mac? <a href="#dl-mac">Get the macOS version</a>.';
+      if (note) note.innerHTML = 'Windows 10/11 · v1.5.0 · 12 MB (game downloads on first launch). On a Mac? <a href="#dl-mac">Get the macOS version</a>.';
     } else if (!mobile && isMac) {
       main.href = main.dataset.mac; main.textContent = "Download for macOS";
-      if (note) note.innerHTML = 'macOS (Apple Silicon &amp; Intel) · v1.4.1-mac · 40 MB. On Windows? <a href="#dl-win">Get the Windows version</a>.';
+      if (note) note.innerHTML = 'macOS (Apple Silicon &amp; Intel) · v1.5.0-mac · 40 MB. On Windows? <a href="#dl-win">Get the Windows version</a>.';
     } else if (mobile && note) {
       note.textContent = "Vanta runs on Windows and macOS computers. Open this page on your PC or Mac to download.";
     }
@@ -151,7 +151,7 @@
     // older versions
     var older = $("#older-list");
     if (older) {
-      var list = rels.filter(function (r) { return ["v1.4.1", "v1.4.1-mac"].indexOf(r.tag_name) === -1; });
+      var list = rels.filter(function (r) { return ["v1.5.0", "v1.5.0-mac"].indexOf(r.tag_name) === -1; });
       if (list.length) older.innerHTML = list.map(function (r) {
         return '<li><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + "</a> <span class=\"small\">· " + fmtDate(r.published_at) + "</span></li>";
       }).join("");
