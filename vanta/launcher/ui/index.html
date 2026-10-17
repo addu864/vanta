@@ -263,6 +263,16 @@
             <label class="toggle-row"><input type="checkbox" id="skin3d-rotate" checked> Auto-rotate</label>
             <label class="toggle-row"><input type="checkbox" id="skin3d-layer" checked> Second layer (hat, jacket, sleeves)</label>
             <label class="toggle-row"><input type="checkbox" id="skin3d-walk"> Walk animation</label>
+            <div class="cape-box">
+              <label>Cape preview
+                <select id="cape-pick" aria-describedby="cape-note"></select>
+              </label>
+              <label>Wear as
+                <select id="cape-back"><option value="cape">Cape</option><option value="elytra">Elytra</option></select>
+              </label>
+              <div class="row"><label class="ghost file-btn">Your cape PNG<input type="file" id="cape-file" accept="image/png,.png" hidden></label><button type="button" class="ghost" id="skin3d-turn">Turn around</button></div>
+              <p class="hint" id="cape-note">Preview only. In Minecraft, capes come from Mojang or a cape mod; Vanta doesn't change what other players see.</p>
+            </div>
           </div>
         </div>
         <div class="mods-toolbar">
@@ -3244,6 +3254,7 @@
         const slim = detectSlim(image);
         viewer.loadSkin(image, { model: slim ? "slim" : "default" });
         setSecondLayer($("skin3d-layer").checked);
+        if ($("cape-pick").value !== "none") applyCape();
         const saved = skin.model === "alex" ? "slim" : "classic";
         const detected = slim ? "slim (Alex, 3px arms)" : "classic (Steve, 4px arms)";
         $("skin3d-model").textContent = "Detected arms: " + detected + (saved !== (slim ? "slim" : "classic") ? ". Saved model setting: " + saved + "." : ".");
@@ -3257,6 +3268,77 @@
     $("skin3d-walk").addEventListener("change", () => {
       if (!skinViewer) return;
       skinViewer.animation = $("skin3d-walk").checked ? new skinview3d.WalkingAnimation() : new skinview3d.IdleAnimation();
+    });
+
+    // ---- Cape preview: built-in designs are drawn here (64x32 cape layout), or load your own PNG ----
+    const CAPES = [
+      { id: "none", name: "No cape" },
+      { id: "vanta", name: "Vanta violet", a: "#6d3fd1", b: "#b892ff", mark: true },
+      { id: "night", name: "Night sky", a: "#140d2e", b: "#7f6bd6", stars: true },
+      { id: "amethyst", name: "Amethyst stripes", a: "#4b2a86", b: "#c29bff", stripes: true },
+      { id: "ember", name: "Ember", a: "#3a0d16", b: "#ff7a59", stripes: true },
+    ];
+    function drawCape(c) {
+      const cv = document.createElement("canvas"); cv.width = 64; cv.height = 32;
+      const g = cv.getContext("2d");
+      const fill = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+      // cape: top 1..11 x 0..1, sides, front 1..11 x 1..17, back 12..22 x 1..17; elytra 22..46 x 0..22
+      fill(0, 0, 64, 32, c.a);
+      if (c.stripes) for (let y = 1; y < 17; y += 4) { fill(1, y, 10, 2, c.b); fill(12, y, 10, 2, c.b); }
+      for (let y = 0; y < 22; y += 4) fill(22, y, 24, 2, c.stripes ? c.b : c.a);
+      if (c.stars) [[3, 3], [7, 6], [4, 11], [9, 13], [2, 15], [14, 4], [18, 9], [15, 14], [26, 5], [34, 9], [40, 15], [30, 18]].forEach(([x, y]) => fill(x, y, 1, 1, c.b));
+      if (c.mark) { // a small V on the outside of the cape (front face, which is the back of the player)
+        [[3, 5], [4, 7], [5, 9], [6, 11], [7, 9], [8, 7], [9, 5]].forEach(([x, y]) => fill(x - 1, y, 2, 2, c.b));
+        fill(1, 1, 10, 1, c.b); fill(28, 4, 12, 2, c.b);
+      }
+      return cv.toDataURL("image/png");
+    }
+    function capeOptions() {
+      const sel = $("cape-pick"); sel.replaceChildren();
+      CAPES.forEach((c) => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+      const own = localStorage.getItem("vanta-cape-own");
+      if (own) { const o = document.createElement("option"); o.value = "own"; o.textContent = "Your cape"; sel.appendChild(o); }
+      sel.value = localStorage.getItem("vanta-cape") || "none";
+      if (!sel.value) sel.value = "none";
+      $("cape-back").value = localStorage.getItem("vanta-cape-back") || "cape";
+    }
+    function applyCape() {
+      const viewer = ensureSkinViewer(); if (!viewer) return;
+      const id = $("cape-pick").value, back = $("cape-back").value;
+      localStorage.setItem("vanta-cape", id); localStorage.setItem("vanta-cape-back", back);
+      $("cape-back").disabled = id === "none";
+      if (id === "none") { viewer.resetCape(); return; }
+      const src = id === "own" ? localStorage.getItem("vanta-cape-own") : drawCape(CAPES.find((c) => c.id === id) || CAPES[1]);
+      if (!src) { viewer.resetCape(); return; }
+      const img = new Image();
+      img.onload = () => { try { viewer.loadCape(img, { backEquipment: back }); } catch (_) { $("cape-note").textContent = "This cape image couldn't be shown."; } };
+      img.src = src;
+    }
+    capeOptions();
+    $("skin3d-turn").addEventListener("click", () => {
+      const viewer = ensureSkinViewer(); if (!viewer) return;
+      viewer.autoRotate = false; $("skin3d-rotate").checked = false;
+      viewer.playerWrapper.rotation.y += Math.PI;
+    });
+    $("cape-pick").addEventListener("change", applyCape);
+    $("cape-back").addEventListener("change", applyCape);
+    $("cape-file").addEventListener("change", () => {
+      const f = $("cape-file").files[0]; if (!f) return;
+      if (f.size > 64 * 1024) { toast("That cape file is too big (64 KB max).", "bad"); return; }
+      const r = new FileReader();
+      r.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const ok = (img.naturalWidth === 64 && img.naturalHeight === 32) || (img.naturalWidth === 22 && img.naturalHeight === 17) || (img.naturalWidth % 64 === 0 && img.naturalWidth === img.naturalHeight * 2);
+          if (!ok) { toast("Cape PNGs are 64×32 (or 22×17). This one is " + img.naturalWidth + "×" + img.naturalHeight + ".", "bad"); return; }
+          try { localStorage.setItem("vanta-cape-own", String(r.result)); } catch (_) { toast("Couldn't keep that cape.", "bad"); return; }
+          capeOptions(); $("cape-pick").value = "own"; applyCape(); toast("Showing your cape on the preview.", "good");
+        };
+        img.onerror = () => toast("That isn't a PNG image.", "bad");
+        img.src = String(r.result);
+      };
+      r.readAsDataURL(f);
+      $("cape-file").value = "";
     });
 
     // ---- Popular servers: compact PLAY bar + BROWSE SERVERS tab ----

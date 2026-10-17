@@ -1006,3 +1006,14 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .empty-state button { margin-top: 6px; }
 .conn-banner { position: sticky; top: 0; z-index: 70; margin: 0 16px 8px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--warn, #e0a84a); background: rgba(60, 38, 10, .92); color: #ffe7c2; font-size: 13px; }
 .conn-banner[hidden] { display: none; }
+
+.cape-box { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.cape-box label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.cape-box .file-btn { display: inline-flex; justify-self: start; color: var(--text); }
+
+/* SKINS 3D panel layout (1.6.2) */
+.skin3d-info { flex: 1; max-width: 560px; }
+.skin3d-info label.toggle-row { display: flex !important; flex-direction: row; justify-content: flex-start; text-align: left; gap: 10px; }
+.skin3d-info label.toggle-row input { width: 16px; min-width: 0 !important; max-width: 16px; margin: 0; flex: none; }
+.cape-box { grid-template-columns: 1fr 1fr; }
+.cape-box .row, .cape-box .hint { grid-column: 1 / -1; }
