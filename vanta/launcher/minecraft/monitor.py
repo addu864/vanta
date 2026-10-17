@@ -138,7 +138,7 @@ def newest_crash_report(instance: Path, since: float) -> Path | None:
     return reports[0] if reports and reports[0].stat().st_mtime >= since - 5 else None
 
 
-_state: dict[str, Any] = {"pid": 0, "since": 0.0, "jar": "", "crash": None}
+_state: dict[str, Any] = {"pid": 0, "since": 0.0, "jar": "", "crash": None, "seen": 0.0}
 
 
 def game_status(data_dir: Path, *, lines: int = 200) -> dict[str, Any]:
@@ -149,12 +149,23 @@ def game_status(data_dir: Path, *, lines: int = 200) -> dict[str, Any]:
     running = bool(pid and launch._pid_alive(pid) and launch._cmdline_matches(pid, jar))
     log_lines = _tail_since_start(data_dir / "client.log")
     if running and _state["pid"] != pid:
-        _state.update(pid=pid, since=float(session.get("started") or time.time()), jar=jar, crash=None)
+        _state.update(pid=pid, since=float(session.get("started") or time.time()), jar=jar, crash=None, seen=time.time())
     elif not running and pid and not _state["pid"]:
         # The game exited before anyone polled (a crash within a second or two),
         # or Vanta restarted while it ran: judge that session now.
-        _state.update(pid=pid, since=float(session.get("started") or time.time() - 600), jar=jar, crash=None)
+        _state.update(pid=pid, since=float(session.get("started") or time.time() - 600), jar=jar, crash=None,
+                      seen=float(session.get("started") or 0))
+    if running:
+        _state["seen"] = time.time()
     if not running and _state["pid"]:
+        try:
+            from vanta.launcher.minecraft import playtime
+
+            folder = Path(_state["jar"]).parent if _state["jar"] else None
+            if folder is not None and _state["since"]:
+                playtime.record(data_dir, folder, _state["since"], playtime.session_end(folder, _state["since"], _state.get("seen") or 0))
+        except Exception:  # noqa: BLE001 - playtime must never break crash detection
+            pass
         # It was running and stopped: decide if that was a crash.
         instance = Path(_state["jar"]).parent if _state["jar"] else None
         report = newest_crash_report(instance, _state["since"]) if instance else None

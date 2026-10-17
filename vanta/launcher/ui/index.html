@@ -42,7 +42,7 @@
       <section class="panel home-panel" data-panel="play" id="panel-play">
         <div class="dash-row" id="dash-row" aria-label="Dashboard">
           <div class="glass dash-card">
-            <h2>Jump back in</h2>
+            <div class="dash-head"><h2>Jump back in</h2><span class="dash-playtime" id="dash-playtime" title="Time in game, counted by Vanta on this computer" hidden></span></div>
             <div class="dash-list" id="dash-instances"><div class="skel-list" aria-busy="true" aria-label="Loading"><span class="skel"></span><span class="skel short"></span><span class="skel"></span></div></div>
           </div>
           <div class="glass dash-card">
@@ -343,6 +343,12 @@
               <label>Extra JVM arguments<input id="inst-jvm" placeholder="-XX:+UseG1GC -Dfoo=bar"></label>
               <button type="button" class="action" id="inst-save">Save</button>
               <div class="status" id="inst-settings-status"></div>
+            </div>
+            <div class="inst-box">
+              <h3>Notes &amp; playtime</h3>
+              <p class="hint inst-playtime" id="inst-playtime">Not played with Vanta yet.</p>
+              <label>Notes (only on this computer)<textarea id="inst-notes" maxlength="2000" rows="5" placeholder="Seeds, server IPs, what you were building, which mods to update…"></textarea></label>
+              <div class="row"><button type="button" class="ghost" id="inst-check">Check mods</button><span class="status" id="inst-notes-status" aria-live="polite"></span></div>
             </div>
             <div class="inst-box">
               <h3>Copy mods to another instance</h3>
@@ -1187,6 +1193,12 @@
       await selectServer(id);
     }
 
+    function fmtDur(sec) {
+      sec = Math.floor(sec || 0);
+      if (sec < 60) return sec ? "<1m" : "0m";
+      const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+      return h ? h + "h " + m + "m" : m + "m";
+    }
     function fmtAgo(sec) {
       const d = Math.max(0, Date.now() / 1000 - sec);
       if (d < 3600) return Math.max(1, Math.round(d / 60)) + " min ago";
@@ -1201,6 +1213,12 @@
       if (!d.ok) return;
       // Release notes refresh in the background now; pick up the fresh copy once.
       if (d.news && d.news.refreshing && !loadDashboard.again) { loadDashboard.again = true; setTimeout(loadDashboard, 6000); }
+      const pt = d.playtime || {}, ptEl = $("dash-playtime");
+      ptEl.hidden = !pt.total;
+      if (pt.total) {
+        ptEl.textContent = "⏱ " + fmtDur(pt.total) + " played";
+        ptEl.title = "Time in game, counted by Vanta on this computer" + ((pt.top || []).length ? "\n" + pt.top.map((t) => t.label + ": " + fmtDur(t.seconds)).join("\n") : "");
+      }
       const list = $("dash-instances"); list.replaceChildren();
       const inst = d.instances || [];
       if (!inst.length) emptyState(list, "⛏", "No instances yet", "Download a Minecraft version with Add instance below, or install a modpack in INSTANCES.");
@@ -1217,6 +1235,7 @@
         bits.push(it.lastPlayed ? "played " + fmtAgo(it.lastPlayed) : "not played yet");
         m.textContent = bits.join(" · ");
         txt.append(t, m);
+        if (it.playtime) { const p = document.createElement("span"); p.className = "hint dash-pt"; p.textContent = "⏱ " + fmtDur(it.playtime) + " played"; txt.appendChild(p); }
         const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = "Select";
         b.setAttribute("aria-label", "Select " + it.versionNumber + " " + it.loader + " for PLAY");
         b.addEventListener("click", () => {
@@ -3794,6 +3813,12 @@
       $("inst-label").value = d.settings.label || "";
       instTune = d.tune || null; $("inst-tune-note").textContent = "";
       $("inst-jvm").value = d.settings.jvmArgs || "";
+      if (document.activeElement !== $("inst-notes")) { $("inst-notes").value = d.settings.notes || ""; $("inst-notes").dataset.saved = d.settings.notes || ""; $("inst-notes").dataset.target = JSON.stringify(v); }
+      setStatus("inst-notes-status", "", "");
+      const pt = d.playtime || {};
+      $("inst-playtime").textContent = pt.seconds
+        ? "⏱ " + fmtDur(pt.seconds) + " played in " + pt.sessions + (pt.sessions === 1 ? " session" : " sessions") + (pt.lastSession ? " · last session " + fmtDur(pt.lastSession) : "") + (pt.last ? " · " + fmtAgo(pt.last) : "")
+        : "Not played with Vanta yet. Playtime is counted while the game runs.";
       const mods = $("inst-mods"); mods.replaceChildren();
       $("inst-mods-note").textContent = d.main ? "(manage the main instance's mods in the MODS tab)" : "";
       if (!d.mods.length) mods.innerHTML = '<p class="hint">No mods in this instance.</p>';
@@ -3964,7 +3989,7 @@
     }
     $("inst-saves-open").addEventListener("click", () => openFolder("saves"));
     $("inst-backups-open").addEventListener("click", () => worldsAct("openbackups", {}));
-    $("inst-select").addEventListener("change", () => { fillCopyTargets(); loadInstanceInfo(); });
+    $("inst-select").addEventListener("change", () => { if (notesTimer) saveNotes(); fillCopyTargets(); loadInstanceInfo(); });
     function fillCopyTargets() {
       const to = $("inst-copy-to"), from = $("inst-select").value; to.replaceChildren();
       versions.filter((v) => v.supported && v.loader !== "vanilla" && (v.versionNumber + "|" + v.loader) !== from).forEach((v) => {
@@ -4000,6 +4025,29 @@
     });
     $("inst-open").addEventListener("click", () => openFolder(""));
     $("inst-shots-open").addEventListener("click", () => openFolder("screenshots"));
+    let notesTimer = null;
+    async function saveNotes() {
+      clearTimeout(notesTimer); notesTimer = null;
+      const box = $("inst-notes");
+      if (box.value === (box.dataset.saved || "")) return;
+      const target = box.dataset.target ? JSON.parse(box.dataset.target) : instValue();
+      const r = await post("/api/instances/notes", Object.assign({ notes: box.value }, target));
+      if (!r.data || !r.data.ok) { setStatus("inst-notes-status", (r.data && r.data.error) || "Couldn't save notes.", "bad"); return; }
+      if (box.dataset.target === JSON.stringify(target)) { box.dataset.saved = r.data.notes; setStatus("inst-notes-status", "Saved", "good"); }
+    }
+    $("inst-notes").addEventListener("input", () => { setStatus("inst-notes-status", "…", ""); clearTimeout(notesTimer); notesTimer = setTimeout(saveNotes, 800); });
+    $("inst-notes").addEventListener("blur", () => { if (notesTimer) saveNotes(); });
+    $("inst-check").addEventListener("click", async () => {
+      setStatus("inst-notes-status", "Checking mods…", "");
+      const r = await post("/api/instances/conflicts", instValue());
+      const d = r.data || {};
+      if (!d.ok) { setStatus("inst-notes-status", d.error || "Couldn't check mods.", "bad"); return; }
+      if (!(d.warnings || []).length) { setStatus("inst-notes-status", "No problems found in " + d.count + (d.count === 1 ? " mod." : " mods."), "good"); return; }
+      setStatus("inst-notes-status", "", "");
+      $("cf-play").hidden = true;
+      await showConflicts({ conflicts: d.warnings, instance: d.instance });
+      $("cf-play").hidden = false;
+    });
     $("inst-save").addEventListener("click", async () => {
       const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value, label: $("inst-label").value }, instValue()));
       if (r.data && r.data.ok) {
@@ -4465,6 +4513,8 @@
       ["Downloads", "Everything Vanta is downloading; pause or cancel", () => { $("dl-pill").hidden = false; dlToggle(true); }],
       ["Search the log", "Log panel", () => { $("log-panel").scrollIntoView({ block: "center" }); $("log-filter").focus(); }],
       ["Cape preview", "SKINS › 3D preview", () => { showTab("skins"); $("cape-pick").focus(); }],
+      ["Instance notes", "INSTANCES › Notes & playtime", () => { showTab("instances"); setTimeout(() => { $("inst-notes").scrollIntoView({ block: "center" }); $("inst-notes").focus(); }, 200); }],
+      ["Check mods", "INSTANCES › Notes & playtime › Check mods", () => { showTab("instances"); setTimeout(() => $("inst-check").click(), 300); }],
       ["Rename instance", "INSTANCES › Name, memory & Java", () => { showTab("instances"); setTimeout(() => { $("inst-label").scrollIntoView({ block: "center" }); $("inst-label").focus(); }, 200); }],
       ["Favourite servers", "BROWSE SERVERS", () => { showTab("browse"); $("browse-favs").focus(); }],
     ];

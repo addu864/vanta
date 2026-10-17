@@ -335,6 +335,7 @@ class VantaApp:
 
     def dashboard(self) -> dict[str, Any]:
         """Home dashboard: recent instances, friends on the LAN, and release notes."""
+        from vanta.launcher.minecraft import playtime
         from vanta.launcher.updates import whatsnew
 
         rows = []
@@ -352,6 +353,7 @@ class VantaApp:
                 "mods": sum(1 for f in mods.glob("*.jar")) if mods.is_dir() else 0,
                 "worlds": sum(1 for f in saves.iterdir() if (f / "level.dat").is_file()) if saves.is_dir() else 0,
                 "modpack": self._modpack_name(folder),
+                "playtime": playtime.for_instance(self.data_dir, folder)["seconds"],
             })
         rows.sort(key=lambda r: r["lastPlayed"], reverse=True)
         friends: dict[str, Any] = {"online": 0, "hosting": 0, "total": 0, "nearby": 0}
@@ -364,7 +366,10 @@ class VantaApp:
         except Exception:  # noqa: BLE001 - dashboard must never fail on Friends
             pass
         news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json", background=True)
-        return {"ok": True, "instances": rows[:4], "friends": friends, "news": news}
+        return {"ok": True, "instances": rows[:4], "friends": friends, "news": news,
+                "playtime": {"total": playtime.total(self.data_dir),
+                             "top": sorted(({"label": r["label"] or f"{r['versionNumber']} {r['loader']}", "seconds": r["playtime"]}
+                                            for r in rows if r["playtime"]), key=lambda x: -x["seconds"])[:3]}}
 
     @staticmethod
     def _modpack_name(folder: Path) -> str:
@@ -994,7 +999,33 @@ class VantaApp:
                 "preset": meta.get("preset") or ("trailer" if main else ("vanilla" if folder.name.endswith("-vanilla") else "fast")),
                 "trailer": True if main else bool(meta.get("trailer")), "skipped": meta.get("skippedMods") or [],
                 "settings": cfg, "mods": mods, "modsEditable": not main, "screenshots": shots,
-                "tune": self._tune(folder)}
+                "tune": self._tune(folder), "playtime": self._playtime(folder)}
+
+    def _playtime(self, folder: Path) -> dict[str, Any]:
+        from vanta.launcher.minecraft import playtime
+        return playtime.for_instance(self.data_dir, folder)
+
+    @staticmethod
+    def clean_notes(raw: Any) -> str:
+        text = str(raw or "").replace("\r\n", "\n").replace("\r", "\n")
+        text = "".join(ch for ch in text if ch in "\n\t" or ord(ch) >= 32 and ord(ch) != 127)
+        return text[:2000].rstrip()
+
+    def save_instance_notes(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        notes = self.clean_notes(body.get("notes"))
+        path = folder / "vanta-settings.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+        except (OSError, ValueError):
+            data = {}
+        data = data if isinstance(data, dict) else {}
+        data["notes"] = notes
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return {"ok": True, "notes": notes, "savedAt": int(time.time())}
 
     def _tune(self, folder: Path) -> dict[str, Any]:
         from vanta.shared import perf
@@ -1013,7 +1044,8 @@ class VantaApp:
         except (OSError, ValueError):
             data = {}
         from vanta.launcher.minecraft.versions import clean_label
-        return {"ramGb": int(data.get("ramGb") or 0), "jvmArgs": str(data.get("jvmArgs") or ""), "label": clean_label(data.get("label"))}
+        return {"ramGb": int(data.get("ramGb") or 0), "jvmArgs": str(data.get("jvmArgs") or ""), "label": clean_label(data.get("label")),
+                "notes": self.clean_notes(data.get("notes"))}
 
     def save_instance_settings(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
