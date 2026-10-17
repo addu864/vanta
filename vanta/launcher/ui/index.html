@@ -3485,17 +3485,28 @@
       const chosen = selectedVersionValue();
       button.disabled = true;
       setStatus(statusId, "Adding " + server.name + " to the server list and starting Minecraft…", "");
-      const send = (v) => post("/api/popular-servers/join", {
+      const send = (v, extra) => post("/api/popular-servers/join", Object.assign({
         id: server.id, accountId: $("account").value || null, versionNumber: v.versionNumber, loader: v.loader,
-        ramGb: Number($("ram").value), profileName: selectedProfile
-      });
-      let d = (await send(chosen)).data || {};
+        ramGb: Number($("ram").value), profileName: selectedProfile, checkConflicts: true
+      }, extra || {}));
+      const confirmMods = async (res, v) => {
+        if (!res.needsConfirm || !(res.conflicts || []).length) return res;
+        const target = res.target && res.target.versionNumber ? res.target : v;
+        const pick = await showConflicts(res, target);
+        if (pick !== "play") {
+          if (pick === "mods" || String(pick).startsWith("search:")) openModsFor(target, String(pick).startsWith("search:") ? pick.slice(7) : "");
+          return { error: pick === "cancel" ? "Not started. Nothing was changed." : "Fix the mods, then press Play again." };
+        }
+        return (await send(target, { conflictsOk: true, versionNumber: target.versionNumber, loader: target.loader })).data || {};
+      };
+      let d = await confirmMods((await send(chosen)).data || {}, chosen);
       if (!d.launched && d.needsInstall) {
         if (confirm(server.name + " accepts " + server.versions + ". No installed instance fits. Download Minecraft " + d.needsInstall + " (Fabric) now?")) {
           const job = ((await post("/api/instances/install", { version: d.needsInstall, loader: "fabric" })).data || {});
           if (job.ok && await waitForJob((job.job || {}).id, statusId, "Downloading " + d.needsInstall + "…")) {
             await refresh();
-            d = (await send({ versionNumber: d.needsInstall, loader: "fabric" })).data || {};
+            const fresh = { versionNumber: d.needsInstall, loader: "fabric" };
+            d = await confirmMods((await send(fresh)).data || {}, fresh);
           } else { d = { error: job.error || "The download did not finish." }; }
         } else { d = { error: "Not started: install a version " + server.name + " accepts (" + server.versions + ") from PLAY › Add instance." }; }
       }

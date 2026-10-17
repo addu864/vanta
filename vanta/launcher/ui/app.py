@@ -747,7 +747,8 @@ class VantaApp:
             self.log.info(f"Mod check: {w['title']}. {w['detail']} {', '.join(w.get('files') or [])}".strip())
         if warns and payload.get("checkConflicts") and not payload.get("conflictsOk"):
             return {"ok": False, "launched": False, "needsConfirm": True, "conflicts": warns,
-                    "instance": found.get("instance"), "error": f"{len(warns)} mod problem(s) found before launch."}
+                    "instance": found.get("instance"), "error": f"{len(warns)} mod problem(s) found before launch.",
+                    "target": {"versionNumber": payload.get("versionNumber"), "loader": payload.get("loader")}}
         return attempt_play(
             config=self.config,
             accounts=self.accounts,
