@@ -854,7 +854,18 @@ class VantaApp:
         return {"ok": True, "id": folder.name, "folder": str(folder), "main": main, "downloaded": bool(version.get("downloaded")),
                 "preset": meta.get("preset") or ("trailer" if main else ("vanilla" if folder.name.endswith("-vanilla") else "fast")),
                 "trailer": True if main else bool(meta.get("trailer")), "skipped": meta.get("skippedMods") or [],
-                "settings": cfg, "mods": mods, "modsEditable": not main, "screenshots": shots}
+                "settings": cfg, "mods": mods, "modsEditable": not main, "screenshots": shots,
+                "tune": self._tune(folder)}
+
+    def _tune(self, folder: Path) -> dict[str, Any]:
+        from vanta.shared import perf
+        try:
+            info = self.platform_info()
+        except Exception:  # noqa: BLE001
+            info = {}
+        c = perf.count_content(folder)
+        return perf.recommend(c["mods"], c["shaders"], c["resourcepacks"], perf.system_memory_gb(),
+                              intel_mac=bool(info.get("mac") and info.get("intel"))) | c
 
     def _instance_settings(self, folder: Path) -> dict[str, Any]:
         path = folder / "vanta-settings.json"

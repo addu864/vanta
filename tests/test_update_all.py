@@ -28,3 +28,36 @@ def test_update_all_installs_each_update_and_survives_failures(tmp_path, monkeyp
 def test_ui_has_update_all():
     html = (Path(__file__).resolve().parents[1] / "vanta/launcher/ui/index.html").read_text(encoding="utf-8")
     assert 'id="mb-update-all"' in html and "/api/browse/updateall" in html
+
+
+def test_download_retries_then_succeeds(tmp_path):
+    import hashlib
+    import io
+    import urllib.error
+
+    good = b"JAR-BYTES"
+    calls = []
+
+    class R(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def opener(req, timeout=0):
+        calls.append(1)
+        if len(calls) == 1:
+            raise urllib.error.URLError("reset")
+        if len(calls) == 2:
+            return R(good[:3])  # cut off
+        return R(good)
+    b = B.ModBrowser(tmp_path, opener=opener)
+    b.retry_delay = 0
+    assert b._download("https://cdn.modrinth.com/x.jar", {"sha1": hashlib.sha1(good).hexdigest()}) == good
+    assert len(calls) == 3
+    calls.clear()
+    b.download_attempts = 1
+    import pytest
+    with pytest.raises(B.BrowserError):
+        b._download("https://cdn.modrinth.com/x.jar", {})

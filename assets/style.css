@@ -936,3 +936,5 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .tour #tour-skip { margin-right: auto; }
 .crash-suspects { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .crash-suspects p { margin: 0; flex: 1 1 100%; }
+.tune-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 10px; }
+.tune-row .hint { margin: 0; flex: 1 1 200px; }

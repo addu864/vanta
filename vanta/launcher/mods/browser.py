@@ -78,6 +78,8 @@ class ModBrowser:
         self._mem: dict[str, tuple[float, Any]] = {}
         self._lock = threading.Lock()
         self.jobs: dict[str, dict[str, Any]] = {}
+        self.download_attempts = 3
+        self.retry_delay = 1.5
         self.curated = {"essentials": ESSENTIALS, "qol": QUALITY_OF_LIFE, "performance": PERFORMANCE}
         if curated_file is not None:
             self.curated.update(load_curated(curated_file))
@@ -384,17 +386,26 @@ class ModBrowser:
         host = urllib.parse.urlparse(url).hostname or ""
         if not url.startswith("https://") or not (host == "modrinth.com" or host.endswith(".modrinth.com")):
             raise BrowserError("Refusing a download that is not hosted on Modrinth.")
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        try:
-            with self._opener(req, timeout=120) as resp:
-                data = resp.read()
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise BrowserError(f"Download failed ({getattr(exc, 'reason', exc)}).") from exc
-        if hashes.get("sha512") and hashlib.sha512(data).hexdigest() != hashes["sha512"]:
-            raise BrowserError("Downloaded file failed its sha512 check.")
-        if hashes.get("sha1") and hashlib.sha1(data).hexdigest() != hashes["sha1"]:
-            raise BrowserError("Downloaded file failed its sha1 check.")
-        return data
+        last: BrowserError | None = None
+        for attempt in range(self.download_attempts):
+            if attempt:
+                time.sleep(self.retry_delay * attempt)
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            try:
+                with self._opener(req, timeout=120) as resp:
+                    data = resp.read()
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                last = BrowserError(f"Download failed ({getattr(exc, 'reason', exc)}).")
+                continue
+            # A failed hash is usually a cut-off download: try again, never keep the bad file.
+            if hashes.get("sha512") and hashlib.sha512(data).hexdigest() != hashes["sha512"]:
+                last = BrowserError("Downloaded file failed its sha512 check.")
+                continue
+            if hashes.get("sha1") and hashlib.sha1(data).hexdigest() != hashes["sha1"]:
+                last = BrowserError("Downloaded file failed its sha1 check.")
+                continue
+            return data
+        raise last or BrowserError("Download failed.")
 
     def install(self, instance: Path, project: str, game_version: str, loader: str = "fabric", version_id: str = "",
                 progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:

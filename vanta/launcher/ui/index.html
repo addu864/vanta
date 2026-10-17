@@ -323,6 +323,7 @@
             <div class="inst-box">
               <h3>Memory &amp; Java</h3>
               <label>RAM for this instance (GB, 0 = PLAY slider)<input type="number" id="inst-ram" min="0" max="64" step="1" value="0"></label>
+              <div class="row tune-row"><button type="button" class="ghost" id="inst-tune">Suggest RAM</button><span class="hint" id="inst-tune-note"></span></div>
               <label>Extra JVM arguments<input id="inst-jvm" placeholder="-XX:+UseG1GC -Dfoo=bar"></label>
               <button type="button" class="action" id="inst-save">Save</button>
               <div class="status" id="inst-settings-status"></div>
@@ -3311,6 +3312,12 @@
       });
       if (main) { const n = document.createElement("p"); n.className = "hint"; n.textContent = "This is your main instance, so turn mods off in MODS › Profile mods."; host.appendChild(n); }
     }
+    let instTune = null;
+    $("inst-tune").addEventListener("click", () => {
+      if (!instTune) return;
+      $("inst-ram").value = instTune.ramGb;
+      $("inst-tune-note").textContent = instTune.ramGb + " GB: " + instTune.reason + "." + (instTune.note ? " " + instTune.note : "") + " Press Save to keep it.";
+    });
     $("crash-copy").addEventListener("click", async () => {
       const c = lastCrash || {};
       const text = ["Vanta " + ($("app-version").textContent || "") + " crash summary", "Instance: " + (c.instance || "?"),
@@ -3433,6 +3440,7 @@
       tr.checked = !!d.trailer; tr.disabled = d.main || v.loader !== "fabric";
       setStatus("inst-trailer-status", d.main ? "Always on for the main 1.21.11 instance." : (v.loader !== "fabric" ? "Needs a Fabric instance." : ""), "");
       $("inst-ram").value = d.settings.ramGb || 0;
+      instTune = d.tune || null; $("inst-tune-note").textContent = "";
       $("inst-jvm").value = d.settings.jvmArgs || "";
       const mods = $("inst-mods"); mods.replaceChildren();
       $("inst-mods-note").textContent = d.main ? "(manage the main instance's mods in the MODS tab)" : "";
