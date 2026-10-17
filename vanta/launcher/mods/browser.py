@@ -514,6 +514,43 @@ class ModBrowser:
         threading.Thread(target=run, daemon=True).start()
         return job_id
 
+    def update_all(self, instance: Path, game_version: str, loader: str = "fabric",
+                   progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:
+        """Install every available update (hash-checked, one project at a time). One failure doesn't stop the rest."""
+        progress = progress or (lambda *_: None)
+        progress("Checking for updates", 0, 1)
+        index = self.installed(instance, game_version, loader, check_updates=True)
+        todo = [(pid, r) for pid, r in index.items() if r.get("update")]
+        updated, failed = [], []
+        for i, (pid, rec) in enumerate(todo):
+            label = str(rec.get("title") or rec.get("file") or pid)
+            progress(f"Updating {label}", i, len(todo))
+            try:
+                self.install(instance, pid, game_version, loader, str(rec["update"]["versionId"]))
+                updated.append({"title": label, "number": rec["update"].get("number")})
+            except BrowserError as exc:
+                failed.append({"title": label, "error": str(exc)})
+        progress("Done", len(todo), max(len(todo), 1))
+        return {"updated": updated, "failed": failed, "checked": len(index)}
+
+    def start_update_all(self, instance: Path, game_version: str, loader: str = "fabric") -> str:
+        job_id = hashlib.sha1(f"update-all{time.time()}".encode()).hexdigest()[:10]
+        job = {"id": job_id, "project": "*", "state": "running", "step": "Starting", "done": 0, "total": 1}
+        self.jobs[job_id] = job
+
+        def report(step: str, done: int, total: int) -> None:
+            job.update(step=step, done=done, total=max(total, 1))
+
+        def run() -> None:
+            try:
+                job["result"] = self.update_all(instance, game_version, loader, progress=report)
+                job["state"] = "done"
+            except Exception as exc:  # noqa: BLE001
+                job.update(state="error", error=f"Update failed: {exc}"[:300])
+
+        threading.Thread(target=run, daemon=True).start()
+        return job_id
+
 
 def _present(instance: Path, p: dict[str, Any]) -> bool:
     """A dependency counts as present when a file in its folder carries the project's slug."""

@@ -516,6 +516,24 @@ class VantaApp:
         self.config.update({"selectedProfileName": profile["name"]})
         return {"ok": True, "profile": profile}
 
+    APPEARANCE = {"accent": ("violet", "amethyst", "lavender", "orchid", "indigo", "grape"),
+                  "text": ("normal", "small", "large", "xl"), "contrast": ("normal", "high"),
+                  "motion": ("normal", "reduce"), "tour": ("new", "done")}
+
+    def ui_appearance(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Accent colour, text size, contrast, motion (and whether the welcome tour was seen)."""
+        path = self.data_dir / "appearance.json"
+        saved = read_json(path, {})
+        current = {k: (saved.get(k) if isinstance(saved, dict) and saved.get(k) in v else v[0])
+                   for k, v in self.APPEARANCE.items()}
+        if payload:
+            for k, v in payload.items():
+                if k not in self.APPEARANCE or v not in self.APPEARANCE[k]:
+                    return {"ok": False, "error": f"Unknown appearance option {k}={v!r}."[:120]}
+                current[k] = v
+            write_json(path, current)
+        return {"ok": True, "appearance": current, "options": {k: list(v) for k, v in self.APPEARANCE.items()}}
+
     def get_settings(self) -> dict[str, Any]:
         return {"settings": self.config.get()}
 
@@ -1121,6 +1139,17 @@ class VantaApp:
             return {"ok": False, "error": "Unknown project."}
         job = self.browser.start_install(folder, project, game, loader, str(body.get("versionId") or ""))
         self.log.info(f"Modrinth install {project} -> {folder.name}.")
+        return {"ok": True, "job": job}
+
+    def browse_update_all(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        body = payload or {}
+        folder, game, loader = self._browse_ctx(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first; files can't change while it's running."}
+        job = self.browser.start_update_all(folder, game, loader)
+        self.log.info(f"Modrinth update all -> {folder.name}.")
         return {"ok": True, "job": job}
 
     def browse_job(self, job_id: str) -> dict[str, Any]:

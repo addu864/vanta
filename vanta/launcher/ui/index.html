@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to content</a>
   <canvas id="live-bg" class="live-bg" aria-hidden="true"></canvas>
   <div id="scene" class="scene has-image"></div>
   <div class="scene-dim" aria-hidden="true"></div>
@@ -30,10 +31,11 @@
       </nav>
       <button type="button" class="pill game-pill" id="game-pill" hidden title="Minecraft is running"><span class="dot"></span><span id="game-pill-text">Minecraft running</span></button>
       <button type="button" class="pill update-pill" id="update-pill" hidden>Update</button>
+      <button type="button" class="pill kbd-pill" id="palette-open" title="Quick jump (Ctrl+K)" aria-label="Quick jump, Control K">Ctrl K</button>
       <div class="account-chip" id="nav-account">No local account</div>
     </header>
     <p id="background-status" class="hint top-note"></p>
-    <main>
+    <main id="main" tabindex="-1">
       <section class="panel home-panel" data-panel="play" id="panel-play">
         <div class="dash-row" id="dash-row" aria-label="Dashboard">
           <div class="glass dash-card">
@@ -180,6 +182,11 @@
         </div>
         <div class="status" id="mb-status"></div>
         <div id="mb-results" class="mb-grid" hidden></div>
+        <div class="glass mb-updates" id="mb-updates" hidden>
+          <div><strong id="mb-updates-title">Updates available</strong><p class="hint" id="mb-updates-list"></p></div>
+          <button type="button" class="action" id="mb-update-all">Update all</button>
+          <div class="mb-progress" id="mb-all-progress" hidden><div class="bar"><span></span></div><small></small></div>
+        </div>
         <div id="mb-rows"></div>
         <div class="mb-overlay" id="mb-overlay" hidden><div class="mb-detail glass" id="mb-detail" role="dialog" aria-modal="true"></div></div>
         <p class="hint mb-credit">Data from the public <a href="https://modrinth.com" target="_blank" rel="noopener">Modrinth</a> API. Files are downloaded from Modrinth's CDN and hash-checked.</p>
@@ -627,6 +634,19 @@
         </div>
         <button type="button" class="action" id="save-settings">Save settings</button>
         <div class="status" id="settings-status"></div>
+        <div class="glass appearance" id="appearance-settings">
+          <h2>Appearance</h2>
+          <p class="hint">Changes apply right away and are saved on this PC.</p>
+          <div class="swatches" id="accent-swatches" role="radiogroup" aria-label="Accent colour"></div>
+          <div class="appearance-grid">
+            <label>Text size
+              <select id="ap-text"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option><option value="xl">Extra large</option></select>
+            </label>
+            <label class="check"><input type="checkbox" id="ap-contrast"> High contrast</label>
+            <label class="check"><input type="checkbox" id="ap-motion"> Reduce motion</label>
+            <button type="button" class="ghost" id="ap-tour">Show the welcome tour</button>
+          </div>
+        </div>
         <div class="controller-block" id="controller-settings">
           <h2>Controller</h2>
           <p class="hint" id="controller-note">Labels only, for the selected profile. Vanta checks pygame, /dev/input/js*, and evdev. If none of those show a pad, the status is NO_DEVICE. Vanta will not invent a controller. These labels are not sent to Minecraft. In-game controller play was not tested.</p>
@@ -679,6 +699,25 @@
       </div>
     </main>
   </div>
+  <div class="palette-overlay" id="palette" hidden>
+    <div class="palette glass" role="dialog" aria-modal="true" aria-label="Quick jump">
+      <input id="palette-input" type="search" placeholder="Jump to a tab, setting or action…" autocomplete="off" aria-controls="palette-list">
+      <ul id="palette-list" role="listbox"></ul>
+      <p class="hint">↑ ↓ to move · Enter to open · Esc to close · Ctrl+K anywhere</p>
+    </div>
+  </div>
+  <div class="tour-overlay" id="tour" hidden>
+    <div class="tour glass" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      <p class="eyebrow" id="tour-step"></p>
+      <h2 id="tour-title"></h2>
+      <p id="tour-body"></p>
+      <div class="row">
+        <button type="button" class="ghost" id="tour-skip">Skip</button>
+        <button type="button" class="ghost" id="tour-back">Back</button>
+        <button type="button" class="action" id="tour-next">Next</button>
+      </div>
+    </div>
+  </div>
   <script src="/assets/vendor/skinview3d.bundle.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -690,6 +729,7 @@
     function showTab(name) {
       document.querySelectorAll(".tab").forEach((item) => {
         item.classList.toggle("active", item.dataset.tab === name);
+        item.setAttribute("aria-current", item.dataset.tab === name ? "page" : "false");
       });
       document.querySelectorAll("[data-panel]").forEach((panel) => {
         panel.hidden = panel.dataset.panel !== name;
@@ -3728,7 +3768,38 @@
       const res = await post("/api/browse/installed", Object.assign(mbInstanceBody(), { updates: true }));
       if (res.data && res.data.ok) mb.installed = res.data.installed || {};
       mbRenderRows();
+      mbPaintUpdates();
     }
+    function mbPaintUpdates() {
+      const ups = Object.values(mb.installed || {}).filter((r) => r && r.update);
+      $("mb-updates").hidden = !ups.length;
+      if (!ups.length) return;
+      $("mb-updates-title").textContent = ups.length + (ups.length === 1 ? " update available" : " updates available") + " for this instance";
+      $("mb-updates-list").textContent = ups.slice(0, 8).map((r) => (r.title || r.file) + " → " + (r.update.number || "latest")).join(" · ") + (ups.length > 8 ? " …" : "");
+    }
+    async function mbUpdateAll() {
+      const btn = $("mb-update-all"); btn.disabled = true;
+      try {
+        const res = await post("/api/browse/updateall", mbInstanceBody());
+        if (!res.data || !res.data.ok) { toast((res.data && res.data.error) || "Update failed.", "bad"); return; }
+        const bar = $("mb-all-progress"); bar.hidden = false;
+        for (;;) {
+          await new Promise((r) => setTimeout(r, 600));
+          const j = (await api("/api/browse/job?id=" + encodeURIComponent(res.data.job))).data || {};
+          bar.querySelector("span").style.width = Math.round(100 * (j.done || 0) / (j.total || 1)) + "%";
+          bar.querySelector("small").textContent = j.step || "";
+          if (j.state === "done") {
+            const r = j.result || {};
+            toast("Updated " + (r.updated || []).length + " item(s)" + ((r.failed || []).length ? "; failed: " + r.failed.map((x) => x.title).join(", ") : "") + ".", (r.failed || []).length ? "bad" : "good");
+            break;
+          }
+          if (j.state === "error" || !j.ok) { toast(j.error || "Update failed.", "bad"); break; }
+        }
+        bar.hidden = true;
+      } finally { btn.disabled = false; }
+      await mbRefreshInstalled();
+    }
+    $("mb-update-all").addEventListener("click", () => mbUpdateAll().catch(() => toast("Update failed.", "bad")));
     $("mb-go").addEventListener("click", () => mbSearch().catch(() => setStatus("mb-status", "Search failed.", "bad")));
     $("mb-query").addEventListener("keydown", (e) => { if (e.key === "Enter") mbSearch().catch(() => {}); });
     $("mb-type").addEventListener("change", mbFilterCategories);
@@ -3828,6 +3899,144 @@
       $("fr-addr").value = d.address; $("fr-inv-out").hidden = false; $("fr-inv-out").textContent = d.invite;
       frCopy(d.invite, "the world invite");
     });
+
+    // ---- v1.6.0 Appearance, quick jump (Ctrl+K) and welcome tour ----
+    const ACCENTS = [["violet", "Violet", "#8a56d2"], ["amethyst", "Amethyst", "#9948c4"], ["lavender", "Lavender", "#7c6cd6"],
+      ["orchid", "Orchid", "#ac46b6"], ["indigo", "Indigo", "#5c5ad6"], ["grape", "Grape", "#7034aa"]];
+    let appearance = {};
+    function applyAppearance(a) {
+      const root = document.documentElement;
+      root.dataset.accent = a.accent || "violet"; root.dataset.text = a.text || "normal";
+      root.dataset.contrast = a.contrast || "normal"; root.dataset.motion = a.motion || "normal";
+      try { localStorage.setItem("vanta-appearance", JSON.stringify(a)); } catch (err) {}
+    }
+    try { applyAppearance(JSON.parse(localStorage.getItem("vanta-appearance") || "{}")); } catch (err) {}
+    function paintAppearance() {
+      const host = $("accent-swatches"); host.replaceChildren();
+      ACCENTS.forEach(([key, label, color]) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "swatch"; b.setAttribute("role", "radio");
+        b.setAttribute("aria-checked", String(appearance.accent === key));
+        const dot = document.createElement("i"); dot.style.background = color;
+        b.append(dot, document.createTextNode(label));
+        b.addEventListener("click", () => saveAppearance({ accent: key }));
+        host.appendChild(b);
+      });
+      $("ap-text").value = appearance.text || "normal";
+      $("ap-contrast").checked = appearance.contrast === "high";
+      $("ap-motion").checked = appearance.motion === "reduce";
+    }
+    async function loadAppearance() {
+      const r = await api("/api/appearance"); const d = r.data || {};
+      if (!d.ok) return;
+      appearance = d.appearance; applyAppearance(appearance); paintAppearance();
+      if (appearance.tour !== "done") startTour();
+    }
+    async function saveAppearance(change) {
+      appearance = Object.assign({}, appearance, change); applyAppearance(appearance); paintAppearance();
+      const r = await post("/api/appearance", change);
+      if (!r.data || !r.data.ok) toast((r.data && r.data.error) || "Couldn't save appearance.", "bad");
+    }
+    $("ap-text").addEventListener("change", () => saveAppearance({ text: $("ap-text").value }));
+    $("ap-contrast").addEventListener("change", () => saveAppearance({ contrast: $("ap-contrast").checked ? "high" : "normal" }));
+    $("ap-motion").addEventListener("change", () => saveAppearance({ motion: $("ap-motion").checked ? "reduce" : "normal" }));
+    $("ap-tour").addEventListener("click", () => startTour());
+
+    const PALETTE = [
+      ["PLAY", "Home dashboard, play button, account", () => showTab("play")],
+      ["Play Minecraft", "Launch the selected version", () => { showTab("play"); $("play").focus(); }],
+      ["INSTANCES", "Modpacks, worlds, backups, screenshots", () => showTab("instances")],
+      ["Import .mrpack modpack", "INSTANCES › Modpacks", () => { showTab("instances"); $("pack-file").click(); }],
+      ["Search modpacks", "INSTANCES › Modpacks", () => { showTab("instances"); $("pack-query").focus(); }],
+      ["Back up a world", "INSTANCES › Worlds", () => { showTab("instances"); $("inst-worlds").scrollIntoView({ block: "center" }); }],
+      ["MODS", "Browse Modrinth mods, shaders, resource packs", () => showTab("mods")],
+      ["Update all mods", "MODS › updates", () => { showTab("mods"); setTimeout(() => $("mb-updates").scrollIntoView({ block: "center" }), 300); }],
+      ["FRIENDS", "Friend code, LAN friends, world invites", () => showTab("friends")],
+      ["SKINS", "Skin library and preview", () => showTab("skins")],
+      ["BROWSE SERVERS", "Public servers that accept local accounts", () => showTab("browse")],
+      ["SERVERS", "Your own local servers", () => showTab("servers")],
+      ["HUD", "In-game HUD modules", () => showTab("hud")],
+      ["PROFILES", "Profiles and instance folders", () => showTab("profiles")],
+      ["SETTINGS", "Default version, RAM, game directory, JVM", () => showTab("settings")],
+      ["Accent colour", "SETTINGS › Appearance", () => { showTab("settings"); $("appearance-settings").scrollIntoView({ block: "center" }); $("accent-swatches").querySelector("button").focus(); }],
+      ["Text size", "SETTINGS › Appearance", () => { showTab("settings"); $("ap-text").focus(); }],
+      ["High contrast / reduce motion", "SETTINGS › Appearance", () => { showTab("settings"); $("ap-contrast").focus(); }],
+      ["Default RAM", "SETTINGS", () => { showTab("settings"); $("default-ram").focus(); }],
+      ["Game directory", "SETTINGS", () => { showTab("settings"); $("game-directory").focus(); }],
+      ["JVM arguments", "SETTINGS", () => { showTab("settings"); $("jvm-args").focus(); }],
+      ["Controller", "SETTINGS › Controller", () => { showTab("settings"); $("controller-settings").scrollIntoView({ block: "center" }); }],
+      ["Copy launcher log", "Log panel", () => { $("log-panel").scrollIntoView({ block: "center" }); }],
+      ["Welcome tour", "What's new in this version", () => startTour()],
+    ];
+    let palSel = 0, palItems = [];
+    function palRender() {
+      const q = $("palette-input").value.trim().toLowerCase();
+      const words = q.split(/\s+/).filter(Boolean);
+      palItems = PALETTE.filter(([t, h]) => words.every((w) => (t + " " + h).toLowerCase().includes(w)));
+      palSel = Math.min(palSel, Math.max(0, palItems.length - 1));
+      const ul = $("palette-list"); ul.replaceChildren();
+      if (!palItems.length) { const li = document.createElement("li"); li.className = "hint"; li.textContent = "Nothing matches."; ul.appendChild(li); }
+      palItems.forEach(([t, h, fn], i) => {
+        const li = document.createElement("li"); li.setAttribute("role", "option"); li.id = "pal-" + i;
+        li.setAttribute("aria-selected", String(i === palSel)); if (i === palSel) li.className = "sel";
+        const b = document.createElement("strong"); b.textContent = t; const sm = document.createElement("small"); sm.textContent = h;
+        li.append(b, sm); li.addEventListener("click", () => { palClose(); fn(); }); ul.appendChild(li);
+      });
+      $("palette-input").setAttribute("aria-activedescendant", palItems.length ? "pal-" + palSel : "");
+      const cur = $("pal-" + palSel); if (cur) cur.scrollIntoView({ block: "nearest" });
+    }
+    let palReturn = null;
+    function palOpen() { palReturn = document.activeElement; $("palette").hidden = false; $("palette-input").value = ""; palSel = 0; palRender(); $("palette-input").focus(); }
+    function palClose() { $("palette").hidden = true; if (palReturn && palReturn.focus) palReturn.focus(); }
+    $("palette-open").addEventListener("click", palOpen);
+    $("palette-input").addEventListener("input", () => { palSel = 0; palRender(); });
+    $("palette-input").addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { palSel = Math.min(palItems.length - 1, palSel + 1); palRender(); e.preventDefault(); }
+      else if (e.key === "ArrowUp") { palSel = Math.max(0, palSel - 1); palRender(); e.preventDefault(); }
+      else if (e.key === "Enter" && palItems[palSel]) { const fn = palItems[palSel][2]; palClose(); fn(); }
+      else if (e.key === "Escape") palClose();
+    });
+    $("palette").addEventListener("click", (e) => { if (e.target === $("palette")) palClose(); });
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("palette").hidden ? palOpen() : palClose(); }
+    });
+
+    const TOUR = [
+      ["Welcome to Vanta 1.6", "A quick look at what's new. It takes 20 seconds, and you can see it again from SETTINGS › Appearance.", "play"],
+      ["Home dashboard", "PLAY now opens with Jump back in (your recent instances), how many friends are online on your network, and the latest release notes.", "play"],
+      ["Modpacks", "INSTANCES › Modpacks searches Fabric modpacks on Modrinth, or imports a .mrpack file. Every file is hash-checked, and your old mods are moved to a backup folder first. Your main 1.21.11 instance is never replaced. Export .mrpack shares your own setup.", "instances"],
+      ["Worlds and backups", "INSTANCES › Worlds lists your saves. Back up any world in one click; Restore never overwrites, and Delete always keeps a backup first.", "instances"],
+      ["Update all mods", "MODS shows a bar when mods in the selected instance have updates. Update all installs them one at a time, each hash-checked.", "mods"],
+      ["Make it yours", "Pick a purple-family accent, bigger text, high contrast or reduced motion in SETTINGS › Appearance. Press Ctrl+K anywhere to jump to any tab or setting.", "settings"],
+    ];
+    let tourAt = 0, tourReturn = null;
+    function tourPaint() {
+      const [title, body, tab] = TOUR[tourAt];
+      showTab(tab);
+      $("tour-step").textContent = `Step ${tourAt + 1} of ${TOUR.length}`;
+      $("tour-title").textContent = title; $("tour-body").textContent = body;
+      $("tour-back").hidden = tourAt === 0;
+      $("tour-next").textContent = tourAt === TOUR.length - 1 ? "Done" : "Next";
+      $("tour-next").focus();
+    }
+    function startTour() { tourReturn = document.activeElement; tourAt = 0; $("tour").hidden = false; tourPaint(); }
+    function endTour() {
+      $("tour").hidden = true; showTab("play");
+      if (appearance.tour !== "done") saveAppearance({ tour: "done" }).catch(() => {});
+      if (tourReturn && tourReturn.focus) tourReturn.focus();
+    }
+    $("tour-next").addEventListener("click", () => { if (tourAt >= TOUR.length - 1) endTour(); else { tourAt += 1; tourPaint(); } });
+    $("tour-back").addEventListener("click", () => { if (tourAt > 0) { tourAt -= 1; tourPaint(); } });
+    $("tour-skip").addEventListener("click", endTour);
+    $("tour").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") endTour();
+      if (e.key === "Tab") {
+        const f = [...$("tour").querySelectorAll("button:not([hidden])")];
+        const i = f.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { f[f.length - 1].focus(); e.preventDefault(); }
+        else if (!e.shiftKey && i === f.length - 1) { f[0].focus(); e.preventDefault(); }
+      }
+    });
+    loadAppearance().catch(() => {});
   </script>
 </body>
 </html>
