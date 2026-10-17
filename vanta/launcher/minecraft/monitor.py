@@ -12,13 +12,28 @@ from vanta.launcher.minecraft import launch
 START_MARK = "--- local start "
 HINTS: tuple[tuple[str, str], ...] = (
     (r"OutOfMemoryError|Java heap space", "Minecraft ran out of memory. Raise RAM for this instance (or close other apps)."),
+    (r"No space left on device|not enough space on the disk", "The disk is full. Free some space, then start Minecraft again."),
+    (r"Could not reserve enough space|Invalid maximum heap size", "The RAM setting is too high for this PC or Java. Lower RAM for this instance."),
+    (r"[Dd]uplicate mods?\b|is supplied by multiple|Found \d+ duplicate", "The same mod is installed twice. Open the instance's mods folder and remove the older copy."),
+    (r"fabric-api.{0,80}(?:which is missing|is missing)|requires .{0,40}\b(?:fabric-api|fabric api)\b", "A mod needs Fabric API. Install Fabric API for this version from MODS."),
+    (r"optifabric|OptiFine", "OptiFine doesn't work with Sodium and Iris. Remove OptiFine/OptiFabric; Iris loads shaders instead."),
+    (r"mods\.toml|is a (?:Neo)?Forge mod|forge mod", "A Forge or NeoForge mod is in a Fabric instance. Remove it, or find the Fabric version on Modrinth."),
     (r"Incompatible mods? found|requires .* of mod|Mod resolution failed|depends on|mods are incompatible", "A mod is missing a dependency or doesn't match this Minecraft version. Open Mods and disable the last mod you added."),
     (r"UnsupportedClassVersionError|class file version", "This Minecraft version needs a newer Java. Install Java 21 (1.20.5+) or Java 25 (26.x)."),
+    (r"InaccessibleObjectException|module java\.base does not \"?opens", "The Java version is too new for this Minecraft or a mod. Use the Java Vanta picks (17 for 1.18–1.20.4, 21 for 1.20.5+)."),
+    (r"Failed to (?:compile|link) (?:shader|program)|[Ss]hader compil|iris.{0,40}(?:shader|program).{0,40}(?:error|fail)", "The shader pack failed to load. Press K in game to turn shaders off, or pick another pack in Video Settings › Shader Packs."),
+    (r"(?:EXCEPTION_ACCESS_VIOLATION|SIGSEGV).{0,400}(?:nvoglv|atio6axx|atioglxx|ig\d+icd|igxelp|libGL|amdxx)|(?:nvoglv|atio6axx|ig\d+icd)\w*\.dll", "The graphics driver crashed. Update the GPU driver; turning shaders off often helps."),
     (r"GLFW error|OpenGL|Pixel format not accelerated|WGL", "The graphics driver couldn't start OpenGL. Update the GPU driver; on laptops, run Java on the dedicated GPU."),
+    (r"NSInternalInconsistencyException|must be (?:called|used) (?:on|from) the main thread|XstartOnFirstThread", "macOS refused to open the game window. Start the game from Vanta (it adds -XstartOnFirstThread) and update Vanta if this keeps happening."),
     (r"Mixin apply failed|MixinApplyError|InvalidInjectionException", "Two mods conflict (a Mixin failed). Disable recently added mods one by one."),
-    (r"Could not reserve enough space|Invalid maximum heap size", "The RAM setting is too high for this PC or Java. Lower RAM for this instance."),
+    (r"NoSuchMethodError|NoSuchFieldError|NoClassDefFoundError|ClassNotFoundException", "A mod was built for a different Minecraft version, or needs another mod that isn't installed. Update or disable the mod named in the error."),
+    (r"JsonSyntaxException|MalformedJsonException|Failed to (?:load|read|parse) (?:the )?config|ConfigLoadingException|ParsingException", "A mod's config file is damaged. Open the game folder, move that mod's file out of the config folder, and start again; it is recreated."),
+    (r"Exception (?:reading|loading) .{0,40}\.mca|RegionFile|Failed to load level|level\.dat", "A world file looks damaged. Restore a backup in INSTANCES › Worlds, or try another world."),
+    (r"Ticking (?:block )?entity|Ticking entity|Ticking player", "Something in the world (a block or mob) crashes the game every tick. Back up the world, then update or remove the mod that adds it."),
+    (r"StackOverflowError", "A mod got stuck in a loop (stack overflow). Disable recently added mods one by one."),
     (r"Failed to (?:bind|open) .*OpenAL|OpenAL", ""),
 )
+
 
 
 def _tail_since_start(path: Path, limit: int = 300) -> list[str]:
