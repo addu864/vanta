@@ -188,6 +188,10 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(app.toggle_instance_mod(_payload(body)))
     if method == "POST" and path == "/api/instances/open-folder":
         return _from_ok(app.open_folder(_payload(body)))
+    if method == "GET" and path == "/api/worlds/icon":
+        return app.world_icon(_query_dict(raw_path))
+    if method == "POST" and path.startswith("/api/worlds/"):
+        return _from_ok(app.worlds_call(path[len("/api/worlds/"):], _payload(body)))
     if method == "GET" and path == "/api/instances/screenshot":
         return app.screenshot_file(_query_dict(raw_path))
     if method == "POST" and path == "/api/accounts/local":

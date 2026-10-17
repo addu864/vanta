@@ -301,6 +301,10 @@
           <div class="inst-mods" id="inst-mods"></div>
           <div class="popular-head"><h3>Screenshots</h3><button type="button" class="ghost" id="inst-shots-open">Open screenshots folder</button></div>
           <div class="shots" id="inst-shots"></div>
+          <div class="popular-head"><h3>Worlds</h3><div class="row"><button type="button" class="ghost" id="inst-saves-open">Open saves folder</button><button type="button" class="ghost" id="inst-backups-open">Open backups folder</button></div></div>
+          <p class="hint">Back up before big changes. Delete always keeps a backup first. Restore never overwrites: it adds the world under a new name if the old one is still there.</p>
+          <div class="worlds" id="inst-worlds"></div>
+          <details class="glass-sub" id="inst-backups-box"><summary>Backups <span class="hint" id="inst-backups-count"></span></summary><div class="backups" id="inst-backups"></div></details>
         </div>
       </section>
       <section class="panel" data-panel="browse" id="panel-browse" hidden>
@@ -3279,7 +3283,59 @@
         const img = document.createElement("img"); img.src = url; img.loading = "lazy"; img.alt = s.name;
         a.appendChild(img); shots.appendChild(a);
       });
+      loadWorlds().catch(() => {});
     }
+    // ---- World manager ----
+    function fmtWhen(sec) { const d = new Date(sec * 1000); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    async function worldsAct(action, body, okText) {
+      const r = await post("/api/worlds/" + action, Object.assign({}, instValue(), body || {}));
+      const d = r.data || {};
+      if (!d.ok) { toast(d.error || "That didn't work.", "bad"); return null; }
+      if (okText) toast(typeof okText === "function" ? okText(d) : okText, "good");
+      await loadWorlds();
+      return d;
+    }
+    async function loadWorlds() {
+      const v = instValue(); if (!v.versionNumber) return;
+      const r = await post("/api/worlds/list", v); const d = r.data || {};
+      const host = $("inst-worlds"); host.replaceChildren();
+      if (!d.ok) { const p = document.createElement("p"); p.className = "hint"; p.textContent = d.error || "Could not read worlds."; host.appendChild(p); return; }
+      if (!d.worlds.length) host.innerHTML = '<p class="hint">No singleplayer worlds in this instance yet.</p>';
+      d.worlds.forEach((w) => {
+        const card = document.createElement("div"); card.className = "world-card";
+        const img = document.createElement(w.icon ? "img" : "div"); img.className = "world-icon";
+        if (w.icon) { img.src = "/api/worlds/icon?versionNumber=" + encodeURIComponent(v.versionNumber) + "&loader=" + encodeURIComponent(v.loader) + "&world=" + encodeURIComponent(w.folder); img.alt = ""; }
+        const meta = document.createElement("div"); meta.className = "world-meta";
+        const n = document.createElement("strong"); n.textContent = w.name;
+        const sub = document.createElement("small"); sub.textContent = (w.name !== w.folder ? w.folder + " · " : "") + w.sizeMb + " MB · played " + fmtWhen(w.lastPlayed);
+        meta.append(n, sub);
+        const acts = document.createElement("div"); acts.className = "row";
+        const b = document.createElement("button"); b.type = "button"; b.className = "action tiny"; b.textContent = "Back up";
+        b.addEventListener("click", async () => { b.disabled = true; b.textContent = "Backing up…"; await worldsAct("backup", { world: w.folder }, (x) => "Backed up " + w.name + " (" + x.sizeMb + " MB)."); });
+        const del = document.createElement("button"); del.type = "button"; del.className = "ghost tiny danger"; del.textContent = "Delete";
+        del.addEventListener("click", () => {
+          const typed = window.prompt("Delete the world \"" + w.name + "\"?\nVanta keeps a backup first.\n\nType the folder name to confirm: " + w.folder);
+          if (typed === null) return;
+          worldsAct("delete", { world: w.folder, confirm: typed }, (x) => "Deleted " + w.name + ". Backup kept: " + x.backup);
+        });
+        acts.append(b, del);
+        card.append(img, meta, acts); host.appendChild(card);
+      });
+      const bh = $("inst-backups"); bh.replaceChildren();
+      $("inst-backups-count").textContent = "(" + d.backups.length + ")";
+      if (!d.backups.length) bh.innerHTML = '<p class="hint">No backups yet.</p>';
+      d.backups.forEach((k) => {
+        const row = document.createElement("div"); row.className = "backup-row";
+        const t = document.createElement("span"); t.textContent = k.world + " · " + fmtWhen(k.at) + " · " + k.sizeMb + " MB" + (k.auto ? " · automatic" : "");
+        const rs = document.createElement("button"); rs.type = "button"; rs.className = "ghost tiny"; rs.textContent = "Restore";
+        rs.addEventListener("click", () => { if (confirm("Restore this backup of " + k.world + "? Your current worlds are not overwritten.")) worldsAct("restore", { file: k.file }, (x) => "Restored as " + x.folder + "."); });
+        const rm = document.createElement("button"); rm.type = "button"; rm.className = "ghost tiny danger"; rm.textContent = "Delete backup";
+        rm.addEventListener("click", () => { if (confirm("Delete this backup file for good?")) worldsAct("deletebackup", { file: k.file }, "Backup deleted."); });
+        row.append(t, rs, rm); bh.appendChild(row);
+      });
+    }
+    $("inst-saves-open").addEventListener("click", () => openFolder("saves"));
+    $("inst-backups-open").addEventListener("click", () => worldsAct("openbackups", {}));
     $("inst-select").addEventListener("change", () => loadInstanceInfo());
     $("inst-open").addEventListener("click", () => openFolder(""));
     $("inst-shots-open").addEventListener("click", () => openFolder("screenshots"));

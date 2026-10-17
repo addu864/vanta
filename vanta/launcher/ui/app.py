@@ -830,6 +830,67 @@ class VantaApp:
         path = folder / "screenshots" / name
         return (200, path.read_bytes(), "image/png") if path.is_file() else (404, b"Not found", "text/plain")
 
+    # ---- World manager (v1.6.0) ----
+    def worlds_call(self, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import worlds
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        backups = self.data_dir / "backups" / folder.name
+        try:
+            if action == "list":
+                return {"ok": True, "worlds": worlds.list_worlds(folder), "backups": worlds.list_backups(backups),
+                        "backupsFolder": str(backups)}
+            if action in {"backup", "restore", "delete"} and self._game_running():
+                return {"ok": False, "error": "Close Minecraft first, so the world isn't being written while Vanta copies it."}
+            if action == "backup":
+                out = worlds.backup(folder, str(body.get("world") or ""), backups)
+                self.log.info(f"Backed up world {body.get('world')} of {folder.name} to {out['file']}.")
+                return out
+            if action == "restore":
+                out = worlds.restore(folder, backups, str(body.get("file") or ""))
+                self.log.info(f"Restored {body.get('file')} into {folder.name}/saves/{out['folder']}.")
+                return out
+            if action == "delete":
+                out = worlds.delete(folder, str(body.get("world") or ""), str(body.get("confirm") or ""), backups)
+                self.log.info(f"Deleted world {body.get('world')} of {folder.name} (backup kept: {out['backup']}).")
+                return out
+            if action == "deletebackup":
+                return worlds.delete_backup(backups, str(body.get("file") or ""))
+            if action == "openbackups":
+                backups.mkdir(parents=True, exist_ok=True)
+                return self._open_path(backups)
+        except worlds.WorldError as exc:
+            return {"ok": False, "error": str(exc)}
+        except OSError as exc:
+            return {"ok": False, "error": f"File error: {exc}"[:300]}
+        return {"ok": False, "error": "Unknown world action."}
+
+    def world_icon(self, payload: dict[str, Any] | None = None) -> tuple[int, bytes, str]:
+        from vanta.launcher.minecraft import worlds
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        try:
+            path = worlds.world_path(folder, str(body.get("world") or "")) / "icon.png" if folder else None
+        except worlds.WorldError:
+            path = None
+        return (200, path.read_bytes(), "image/png") if path and path.is_file() else (404, b"Not found", "text/plain")
+
+    def _open_path(self, folder: Path) -> dict[str, Any]:
+        import subprocess
+        import sys
+        try:
+            if os.name == "nt":
+                os.startfile(str(folder))  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(folder)])
+            else:
+                subprocess.Popen(["xdg-open", str(folder)])
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": f"Could not open the folder: {exc}", "folder": str(folder)}
+        return {"ok": True, "folder": str(folder)}
+
     def open_folder(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         import subprocess
         import sys
