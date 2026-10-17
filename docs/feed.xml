@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Vanta news</title>
+  <link>https://addu864.github.io/vanta/news.html</link>
+  <atom:link href="https://addu864.github.io/vanta/feed.xml" rel="self" type="application/rss+xml"/>
+  <description>Release posts for Vanta, a free Minecraft Java launcher for Windows and macOS.</description>
+  <language>en</language>
+  <item><title>Vanta 1.6.1: server favourites, a logs viewer and shader previews</title><link>https://addu864.github.io/vanta/news-1-6-1.html</link><guid isPermaLink="true">https://addu864.github.io/vanta/news-1-6-1.html</guid><pubDate>Sat, 17 Oct 2026 12:00:00 +0530</pubDate><description>Star your favourite servers, search the game log, flip through screenshots full size, and see shader and resource pack previews before you install.</description></item>
+  <item><title>Vanta 1.6.0: a home dashboard, modpacks and world backups</title><link>https://addu864.github.io/vanta/news-1-6-0.html</link><guid isPermaLink="true">https://addu864.github.io/vanta/news-1-6-0.html</guid><pubDate>Sat, 17 Oct 2026 12:00:00 +0530</pubDate><description>PLAY opens with a dashboard, Modrinth modpacks install in one click with every file hash-checked, and worlds get one-click backups. Plus a crash helper, appearance settings and a native Mac window.</description></item>
+  <item><title>Vanta for Mac now opens in its own window</title><link>https://addu864.github.io/vanta/news-1-5-2-mac.html</link><guid isPermaLink="true">https://addu864.github.io/vanta/news-1-5-2-mac.html</guid><pubDate>Sat, 17 Oct 2026 12:00:00 +0530</pubDate><description>Vanta 1.5.2 for macOS runs in a native Mac window with normal menus and shortcuts, and never opens your web browser.</description></item>
+</channel>
+</rss>

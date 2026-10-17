@@ -210,7 +210,7 @@
     if (cl) {
       cl.innerHTML = rels.map(function (r) {
         var mac = /-mac$/.test(r.tag_name);
-        return '<article class="glass rel" data-os="' + (mac ? "mac" : "win") + '"><h3><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + '</a> <small>' + esc(r.tag_name) + " · " + fmtDate(r.published_at) + '</small> <span class="tags"><span class="tag">' + (mac ? "macOS" : "Windows") + "</span></span></h3><div class=\"body\">" + mdLite(r.body) + "</div></article>";
+        return '<article class="glass rel" data-os="' + (mac ? "mac" : "win") + '"><h2><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + '</a> <small>' + esc(r.tag_name) + " · " + fmtDate(r.published_at) + '</small> <span class="tags"><span class="tag">' + (mac ? "macOS" : "Windows") + "</span></span></h2><div class=\"body\" tabindex=\"0\" role=\"region\" aria-label=\"Release notes for " + esc(r.tag_name) + "\">" + mdLite(r.body) + "</div></article>";
       }).join("");
       var src2 = $("#changelog-src"); if (src2) src2.textContent = "Live from GitHub Releases: " + rels.length + " releases.";
       applyClFilter();
@@ -219,7 +219,7 @@
     var box = $("#releases");
     if (box) {
       box.innerHTML = rels.slice(0, 6).map(function (r) {
-        return '<article class="glass rel"><h3><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + "</a> <small>" + esc(r.tag_name) + " · " + fmtDate(r.published_at) + (r.prerelease ? " · pre-release" : "") + '</small></h3><div class="body">' + mdLite(r.body) + "</div></article>";
+        return '<article class="glass rel"><h3><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + "</a> <small>" + esc(r.tag_name) + " · " + fmtDate(r.published_at) + (r.prerelease ? " · pre-release" : "") + '</small></h3><div class="body" tabindex="0" role="region" aria-label="Release notes for ' + esc(r.tag_name) + '">' + mdLite(r.body) + "</div></article>";
       }).join("");
       var src = $("#updates-src"); if (src) src.textContent = "Live from GitHub Releases.";
     }
