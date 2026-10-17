@@ -25,3 +25,12 @@ def test_cape_preview_is_preview_only():
     start = HTML.index("function drawCape(")
     block = HTML[start:HTML.index("// ---- Popular servers", start)]
     assert "post(" not in block and "fetch(" not in block  # nothing is uploaded or written to the game
+
+
+def test_launcher_accessibility_names():
+    for needle in ('id="mb-type" aria-label="Type"', 'id="mb-sort" aria-label="Sort by"', 'id="skin-file" aria-label=',
+                   'id="skin-import-model" aria-label=', 'aria-label="Which log"', 'id="palette-list" role="listbox" aria-label="Matches"',
+                   '"Arm model for "'):
+        assert needle in HTML
+    assert 'role="tablist"><button type="button" class="seg-btn' not in HTML
+    assert 'card.setAttribute("role", "button");\n      card.setAttribute("aria-label", "Select and apply' not in HTML

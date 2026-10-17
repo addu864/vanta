@@ -175,12 +175,12 @@
           <label class="mb-inst">Instance <select id="mb-instance"></select></label>
         </div>
         <div class="mb-search glass">
-          <input id="mb-query" maxlength="100" placeholder="Search Modrinth: mods, shaders, resource packs" autocomplete="off">
-          <select id="mb-type"><option value="mod">Mods</option><option value="shader">Shaders</option><option value="resourcepack">Resource packs</option></select>
-          <select id="mb-category"><option value="">Any category</option></select>
-          <select id="mb-loader"><option value="fabric">Fabric</option><option value="quilt">Quilt</option><option value="neoforge">NeoForge</option><option value="forge">Forge</option></select>
-          <input id="mb-gamever" maxlength="12" placeholder="Game version" title="Defaults to the selected instance version">
-          <select id="mb-sort"><option value="relevance">Relevance</option><option value="downloads">Downloads</option><option value="follows">Follows</option><option value="updated">Updated</option><option value="newest">Newest</option></select>
+          <input id="mb-query" aria-label="Search Modrinth" maxlength="100" placeholder="Search Modrinth: mods, shaders, resource packs" autocomplete="off">
+          <select id="mb-type" aria-label="Type"><option value="mod">Mods</option><option value="shader">Shaders</option><option value="resourcepack">Resource packs</option></select>
+          <select id="mb-category" aria-label="Category"><option value="">Any category</option></select>
+          <select id="mb-loader" aria-label="Mod loader"><option value="fabric">Fabric</option><option value="quilt">Quilt</option><option value="neoforge">NeoForge</option><option value="forge">Forge</option></select>
+          <input id="mb-gamever" aria-label="Game version" maxlength="12" placeholder="Game version" title="Defaults to the selected instance version">
+          <select id="mb-sort" aria-label="Sort by"><option value="relevance">Relevance</option><option value="downloads">Downloads</option><option value="follows">Follows</option><option value="updated">Updated</option><option value="newest">Newest</option></select>
           <button type="button" class="action" id="mb-go">Search</button>
           <button type="button" class="ghost" id="mb-clear" hidden>Back to rows</button>
         </div>
@@ -301,9 +301,9 @@
           <h2>Import a PNG</h2>
           <p class="hint">64x64 or 64x32 only. Other sizes are rejected.</p>
           <div class="row">
-            <input id="skin-file" type="file" accept="image/png,.png">
-            <input id="skin-import-name" maxlength="64" placeholder="Skin name" autocomplete="off">
-            <select id="skin-import-model"></select>
+            <input id="skin-file" aria-label="Skin PNG file" type="file" accept="image/png,.png">
+            <input id="skin-import-name" aria-label="Skin name" maxlength="64" placeholder="Skin name" autocomplete="off">
+            <select id="skin-import-model" aria-label="Arm model"></select>
             <button type="button" class="action" id="skin-import">Import</button>
           </div>
         </div>
@@ -705,7 +705,7 @@
 
       <section class="panel" id="log-panel">
         <div class="log-head">
-          <div class="seg" role="tablist"><button type="button" class="seg-btn active" id="log-tab-vanta">Launcher log</button><button type="button" class="seg-btn" id="log-tab-game">Game log</button></div>
+          <div class="seg" role="group" aria-label="Which log"><button type="button" class="seg-btn active" id="log-tab-vanta" aria-pressed="true">Launcher log</button><button type="button" class="seg-btn" id="log-tab-game" aria-pressed="false">Game log</button></div>
           <div class="row log-tools">
             <input type="search" id="log-filter" placeholder="Search the log" aria-label="Search the log" autocomplete="off">
             <label class="check"><input type="checkbox" id="log-errors"> Errors &amp; warnings only</label>
@@ -725,8 +725,8 @@
   </div>
   <div class="palette-overlay" id="palette" hidden>
     <div class="palette glass" role="dialog" aria-modal="true" aria-label="Quick jump">
-      <input id="palette-input" type="search" placeholder="Jump to a tab, setting or action…" autocomplete="off" aria-controls="palette-list">
-      <ul id="palette-list" role="listbox"></ul>
+      <input id="palette-input" type="search" aria-label="Quick jump" placeholder="Jump to a tab, setting or action…" autocomplete="off" aria-controls="palette-list">
+      <ul id="palette-list" role="listbox" aria-label="Matches" tabindex="0"></ul>
       <p class="hint">↑ ↓ to move · Enter to open · Esc to close · Ctrl+K anywhere</p>
     </div>
   </div>
@@ -1914,9 +1914,7 @@
     function renderSkinCard(skin) {
       const card = document.createElement("article");
       card.className = "mod-card skin-card" + (skin.id === appliedSkinId ? " selected" : "");
-      card.tabIndex = 0;
-      card.setAttribute("role", "button");
-      card.setAttribute("aria-label", "Select and apply " + (skin.name || "skin"));
+      card.setAttribute("aria-label", skin.name || "Skin");  // the buttons inside are the keyboard path; the card itself is a mouse shortcut
       const title = document.createElement("strong");
       title.textContent = skin.name || skin.username || "Skin";
       const meta = document.createElement("p");
@@ -1949,6 +1947,7 @@
       const actions = document.createElement("div");
       actions.className = "row mod-actions";
       const model = document.createElement("select");
+      model.setAttribute("aria-label", "Arm model for " + (skin.name || "this skin"));
       ["steve", "alex"].forEach((value) => {
         const option = document.createElement("option");
         option.value = value;
@@ -3562,6 +3561,8 @@
       logMode = mode;
       $("log-tab-vanta").classList.toggle("active", mode === "vanta");
       $("log-tab-game").classList.toggle("active", mode === "game");
+      $("log-tab-vanta").setAttribute("aria-pressed", String(mode === "vanta"));
+      $("log-tab-game").setAttribute("aria-pressed", String(mode === "game"));
       refreshLogs().catch(() => {});
     }
     $("log-tab-vanta").addEventListener("click", () => setLogMode("vanta"));
