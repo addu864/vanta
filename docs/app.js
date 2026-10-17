@@ -186,7 +186,7 @@
       applyClFilter();
     });
   });
-  getReleases().then(function (rels) {
+  function loadReleases() { getReleases().then(function (rels) {
     rels = rels.filter(function (r) { return !r.draft; });
     if (!rels.length) return;
     // download counts, clearly labeled
@@ -223,5 +223,57 @@
       }).join("");
       var src = $("#updates-src"); if (src) src.textContent = "Live from GitHub Releases.";
     }
-  }).catch(function () { /* keep the saved copy baked into the page */ });
+  }).catch(function () { /* keep the saved copy baked into the page */ }); }
+
+  // Guides: troubleshooting search. Short queries must match every word; a pasted error
+  // (many words) shows the best few matches instead.
+  (function () {
+    var box = $("#ts-search");
+    if (!box) return;
+    var items = $$("#troubleshooting .faq-item");
+    var count = $("#ts-count");
+    var STOP = { the: 1, and: 1, for: 1, with: 1, not: 1, was: 1, this: 1, that: 1, from: 1, java: 0, net: 1, com: 1, org: 1, exception: 1, error: 1, caused: 1, thread: 1, main: 1 };
+    var text = items.map(function (el) { return (el.textContent + " " + (el.dataset.kw || "")).toLowerCase(); });
+    function run() {
+      var q = box.value.toLowerCase();
+      var words = (q.match(/[a-z0-9_\-\.]{3,}/g) || []).filter(function (w) { return !STOP[w]; }).slice(0, 40);
+      var expand = [];
+      words.forEach(function (w) { expand.push(w); w.split(/[\.\-_]/).forEach(function (p) { if (p.length >= 4 && !STOP[p] && p !== w) expand.push(p); }); });
+      if (!q.trim()) { items.forEach(function (el) { el.hidden = false; el.open = false; }); count.textContent = ""; return; }
+      var shown = 0;
+      if (words.length <= 3) {
+        items.forEach(function (el, i) {
+          var ok = words.length && words.every(function (w) { return text[i].indexOf(w) !== -1; });
+          el.hidden = !ok; el.open = ok && words.length > 0; if (ok) shown++;
+        });
+      } else {
+        var scores = text.map(function (t) { return expand.reduce(function (s, w) { return s + (t.indexOf(w) !== -1 ? (w.length > 6 ? 2 : 1) : 0); }, 0); });
+        var best = Math.max.apply(null, scores);
+        var cut = Math.max(2, Math.ceil(best * 0.6));
+        var ranked = scores.map(function (sc, i) { return [sc, i]; }).filter(function (x) { return x[0] >= cut; }).sort(function (a, b) { return b[0] - a[0]; }).slice(0, 4);
+        var keep = {}; ranked.forEach(function (x) { keep[x[1]] = 1; });
+        items.forEach(function (el, i) { el.hidden = !keep[i]; el.open = !!keep[i]; });
+        shown = ranked.length;
+      }
+      count.innerHTML = shown ? shown + (shown === 1 ? " matching problem" : " matching problems") + " below."
+        : 'No match. Try fewer words, or <a href="https://github.com/addu864/vanta/issues/new" target="_blank" rel="noopener">open a GitHub issue</a> with the crash summary.';
+    }
+    box.addEventListener("input", run);
+    var m = /[?&]q=([^&#]*)/.exec(location.search);
+    if (m) { try { box.value = decodeURIComponent(m[1].replace(/\+/g, " ")).slice(0, 2000); } catch (e) {} run(); }
+  })();
+  // Live GitHub data (~170 KB) only where a page shows it, and on the home page only once
+  // the downloads or updates section is close to the screen. The saved copy is already in the page.
+  (function () {
+    if ($("#changelog")) { loadReleases(); return; }
+    var spots = $$(".live-count, #older-list, #releases");
+    if (!spots.length) return;
+    if (!("IntersectionObserver" in window)) { loadReleases(); return; }
+    var done = false;
+    var io = new IntersectionObserver(function (entries) {
+      if (done || !entries.some(function (e) { return e.isIntersecting; })) return;
+      done = true; io.disconnect(); loadReleases();
+    }, { rootMargin: "800px 0px" });
+    spots.forEach(function (el) { io.observe(el); });
+  })();
 })();
