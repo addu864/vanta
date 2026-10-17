@@ -2,6 +2,15 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.6
+
+- **Crash card › Check mods** runs the mod check on the instance that crashed, with the same quick fixes.
+- **Mod check**: when a needed mod (for example Fabric API) is in the mods folder but turned off, it offers **Turn it back on** instead of a download. Duplicate copies keep the original over a browser copy like `mod (1).jar`.
+- **Home** shows playtime this week next to the total, and a 📝 icon on instances that have notes.
+- **INSTANCES › Reset playtime** clears one instance's playtime (asks first; worlds and mods are not touched).
+- **Crash helper** knows 4 more crashes: damaged game/mod files, incomplete Minecraft install, access denied (antivirus/permissions) and network port already in use.
+- Keyboard focus stays inside the mod check dialog and returns to the button that opened it.
+
 ## New in 1.6.5
 
 - **Mod check quick fixes**: in the mod check, turn off the older copy of a duplicate mod, turn off Forge or damaged jars (renamed to `.jar.disabled`, undo in INSTANCES › Mods), install Fabric API, or jump to MODS to find a missing mod.

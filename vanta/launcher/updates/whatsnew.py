@@ -66,6 +66,13 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.6": [
+        "Crash card: Check mods runs the mod check on the instance that crashed.",
+        "Mod check: a needed mod that is turned off gets a Turn it back on button.",
+        "Home shows playtime this week, and a note icon on instances with notes.",
+        "INSTANCES: Reset playtime for one instance (asks first).",
+        "Crash helper knows 4 more crashes: damaged files, incomplete install, access denied, port in use.",
+    ],
     "1.6.5": [
         "Mod check quick fixes: turn off the older copy of a duplicate mod, turn off Forge or damaged jars, or install Fabric API in one click.",
         "The mod check also runs before joining a server from the server cards.",
