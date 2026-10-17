@@ -2,6 +2,17 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.0
+
+- Home dashboard on PLAY (recent instances, friends online on your network, release notes)
+- Modrinth modpacks: search or import `.mrpack` (hash-checked, old mods backed up, main 1.21.11 instance never replaced) and Export `.mrpack`
+- Worlds: list, back up, restore (never overwrites), delete (always backs up first)
+- MODS: Update all; crash helper with suspected mods; Suggest RAM
+- Appearance (6 purple accents, text size, high contrast, reduce motion), Ctrl+K quick jump, welcome tour
+- macOS: native window (WKWebView via bundled pyobjc), never opens the browser
+
+Guides: https://addu864.github.io/vanta/guides.html · Changelog: https://addu864.github.io/vanta/changelog.html
+
 ## Run
 
 ```bash
