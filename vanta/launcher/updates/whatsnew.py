@@ -66,6 +66,13 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.4": [
+        "Mod check before PLAY: duplicate mods, Forge mods in Fabric, missing Fabric API or other needed mods, wrong versions and known clashes. Launch anyway or fix first.",
+        "Playtime per instance on Home and in INSTANCES, plus a notes box for each instance.",
+        "MODS works offline: saved Modrinth results and search when Modrinth can't be reached.",
+        "Crash helper knows 14 more crashes, e.g. duplicate mods, Java too new, shader errors and driver crashes.",
+        "Home opens faster: it no longer waits for release notes from GitHub.",
+    ],
     "1.6.3": [
         "Copy mods to another instance: INSTANCES › Copy mods re-downloads each mod, shader and pack for the other instance's version.",
         "Mods without a build for that version are skipped and listed; nothing is removed.",

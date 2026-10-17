@@ -2,6 +2,15 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.4
+
+- **Mod check before launch**: PLAY reads the mods in the instance first and warns about duplicate mods, Forge mods in a Fabric instance, missing Fabric API or other required mods, mods made for another Minecraft version, version mismatches between mods, known clashes (OptiFine + Sodium, ...) and damaged jars. Launch anyway, open MODS, or cancel. INSTANCES › Check mods runs it any time. Read-only: nothing is changed.
+- **Playtime**: time in game per instance, counted by Vanta on this computer, on Home and in INSTANCES.
+- **Instance notes**: a notes box per instance (seeds, IPs, to-dos), saved as you type, stays on this computer.
+- **Offline MODS**: when Modrinth can't be reached, MODS shows the saved rows and searches saved results, with a clear note. Installing still needs the internet.
+- **Crash helper**: 14 more known crashes (duplicate mods, missing Fabric API, OptiFine, Forge mods, Java too new, shader compile errors, graphics driver crashes, broken config files, damaged worlds, ticking entities, disk full, ...).
+- **Faster start**: Home fills in about 0.15 s instead of about 2.3 s on a cold start (release notes now refresh in the background); the page and assets are revalidated instead of re-sent.
+
 ## New in 1.6.3
 
 - **Copy mods to another instance** (INSTANCES): adds this instance's Modrinth mods, shaders and resource packs to another Fabric instance, each downloaded for that version and hash-checked. Mods without a build for that version are skipped and listed. Nothing is removed. Shows in the Downloads panel.
