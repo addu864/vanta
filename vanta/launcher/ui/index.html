@@ -30,6 +30,7 @@
         <button type="button" class="tab" data-tab="friends" id="tab-friends">FRIENDS</button>
       </nav>
       <button type="button" class="pill game-pill" id="game-pill" hidden title="Minecraft is running"><span class="dot"></span><span id="game-pill-text">Minecraft running</span></button>
+      <button type="button" class="pill dl-pill" id="dl-pill" hidden aria-haspopup="dialog" aria-controls="dl-panel" aria-expanded="false"><span aria-hidden="true">⬇</span> <span id="dl-pill-text">Downloads</span></button>
       <button type="button" class="pill update-pill" id="update-pill" hidden>Update</button>
       <button type="button" class="pill kbd-pill" id="palette-open" title="Quick jump (Ctrl+K)" aria-label="Quick jump, Control K">Ctrl K</button>
       <div class="account-chip" id="nav-account">No local account</div>
@@ -122,6 +123,7 @@
                 </div>
                 <button type="button" class="action" id="instance-install">Download</button>
                 <div class="progress" id="instance-progress" hidden><div class="progress-bar" id="instance-progress-bar"></div></div>
+                <div class="row" id="instance-controls" hidden><button type="button" class="ghost" id="instance-pause">Pause</button><button type="button" class="ghost" id="instance-cancel">Cancel</button></div>
                 <div class="status" id="instance-status"></div>
               </details>
             </div>
@@ -736,6 +738,11 @@
       <ul class="wn-list" id="wn-list"></ul>
       <div class="row"><button type="button" class="ghost" id="wn-tour">Show the tour</button><button type="button" class="action" id="wn-ok">Got it</button></div>
     </div>
+  </div>
+  <div class="dl-panel glass" id="dl-panel" role="dialog" aria-label="Downloads" hidden>
+    <div class="dl-head"><strong>Downloads</strong><button type="button" class="ghost small-btn" id="dl-clear">Clear finished</button><button type="button" class="ghost small-btn" id="dl-close" aria-label="Close downloads">✕</button></div>
+    <div id="dl-list" class="dl-list" aria-live="polite"></div>
+    <p class="hint">Minecraft downloads can be paused and resumed. Cancelled downloads keep the shared sound and asset files, so starting again is faster.</p>
   </div>
   <div class="shot-viewer" id="shot-viewer" hidden>
     <div class="sv-box glass" role="dialog" aria-modal="true" aria-label="Screenshot">
@@ -3003,7 +3010,7 @@
         option.textContent = row.id + (row.releaseTime ? "  (" + row.releaseTime + ")" : "") + (have.length ? " · " + have.join(", ") : "") + (row.fabric ? "" : " · no Fabric");
         select.appendChild(option);
       });
-      const running = (data.jobs || []).find((job) => job.state === "downloading" || job.state === "queued");
+      const running = (data.jobs || []).find((job) => job.state === "downloading" || job.state === "queued" || job.state === "paused");
       if (running) watchInstanceJob(running.id);
     }
 
@@ -3013,7 +3020,16 @@
       $("instance-progress-bar").style.width = Math.max(2, job.percent || 0) + "%";
       const labels = { metadata: "Reading version info", client: "Downloading client jar", libraries: "Libraries and natives", fabric: "Fabric loader", assets: "Sounds and assets", mods: "Mods and packs", done: "Done" };
       const step = labels[job.step] || job.step || "";
-      if (job.state === "failed") {
+      const live = job.state === "downloading" || job.state === "queued" || job.state === "paused";
+      $("instance-controls").hidden = !live;
+      $("instance-controls").dataset.job = job.id || "";
+      $("instance-pause").textContent = job.state === "paused" ? "Resume" : "Pause";
+      if (job.state === "cancelled") {
+        setStatus("instance-status", "Download cancelled." + (job.removedFolder ? " The unfinished " + job.id + " folder was removed." : ""), "");
+        bar.hidden = true;
+      } else if (job.state === "paused") {
+        setStatus("instance-status", job.id + ": paused at " + (job.percent || 0) + "%. Press Resume to continue.", "");
+      } else if (job.state === "failed") {
         setStatus("instance-status", "Download failed: " + (job.error || "unknown error"), "bad");
       } else if (job.state === "done") {
         const skipped = (job.result && job.result.skippedMods) || [];
@@ -3031,7 +3047,7 @@
         const result = await api("/api/instances/job?id=" + encodeURIComponent(id));
         const job = (result.data && result.data.job) || {};
         showInstanceJob(job);
-        if (job.state === "done" || job.state === "failed" || job.state === "unknown") {
+        if (job.state === "done" || job.state === "failed" || job.state === "unknown" || job.state === "cancelled") {
           clearInterval(instancePoll);
           instancePoll = null;
           $("instance-install").disabled = false;
@@ -3458,6 +3474,66 @@
       }, 1000);
     });
     setTimeout(() => checkUpdates().catch(() => {}), 4000);
+
+    // ---- Downloads panel: everything Vanta is downloading, with pause/resume/cancel for Minecraft ----
+    const dlHidden = new Set(JSON.parse(sessionStorage.getItem("vanta-dl-hidden") || "[]"));
+    let dlTimer = null, dlRows = [];
+    const DL_STATE = { downloading: "Downloading", queued: "Waiting", paused: "Paused", done: "Done", failed: "Failed", cancelled: "Cancelled" };
+    async function dlControl(id, action) {
+      if (action === "cancel" && !confirm("Cancel this download? Files already downloaded for this version are removed; shared assets are kept.")) return;
+      const r = await post("/api/downloads/control", { id, action });
+      if (!r.data || !r.data.ok) toast((r.data && r.data.error) || "Couldn't change that download.", "bad");
+      dlKick();
+    }
+    function dlRender() {
+      const rows = dlRows.filter((r) => !dlHidden.has(r.id + ":" + r.state));
+      const active = rows.filter((r) => r.state === "downloading" || r.state === "queued" || r.state === "paused").length;
+      const pill = $("dl-pill");
+      pill.hidden = rows.length === 0 && $("dl-panel").hidden;
+      $("dl-pill-text").textContent = active ? "Downloads · " + active : "Downloads";
+      pill.classList.toggle("busy", active > 0);
+      const host = $("dl-list"); host.replaceChildren();
+      if (!rows.length) { const e = document.createElement("p"); e.className = "empty-note"; e.textContent = "Nothing is downloading right now. Minecraft versions, mods, modpacks, Java and Vanta updates show up here."; host.appendChild(e); return; }
+      rows.forEach((r) => {
+        const el = document.createElement("div"); el.className = "dl-item state-" + r.state;
+        const top = document.createElement("div"); top.className = "dl-top";
+        const t = document.createElement("strong"); t.textContent = r.title;
+        const st = document.createElement("span"); st.className = "dl-state"; st.textContent = DL_STATE[r.state] || r.state;
+        top.append(t, st);
+        const bar = document.createElement("div"); bar.className = "progress"; bar.setAttribute("role", "progressbar"); bar.setAttribute("aria-valuenow", String(r.percent)); bar.setAttribute("aria-valuemin", "0"); bar.setAttribute("aria-valuemax", "100"); bar.setAttribute("aria-label", r.title);
+        const fill = document.createElement("div"); fill.className = "progress-bar"; fill.style.width = Math.max(2, r.percent) + "%"; bar.appendChild(fill);
+        const meta = document.createElement("small"); meta.className = "hint";
+        meta.textContent = [r.detail, r.error || r.step, r.state === "done" ? "" : r.percent + "%"].filter(Boolean).join(" · ");
+        el.append(top, bar, meta);
+        if ((r.controls || []).length) {
+          const row = document.createElement("div"); row.className = "row";
+          r.controls.forEach((a) => { const b = document.createElement("button"); b.type = "button"; b.className = "ghost small-btn"; b.textContent = a[0].toUpperCase() + a.slice(1); b.addEventListener("click", () => dlControl(r.id, a)); row.appendChild(b); });
+          el.appendChild(row);
+        }
+        host.appendChild(el);
+      });
+    }
+    async function dlPoll() {
+      try { const d = (await api("/api/downloads")).data || {}; dlRows = d.downloads || []; dlRender(); } catch (_) {}
+      const busy = dlRows.some((r) => r.state === "downloading" || r.state === "queued" || r.state === "paused");
+      clearTimeout(dlTimer); dlTimer = setTimeout(dlPoll, busy || !$("dl-panel").hidden ? 1000 : 6000);
+    }
+    function dlKick() { clearTimeout(dlTimer); dlTimer = setTimeout(dlPoll, 300); }
+    function dlToggle(open) {
+      const panel = $("dl-panel"); panel.hidden = !open;
+      $("dl-pill").setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) { dlKick(); const first = panel.querySelector("button"); if (first) first.focus(); } else { $("dl-pill").focus(); dlRender(); }
+    }
+    $("dl-pill").addEventListener("click", () => dlToggle($("dl-panel").hidden));
+    $("dl-close").addEventListener("click", () => dlToggle(false));
+    $("dl-panel").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); dlToggle(false); } });
+    $("dl-clear").addEventListener("click", () => {
+      dlRows.forEach((r) => { if (!["downloading", "queued", "paused"].includes(r.state)) dlHidden.add(r.id + ":" + r.state); });
+      sessionStorage.setItem("vanta-dl-hidden", JSON.stringify([...dlHidden])); dlRender();
+    });
+    $("instance-pause").addEventListener("click", () => { const id = $("instance-controls").dataset.job; if (id) dlControl("mc:" + id, $("instance-pause").textContent === "Resume" ? "resume" : "pause"); });
+    $("instance-cancel").addEventListener("click", () => { const id = $("instance-controls").dataset.job; if (id) dlControl("mc:" + id, "cancel"); });
+    setTimeout(dlPoll, 1500);
 
     // ---- first-run download (Minecraft, mods and packs are downloaded on first launch, never bundled) ----
     const FIRST_RUN_STEPS = { metadata: "Reading version info", client: "Downloading Minecraft", libraries: "Libraries", fabric: "Fabric loader",
@@ -3909,7 +3985,8 @@
     }
     function mbClose() { $("mb-overlay").hidden = true; $("mb-detail").replaceChildren(); }
     async function mbInstall(p, versionId) {
-      const res = await post("/api/browse/install", Object.assign(mbInstanceBody(), { project: p.id, versionId: versionId || "" }));
+      const res = await post("/api/browse/install", Object.assign(mbInstanceBody(), { project: p.id, title: p.title || "", versionId: versionId || "" }));
+      dlKick();
       if (!res.data || !res.data.ok) { toast((res.data && res.data.error) || "Install failed.", "bad"); return; }
       const bar = $("mb-progress"); if (bar) bar.hidden = false;
       const id = res.data.job;

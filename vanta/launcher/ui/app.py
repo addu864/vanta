@@ -115,6 +115,64 @@ class VantaApp:
         result["jobs"] = instances.all_jobs()
         return result
 
+    def downloads(self) -> dict[str, Any]:
+        """Every download Vanta is doing (or did this session), for the Downloads panel."""
+        from vanta.launcher.minecraft import instances
+        from vanta.launcher.updates import github
+        from vanta.shared import java_download
+
+        rows: list[dict[str, Any]] = []
+        active_states = {"queued", "downloading", "paused", "running"}
+        for job in instances.all_jobs():
+            state = str(job.get("state") or "")
+            rows.append({"id": "mc:" + str(job.get("id")), "kind": "minecraft", "title": f"Minecraft {job.get('version')}",
+                         "detail": str(job.get("preset") or job.get("loader") or "").capitalize(), "state": state,
+                         "step": str(job.get("step") or ""), "percent": int(job.get("percent") or 0),
+                         "error": str(job.get("error") or "")[:300],
+                         "controls": (["resume"] if state == "paused" else ["pause"]) + ["cancel"] if state in active_states else []})
+        for job in list(self.browser.jobs.values()):
+            state = {"running": "downloading", "error": "failed"}.get(str(job.get("state")), str(job.get("state")))
+            total = max(int(job.get("total") or 1), 1)
+            rows.append({"id": "mod:" + str(job.get("id")), "kind": "mod",
+                         "title": "Update all mods" if job.get("project") == "*" else str(job.get("title") or job.get("project") or "Mod"),
+                         "detail": str(job.get("instance") or ""), "state": state, "step": str(job.get("step") or ""),
+                         "percent": 100 if state == "done" else int(int(job.get("done") or 0) * 100 / total),
+                         "error": str(job.get("error") or "")[:300], "controls": []})
+        with java_download._lock:
+            javas = [dict(j) for j in java_download._jobs.values()]
+        for job in javas:
+            state = {"running": "downloading"}.get(str(job.get("state")), str(job.get("state")))
+            rows.append({"id": "java:" + str(job.get("id")), "kind": "java", "title": f"Java {job.get('major')}",
+                         "detail": "Eclipse Temurin " + str(job.get("arch") or ""), "state": state, "step": "",
+                         "percent": int(job.get("percent") or 0), "error": str(job.get("error") or "")[:300], "controls": []})
+        pack = dict(self._pack_job or {})
+        if pack.get("state") in {"running", "done", "failed"}:
+            state = {"running": "downloading"}.get(str(pack["state"]), str(pack["state"]))
+            rows.append({"id": "pack", "kind": "modpack", "title": "Modpack: " + str(pack.get("label") or ""), "detail": "",
+                         "state": state, "step": str(pack.get("step") or ""), "percent": int(pack.get("percent") or 0),
+                         "error": str(pack.get("error") or "")[:300], "controls": []})
+        upd = github.update_job()
+        if upd.get("state") in {"running", "done", "failed"}:
+            state = {"running": "downloading"}.get(str(upd["state"]), str(upd["state"]))
+            rows.append({"id": "update", "kind": "update", "title": "Vanta " + str(upd.get("tag") or "update"), "detail": "",
+                         "state": state, "step": "", "percent": int(upd.get("percent") or 0),
+                         "error": str(upd.get("error") or "")[:300], "controls": []})
+        live = {"downloading", "queued", "paused"}
+        rows.sort(key=lambda r: 0 if r["state"] in live else 1)
+        return {"ok": True, "downloads": rows, "active": sum(1 for r in rows if r["state"] in live)}
+
+    def control_download(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import instances
+
+        body = payload or {}
+        ident = str(body.get("id") or "")
+        if not ident.startswith("mc:"):
+            return {"ok": False, "error": "Only Minecraft downloads can be paused or cancelled."}
+        result = instances.control_job(ident[3:], str(body.get("action") or ""))
+        if result.get("ok"):
+            self.log.info(f"Download {ident[3:]}: {body.get('action')}.")
+        return result
+
     def install_instance(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         from vanta.launcher.minecraft import instances
 
@@ -549,9 +607,10 @@ class VantaApp:
             return {"ok": True, "show": False, "current": __version__, "seen": seen}
         news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json")
         rel = next((r for r in news.get("releases") or [] if r.get("current")), None)
+        highlights = (rel or {}).get("highlights") or whatsnew.BUNDLED_HIGHLIGHTS.get(__version__, [])
         return {"ok": True, "show": True, "current": __version__, "seen": seen,
-                "highlights": (rel or {}).get("highlights") or [], "name": (rel or {}).get("name") or f"Vanta {__version__}",
-                "offline": rel is None}
+                "highlights": highlights, "name": (rel or {}).get("name") or f"Vanta {__version__}",
+                "offline": not highlights}
 
     def get_settings(self) -> dict[str, Any]:
         return {"settings": self.config.get()}
@@ -1246,6 +1305,10 @@ class VantaApp:
         if not re.fullmatch(r"[\w\-]{1,64}", project):
             return {"ok": False, "error": "Unknown project."}
         job = self.browser.start_install(folder, project, game, loader, str(body.get("versionId") or ""))
+        title = re.sub(r"[\x00-\x1f]", "", str(body.get("title") or ""))[:80]
+        if job in self.browser.jobs:
+            self.browser.jobs[job]["title"] = title or project
+            self.browser.jobs[job]["instance"] = folder.name
         self.log.info(f"Modrinth install {project} -> {folder.name}.")
         return {"ok": True, "job": job}
 

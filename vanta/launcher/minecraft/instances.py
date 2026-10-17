@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import threading
 import time
 import traceback
@@ -66,6 +67,7 @@ CACHE_SECONDS = 600
 _cache: dict[str, Any] = {}
 _jobs: dict[str, dict[str, Any]] = {}
 _jobs_lock = threading.Lock()
+_controls: dict[str, dict[str, bool]] = {}
 
 
 def version_key(version_id: str) -> tuple[int, ...] | None:
@@ -161,6 +163,23 @@ def job(job_id: str) -> dict[str, Any]:
         return dict(_jobs.get(job_id) or {"state": "unknown", "id": job_id})
 
 
+def control_job(job_id: str, action: str) -> dict[str, Any]:
+    """Pause, resume or cancel a running instance download."""
+    control = _controls.get(job_id)
+    if action not in {"pause", "resume", "cancel"}:
+        return {"ok": False, "error": "Unknown action."}
+    if control is None:
+        return {"ok": False, "error": "That download isn't running any more."}
+    if action == "cancel":
+        control["cancel"] = True
+    else:
+        control["pause"] = action == "pause"
+        with _jobs_lock:
+            if job_id in _jobs and _jobs[job_id].get("state") in {"queued", "downloading", "paused"}:
+                _jobs[job_id]["state"] = "paused" if action == "pause" else "downloading"
+    return {"ok": True, "job": job(job_id)}
+
+
 def all_jobs() -> list[dict[str, Any]]:
     with _jobs_lock:
         return [dict(item) for item in _jobs.values()]
@@ -191,7 +210,7 @@ def start_install(
         return {"ok": False, "error": f"{name} is Vanta's main instance and is already installed; it is not re-downloaded here."}
     with _jobs_lock:
         current = _jobs.get(name)
-        if current and current.get("state") in {"queued", "downloading"}:
+        if current and current.get("state") in {"queued", "downloading", "paused"}:
             return {"ok": True, "job": dict(current), "already": True}
         _jobs[name] = {"id": name, "version": version, "loader": loader, "preset": preset, "state": "queued", "step": "queued", "done": 0, "total": 1, "percent": 0, "error": ""}
 
@@ -199,12 +218,29 @@ def start_install(
         with _jobs_lock:
             _jobs[name].update(fields)
 
+    control = _controls[name] = {"pause": False, "cancel": False}
+    existed = (Path(game_root) / name).exists()
+
+    def gate() -> None:
+        while control["pause"] and not control["cancel"]:
+            with _jobs_lock:
+                _jobs[name]["state"] = "paused"
+            time.sleep(0.3)
+        if control["cancel"]:
+            raise mc_install.InstallCancelled(name)
+        with _jobs_lock:
+            if _jobs[name].get("state") == "paused":
+                _jobs[name]["state"] = "downloading"
+
     weights = {"metadata": (0, 2), "client": (2, 8), "libraries": (8, 30), "fabric": (30, 35), "assets": (35, 88), "mods": (88, 94), "packs": (94, 99)}
 
     def progress(step: str, done: int, total: int) -> None:
+        gate()
         lo, hi = weights.get(step, (0, 100))
         frac = (done / total) if total else 1.0
         update(state="downloading", step=step, done=done, total=total, percent=int(lo + (hi - lo) * min(1.0, frac)))
+
+    progress.gate = gate  # type: ignore[attr-defined]
 
     def work() -> None:
         root = Path(game_root)
@@ -250,8 +286,16 @@ def start_install(
             }
             (root / name / META_NAME).write_text(json.dumps(meta, indent=2), encoding="utf-8")
             update(state="done", step="done", percent=100, result=meta)
+        except mc_install.InstallCancelled:
+            removed = False
+            if not existed:  # only a folder this job created; the shared assets folder is kept for next time
+                shutil.rmtree(Path(game_root) / name, ignore_errors=True)
+                removed = True
+            update(state="cancelled", step="cancelled", error="", removedFolder=removed)
         except Exception as exc:  # noqa: BLE001 - report to the UI
             update(state="failed", error=str(exc), trace=traceback.format_exc()[-2000:])
+        finally:
+            _controls.pop(name, None)
 
     if background:
         threading.Thread(target=work, name=f"vanta-install-{name}", daemon=True).start()

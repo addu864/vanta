@@ -346,6 +346,10 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(app.available_instances())
     if method == "POST" and path == "/api/instances/install":
         return _from_ok(app.install_instance(_payload(body)))
+    if method == "GET" and path == "/api/downloads":
+        return _from_ok(app.downloads())
+    if method == "POST" and path == "/api/downloads/control":
+        return _from_ok(app.control_download(_payload(body)))
     if method == "GET" and path == "/api/instances/job":
         return _from_ok(app.instance_job(_query_dict(raw_path)))
     if method == "GET" and path == "/api/servers":

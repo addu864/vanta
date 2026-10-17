@@ -36,6 +36,10 @@ USER_AGENT = f"Vanta/{VANTA_VERSION} (local installer; no account token)"
 OFFLINE_ACCESS_TOKEN = "0"
 
 
+class InstallCancelled(Exception):
+    """Raised by a progress gate when the user cancels a download."""
+
+
 def install_client(
     game_directory: Path,
     *,
@@ -53,9 +57,13 @@ def install_client(
     an optional callable ``progress(step, done, total)``. ``assets_root`` lets
     several instances share one assets folder.
     """
+    gate = getattr(progress, "gate", None)
+
     def report(step: str, done: int, total: int) -> None:
         if progress is None:
             return
+        if gate is not None:
+            gate()  # pause waits here; cancel raises InstallCancelled (on purpose, not swallowed)
         try:
             progress(step, done, total)
         except Exception:  # noqa: BLE001 - progress display must never break an install
@@ -141,6 +149,8 @@ def install_client(
             lock = threading.Lock()
 
             def _counted(obj: dict[str, Any]) -> None:
+                if gate is not None:
+                    gate()
                 _one(obj)
                 with lock:
                     done[0] += 1

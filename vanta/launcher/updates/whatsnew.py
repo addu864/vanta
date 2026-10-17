@@ -58,6 +58,28 @@ def summarize(releases: list[dict[str, Any]], current: str = __version__, count:
     return rows[:count]
 
 
+def _has_version(releases: list[Any], current: str) -> bool:
+    tags = {str(r.get("tag_name") or "") for r in releases if isinstance(r, dict)}
+    return f"v{current}" in tags or f"v{current}-mac" in tags
+
+
+# Shipped with the app, so the popup after an update works offline too.
+BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.2": [
+        "Downloads panel: see everything Vanta is downloading. Pause, resume or cancel Minecraft downloads.",
+        "Clearer empty states, error messages and loading placeholders.",
+        "What's new now works offline right after an update.",
+    ],
+    "1.6.1": [
+        "What's new popup after an update.",
+        "Logs viewer: filter as you type, errors and warnings only, copy matching lines.",
+        "Screenshot viewer: full size, arrow keys, copy image, show in folder.",
+        "Server favourites, sort by players, ping or name.",
+        "Preview images on shader and resource pack cards.",
+    ],
+}
+
+
 def _quick_json(url: str) -> Any:
     import urllib.request
 
@@ -75,6 +97,8 @@ def whats_new(cache_file: Path, fetch: Callable[[str], Any] = _quick_json, curre
     except (OSError, ValueError):
         cached = {}
     fresh = isinstance(cached, dict) and isinstance(cached.get("releases"), list) and now - float(cached.get("at") or 0) < CACHE_SECONDS
+    if fresh and not _has_version(cached["releases"], current):
+        fresh = False  # saved before this version was released (e.g. right after an update): fetch again
     offline = False
     if not fresh and fetch is _quick_json and now - _last_fail["at"] < RETRY_SECONDS:
         offline = True
