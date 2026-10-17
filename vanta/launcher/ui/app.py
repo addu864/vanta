@@ -274,6 +274,46 @@ class VantaApp:
             recent = servers[:3]
         return {"ok": True, "recent": recent, "saved": servers}
 
+    def dashboard(self) -> dict[str, Any]:
+        """Home dashboard: recent instances, friends on the LAN, and release notes."""
+        from vanta.launcher.updates import whatsnew
+
+        rows = []
+        for item in self.versions().get("versions") or []:
+            folder = Path(str(item.get("gameDirectory") or ""))
+            if not folder.is_dir() or not ((folder / "client.jar").is_file() or item.get("downloaded")):
+                continue
+            stamps = [p.stat().st_mtime for p in (folder / "logs" / "latest.log", folder / "options.txt") if p.is_file()]
+            mods = folder / "mods"
+            saves = folder / "saves"
+            rows.append({
+                "versionNumber": item.get("versionNumber"), "loader": item.get("loader") or "fabric",
+                "lastPlayed": max(stamps) if stamps else 0,
+                "mods": sum(1 for f in mods.glob("*.jar")) if mods.is_dir() else 0,
+                "worlds": sum(1 for f in saves.iterdir() if (f / "level.dat").is_file()) if saves.is_dir() else 0,
+                "modpack": self._modpack_name(folder),
+            })
+        rows.sort(key=lambda r: r["lastPlayed"], reverse=True)
+        friends: dict[str, Any] = {"online": 0, "hosting": 0, "total": 0, "nearby": 0}
+        try:
+            ov = self.friends.overview()
+            fl = ov.get("friends") or []
+            friends = {"online": sum(1 for f in fl if f.get("online")), "hosting": sum(1 for f in fl if f.get("join")),
+                       "total": len(fl), "nearby": len(ov.get("nearby") or []),
+                       "names": [f["name"] for f in fl if f.get("online")][:4]}
+        except Exception:  # noqa: BLE001 - dashboard must never fail on Friends
+            pass
+        news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json")
+        return {"ok": True, "instances": rows[:4], "friends": friends, "news": news}
+
+    @staticmethod
+    def _modpack_name(folder: Path) -> str:
+        try:
+            data = json.loads((folder / "vanta-modpack.json").read_text(encoding="utf-8"))
+            return str(data.get("name") or "")[:60] if isinstance(data, dict) else ""
+        except (OSError, ValueError):
+            return ""
+
     def remember_server(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
         if contains_token_key(body):

@@ -217,6 +217,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
     if method == "POST" and path == "/api/instances/browse":
         result = app.browse_instance_folder()
         return _from_ok(result)
+    if method == "GET" and path == "/api/dashboard":
+        return _from_ok(app.dashboard())
     if method == "GET" and path == "/api/home":
         return _from_ok(app.home_state())
     if method == "POST" and path == "/api/home/visit":

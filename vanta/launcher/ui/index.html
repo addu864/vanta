@@ -35,12 +35,18 @@
     <p id="background-status" class="hint top-note"></p>
     <main>
       <section class="panel home-panel" data-panel="play" id="panel-play">
-        <div class="glass scene-picker">
-          <h2>Background</h2>
-          <p class="hint">One still image. It is dimmed behind the glass. A custom image stays until Clear, which returns the default.</p>
-          <div class="scene-choices" role="group" aria-label="Background">
-            <button type="button" class="ghost" id="pick-background">Custom image</button>
-            <button type="button" class="ghost" id="clear-background">Clear</button>
+        <div class="dash-row" id="dash-row" aria-label="Dashboard">
+          <div class="glass dash-card">
+            <h2>Jump back in</h2>
+            <div class="dash-list" id="dash-instances"><p class="hint">Loading…</p></div>
+          </div>
+          <div class="glass dash-card">
+            <div class="popular-head"><h2>Friends</h2><button type="button" class="ghost" id="dash-friends-open">Open</button></div>
+            <div id="dash-friends"><p class="hint">Loading…</p></div>
+          </div>
+          <div class="glass dash-card dash-news">
+            <div class="popular-head"><h2>What's new</h2><span class="hint" id="dash-version"></span></div>
+            <div id="dash-news"><p class="hint">Loading…</p></div>
           </div>
         </div>
         <div class="glass popular-bar" id="popular-bar">
@@ -129,6 +135,14 @@
               <div id="home-skin" class="home-skin"></div>
               <button type="button" class="ghost" id="home-open-skins">Open skins</button>
             </div>
+          </div>
+        </div>
+        <div class="glass scene-picker">
+          <h2>Background</h2>
+          <p class="hint">One still image. It is dimmed behind the glass. A custom image stays until Clear, which returns the default.</p>
+          <div class="scene-choices" role="group" aria-label="Background">
+            <button type="button" class="ghost" id="pick-background">Custom image</button>
+            <button type="button" class="ghost" id="clear-background">Clear</button>
           </div>
         </div>
       </section>
@@ -924,7 +938,7 @@
       if (!$("server-ram-create").value) {
         $("server-ram-create").value = "2";
       }
-      await Promise.all([loadHome(), loadBackground(), refreshLogs()].map((p) => p.catch(() => {})));
+      await Promise.all([loadHome(), loadDashboard(), loadBackground(), refreshLogs()].map((p) => p.catch(() => {})));
       Promise.all([loadInstalledMods(), loadServers(), loadHud(), loadController()].map((p) => p.catch(() => {})));
     }
 
@@ -985,6 +999,74 @@
         await post("/api/home/visit", { serverId: id });
       } catch (err) {}
       await selectServer(id);
+    }
+
+    function fmtAgo(sec) {
+      const d = Math.max(0, Date.now() / 1000 - sec);
+      if (d < 3600) return Math.max(1, Math.round(d / 60)) + " min ago";
+      if (d < 86400) return Math.round(d / 3600) + " h ago";
+      if (d < 86400 * 30) return Math.round(d / 86400) + " days ago";
+      return new Date(sec * 1000).toLocaleDateString();
+    }
+
+    async function loadDashboard() {
+      let d = {};
+      try { d = (await api("/api/dashboard")).data || {}; } catch (err) { return; }
+      if (!d.ok) return;
+      const list = $("dash-instances"); list.replaceChildren();
+      const inst = d.instances || [];
+      if (!inst.length) {
+        const p = document.createElement("p"); p.className = "hint";
+        p.textContent = "No instances downloaded yet. Use Add instance below, or install a modpack in INSTANCES.";
+        list.appendChild(p);
+      }
+      inst.forEach((it) => {
+        const row = document.createElement("div"); row.className = "dash-inst";
+        const txt = document.createElement("div");
+        const t = document.createElement("strong"); t.textContent = it.versionNumber + " · " + it.loader;
+        const m = document.createElement("span"); m.className = "hint";
+        const bits = [];
+        if (it.modpack) bits.push(it.modpack);
+        bits.push(it.mods + (it.mods === 1 ? " mod" : " mods"));
+        bits.push(it.worlds + (it.worlds === 1 ? " world" : " worlds"));
+        bits.push(it.lastPlayed ? "played " + fmtAgo(it.lastPlayed) : "not played yet");
+        m.textContent = bits.join(" · ");
+        txt.append(t, m);
+        const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = "Select";
+        b.setAttribute("aria-label", "Select " + it.versionNumber + " " + it.loader + " for PLAY");
+        b.addEventListener("click", () => {
+          const v = it.versionNumber + "|" + it.loader;
+          const sel = $("version");
+          if ([...sel.options].some((o) => o.value === v)) { sel.value = v; sel.dispatchEvent(new Event("change")); }
+          $("play").scrollIntoView({ behavior: "smooth", block: "center" }); $("play").focus({ preventScroll: true });
+        });
+        row.append(txt, b); list.appendChild(row);
+      });
+      const fr = d.friends || {}; const fh = $("dash-friends"); fh.replaceChildren();
+      const big = document.createElement("div"); big.className = "dash-big";
+      big.textContent = String(fr.online || 0);
+      const lab = document.createElement("p"); lab.className = "hint";
+      lab.textContent = (fr.total ? `of ${fr.total} friends online on your network` : "No friends added yet. Share your friend code in FRIENDS.")
+        + (fr.hosting ? ` · ${fr.hosting} hosting a LAN world` : "");
+      fh.append(big, lab);
+      if ((fr.names || []).length) { const n = document.createElement("p"); n.className = "dash-names"; n.textContent = fr.names.join(", "); fh.appendChild(n); }
+      if (fr.nearby) { const n = document.createElement("p"); n.className = "hint"; n.textContent = `${fr.nearby} other Vanta player${fr.nearby === 1 ? "" : "s"} nearby.`; fh.appendChild(n); }
+      const news = d.news || {}; const nh = $("dash-news"); nh.replaceChildren();
+      $("dash-version").textContent = "You have v" + (news.current || "");
+      const rels = news.releases || [];
+      if (!rels.length) {
+        const p = document.createElement("p"); p.className = "hint";
+        p.textContent = news.offline ? "Release notes need the internet. Vanta works fine offline." : "No release notes yet.";
+        nh.appendChild(p);
+      }
+      rels.slice(0, 2).forEach((r) => {
+        const art = document.createElement("div"); art.className = "dash-rel";
+        const h = document.createElement("strong");
+        h.textContent = r.tag + (r.current ? " (installed)" : r.newer ? " (new — use Update)" : "") + (r.date ? " · " + r.date : "");
+        const ul = document.createElement("ul");
+        (r.highlights || []).slice(0, 4).forEach((x) => { const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
+        art.append(h, ul); nh.appendChild(art);
+      });
     }
 
     async function loadHome() {
@@ -1057,6 +1139,11 @@
     }
 
     $("home-open-servers").addEventListener("click", () => showTab("servers"));
+    $("dash-friends-open").addEventListener("click", () => showTab("friends"));
+    setInterval(() => {
+      const panel = $("panel-play");
+      if (!document.hidden && panel && !panel.hidden) loadDashboard().catch(() => {});
+    }, 20000);
     $("home-open-skins").addEventListener("click", () => showTab("skins"));
 
     $("pick-background").addEventListener("click", async () => {
