@@ -534,6 +534,25 @@ class VantaApp:
             write_json(path, current)
         return {"ok": True, "appearance": current, "options": {k: list(v) for k, v in self.APPEARANCE.items()}}
 
+    def whats_new_popup(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Show release notes once after Vanta updates itself. First run just records the version."""
+        from vanta import __version__
+        from vanta.launcher.updates import github, whatsnew
+        path = self.data_dir / "seen-version.json"
+        seen = str((read_json(path, {}) or {}).get("version") or "")
+        if not seen and (read_json(self.data_dir / "appearance.json", {}) or {}).get("tour") == "done":
+            seen = "1.6.0"  # 1.6.0 had the tour but didn't record the version yet
+        if (payload or {}).get("mark") or not seen:
+            write_json(path, {"version": __version__})
+            return {"ok": True, "show": False, "current": __version__, "seen": seen or __version__}
+        if github.version_tuple(seen) >= github.version_tuple(__version__):
+            return {"ok": True, "show": False, "current": __version__, "seen": seen}
+        news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json")
+        rel = next((r for r in news.get("releases") or [] if r.get("current")), None)
+        return {"ok": True, "show": True, "current": __version__, "seen": seen,
+                "highlights": (rel or {}).get("highlights") or [], "name": (rel or {}).get("name") or f"Vanta {__version__}",
+                "offline": rel is None}
+
     def get_settings(self) -> dict[str, Any]:
         return {"settings": self.config.get()}
 

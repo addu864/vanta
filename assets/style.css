@@ -945,3 +945,5 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 #log .log-warn { color: var(--warn); }
 .log-tools .check { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; font-size: 13px; }
 .log-tools .check input { width: auto; min-height: 0; }
+.wn-list { margin: 6px 0 4px; padding-left: 20px; line-height: 1.5; }
+.wn-list li { margin: 6px 0; }

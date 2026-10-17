@@ -219,6 +219,10 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
     if method == "POST" and path == "/api/instances/browse":
         result = app.browse_instance_folder()
         return _from_ok(result)
+    if method == "GET" and path == "/api/whatsnew":
+        return _from_ok(app.whats_new_popup())
+    if method == "POST" and path == "/api/whatsnew":
+        return _from_ok(app.whats_new_popup(_payload(body)))
     if method == "GET" and path == "/api/appearance":
         return _from_ok(app.ui_appearance())
     if method == "POST" and path == "/api/appearance":

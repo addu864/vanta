@@ -725,6 +725,14 @@
       </div>
     </div>
   </div>
+  <div class="tour-overlay" id="whatsnew" hidden>
+    <div class="tour glass" role="dialog" aria-modal="true" aria-labelledby="wn-title">
+      <p class="eyebrow" id="wn-from"></p>
+      <h2 id="wn-title">Vanta updated</h2>
+      <ul class="wn-list" id="wn-list"></ul>
+      <div class="row"><button type="button" class="ghost" id="wn-tour">Show the tour</button><button type="button" class="action" id="wn-ok">Got it</button></div>
+    </div>
+  </div>
   <script src="/assets/vendor/skinview3d.bundle.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -4011,7 +4019,9 @@
       const r = await api("/api/appearance"); const d = r.data || {};
       if (!d.ok) return;
       appearance = d.appearance; applyAppearance(appearance); paintAppearance();
-      if (appearance.tour !== "done") startTour();
+      if (appearance.tour !== "done") { startTour(); post("/api/whatsnew", { mark: true }).catch(() => {}); return; }
+      const w = (await api("/api/whatsnew")).data || {};
+      if (w.show) showWhatsNew(w);
     }
     async function saveAppearance(change) {
       appearance = Object.assign({}, appearance, change); applyAppearance(appearance); paintAppearance();
@@ -4118,6 +4128,18 @@
         else if (!e.shiftKey && i === f.length - 1) { f[0].focus(); e.preventDefault(); }
       }
     });
+    function showWhatsNew(w) {
+      $("wn-from").textContent = "Updated from v" + w.seen + " to v" + w.current;
+      $("wn-title").textContent = w.name || ("Vanta " + w.current);
+      const ul = $("wn-list"); ul.replaceChildren();
+      const items = (w.highlights || []).length ? w.highlights : ["Release notes need the internet. They're also on the Vanta website under Changelog."];
+      items.forEach((t) => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+      $("whatsnew").hidden = false; $("wn-ok").focus();
+    }
+    function closeWhatsNew() { $("whatsnew").hidden = true; post("/api/whatsnew", { mark: true }).catch(() => {}); }
+    $("wn-ok").addEventListener("click", closeWhatsNew);
+    $("wn-tour").addEventListener("click", () => { closeWhatsNew(); startTour(); });
+    $("whatsnew").addEventListener("keydown", (e) => { if (e.key === "Escape") closeWhatsNew(); });
     loadAppearance().catch(() => {});
   </script>
 </body>
