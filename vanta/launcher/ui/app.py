@@ -184,7 +184,8 @@ class VantaApp:
         result = instances.start_install(self._game_root(), version, loader, preset=preset, extra_mods=mods,
                                          include_fast=bool(body.get("includeFast", True)))
         if result.get("ok"):
-            self.log.info(f"Downloading Minecraft {version} ({loader}) into its own instance folder.")
+            job = result.get("job") or {}
+            self.log.info(f"Downloading Minecraft {version} ({job.get('preset') or job.get('loader') or loader}) into its own instance folder.")
         else:
             self.log.error(str(result.get("error")))
         return result

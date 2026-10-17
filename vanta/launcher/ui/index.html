@@ -35,21 +35,22 @@
       <button type="button" class="pill kbd-pill" id="palette-open" title="Quick jump (Ctrl+K)" aria-label="Quick jump, Control K">Ctrl K</button>
       <div class="account-chip" id="nav-account">No local account</div>
     </header>
+    <div class="conn-banner" id="conn-banner" role="alert" hidden><strong>Vanta's background service isn't answering.</strong> <span id="conn-text">Trying again…</span></div>
     <p id="background-status" class="hint top-note"></p>
     <main id="main" tabindex="-1">
       <section class="panel home-panel" data-panel="play" id="panel-play">
         <div class="dash-row" id="dash-row" aria-label="Dashboard">
           <div class="glass dash-card">
             <h2>Jump back in</h2>
-            <div class="dash-list" id="dash-instances"><p class="hint">Loading…</p></div>
+            <div class="dash-list" id="dash-instances"><div class="skel-list" aria-busy="true" aria-label="Loading"><span class="skel"></span><span class="skel short"></span><span class="skel"></span></div></div>
           </div>
           <div class="glass dash-card">
             <div class="popular-head"><h2>Friends</h2><button type="button" class="ghost" id="dash-friends-open">Open</button></div>
-            <div id="dash-friends"><p class="hint">Loading…</p></div>
+            <div id="dash-friends"><div class="skel-list" aria-busy="true" aria-label="Loading"><span class="skel"></span><span class="skel short"></span><span class="skel"></span></div></div>
           </div>
           <div class="glass dash-card dash-news">
             <div class="popular-head"><h2>What's new</h2><span class="hint" id="dash-version"></span></div>
-            <div id="dash-news"><p class="hint">Loading…</p></div>
+            <div id="dash-news"><div class="skel-list" aria-busy="true" aria-label="Loading"><span class="skel"></span><span class="skel short"></span><span class="skel"></span></div></div>
           </div>
         </div>
         <div class="glass popular-bar" id="popular-bar">
@@ -353,7 +354,7 @@
             <label class="inline-label">Sort <select id="browse-sort"><option value="fav">Favourites first</option><option value="players">Most players</option><option value="ping">Lowest ping</option><option value="name">Name</option></select></label>
             <label class="check"><input type="checkbox" id="browse-favs"> Favourites only</label>
           </div>
-          <div class="browse-grid" id="browse-grid"><p class="hint">Loading servers…</p></div>
+          <div class="browse-grid" id="browse-grid" aria-busy="true"><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div><div class="skel-card" aria-hidden="true"><span class="skel icon"></span><span class="skel"></span><span class="skel short"></span></div></div>
           <div class="status" id="browse-status"></div>
         </div>
       </section>
@@ -804,15 +805,58 @@
       button.addEventListener("click", () => showTab(button.dataset.tab));
     });
 
+    // Friendly errors: a failed request never throws; callers get { ok: false, error } in data.
+    let connDown = false, connTimer = null;
+    function connLost() {
+      if (connDown) return;
+      connDown = true; $("conn-banner").hidden = false;
+      let tries = 0;
+      const ping = async () => {
+        tries += 1;
+        try { const r = await fetch("/api/appearance", { cache: "no-store" }); if (r.ok) { connDown = false; $("conn-banner").hidden = true; toast("Reconnected to Vanta.", "good"); return; } } catch (_) {}
+        $("conn-text").textContent = tries > 3 ? "If this keeps happening, close Vanta and open it again. Your files are safe." : "Trying again…";
+        connTimer = setTimeout(ping, Math.min(10000, 1500 * tries));
+      };
+      clearTimeout(connTimer); connTimer = setTimeout(ping, 1500);
+    }
+    function friendlyHttp(status) {
+      if (status === 404) return "Vanta couldn't find that. Try refreshing the tab.";
+      if (status === 413) return "That file is too big.";
+      if (status >= 500) return "Something went wrong inside Vanta (error " + status + "). Details are in the Launcher log at the bottom of the page.";
+      return "Vanta couldn't do that (error " + status + ").";
+    }
     async function api(path, options) {
-      const response = await fetch(path, options);
+      let response;
+      try { response = await fetch(path, options); }
+      catch (err) { connLost(); return { httpOk: false, offline: true, data: { ok: false, error: "Vanta's background service isn't answering. It will reconnect on its own." } }; }
       const type = response.headers.get("content-type") || "";
       if (type.indexOf("application/json") !== -1) {
-        const data = await response.json();
+        let data;
+        try { data = await response.json(); } catch (_) { data = { ok: false, error: friendlyHttp(response.status) }; }
+        if (!response.ok && data && typeof data === "object" && !data.error) data.error = friendlyHttp(response.status);
         return { httpOk: response.ok, data: data };
       }
       const text = await response.text();
+      if (!response.ok) return { httpOk: false, text: text, data: { ok: false, error: friendlyHttp(response.status) } };
       return { httpOk: response.ok, text: text };
+    }
+    function skeleton(host, lines) {
+      if (!host) return;
+      host.replaceChildren();
+      const wrap = document.createElement("div"); wrap.className = "skel-list"; wrap.setAttribute("aria-busy", "true"); wrap.setAttribute("aria-label", "Loading");
+      for (let i = 0; i < (lines || 3); i += 1) { const sp = document.createElement("span"); sp.className = "skel" + (i % 3 === 1 ? " short" : ""); wrap.appendChild(sp); }
+      host.appendChild(wrap);
+    }
+    function emptyState(host, icon, title, text, button) {
+      if (!host) return;
+      host.replaceChildren();
+      const box = document.createElement("div"); box.className = "empty-state";
+      const i = document.createElement("span"); i.className = "empty-icon"; i.setAttribute("aria-hidden", "true"); i.textContent = icon;
+      const t = document.createElement("strong"); t.textContent = title;
+      const p = document.createElement("p"); p.textContent = text;
+      box.append(i, t, p);
+      if (button) { const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = button.label; b.addEventListener("click", button.onClick); box.appendChild(b); }
+      host.appendChild(box);
     }
 
     function post(path, payload) {
@@ -1128,11 +1172,7 @@
       if (!d.ok) return;
       const list = $("dash-instances"); list.replaceChildren();
       const inst = d.instances || [];
-      if (!inst.length) {
-        const p = document.createElement("p"); p.className = "hint";
-        p.textContent = "No instances downloaded yet. Use Add instance below, or install a modpack in INSTANCES.";
-        list.appendChild(p);
-      }
+      if (!inst.length) emptyState(list, "⛏", "No instances yet", "Download a Minecraft version with Add instance below, or install a modpack in INSTANCES.");
       inst.forEach((it) => {
         const row = document.createElement("div"); row.className = "dash-inst";
         const txt = document.createElement("div");
@@ -3333,7 +3373,10 @@
         const card = serverCard(s, false, "browse-status");
         if (!needle || card.dataset.search.includes(needle)) grid.appendChild(card);
       });
-      if (!grid.children.length) grid.innerHTML = onlyFav && !popularRows.some((s) => s.favourite) ? '<p class="hint">No favourites yet. Tap ☆ on a server to add it; favourites also show first on PLAY.</p>' : '<p class="hint">No servers match.</p>';
+      if (!grid.children.length) {
+        if (onlyFav && !popularRows.some((s) => s.favourite)) emptyState(grid, "☆", "No favourites yet", "Tap ☆ on a server to add it. Favourites also show first on PLAY.");
+        else emptyState(grid, "🔍", "No servers match", "Try a shorter search, or clear the filters.", { label: "Clear search", onClick: () => { $("browse-filter").value = ""; $("browse-favs").checked = false; renderPopular(); } });
+      }
     }
     async function loadPopularServers() {
       // Bundled info first (instant), then live pings fill in players/logos when servers answer.
@@ -3623,7 +3666,7 @@
         row.appendChild(box); row.appendChild(name); mods.appendChild(row);
       });
       const shots = $("inst-shots"); shots.replaceChildren();
-      if (!d.screenshots.length) shots.innerHTML = '<p class="hint">No screenshots yet. Press F2 in game to take one.</p>';
+      if (!d.screenshots.length) emptyState(shots, "📷", "No screenshots yet", "Press F2 in game to take one. They show up here, ready to view, copy or share.");
       d.screenshots.forEach((s) => {
         const a = document.createElement("a");
         const url = "/api/instances/screenshot?versionNumber=" + encodeURIComponent(v.versionNumber) + "&loader=" + encodeURIComponent(v.loader) + "&name=" + encodeURIComponent(s.name);
@@ -3742,7 +3785,7 @@
       const r = await post("/api/worlds/list", v); const d = r.data || {};
       const host = $("inst-worlds"); host.replaceChildren();
       if (!d.ok) { const p = document.createElement("p"); p.className = "hint"; p.textContent = d.error || "Could not read worlds."; host.appendChild(p); return; }
-      if (!d.worlds.length) host.innerHTML = '<p class="hint">No singleplayer worlds in this instance yet.</p>';
+      if (!d.worlds.length) emptyState(host, "🌍", "No worlds yet", "Create a singleplayer world in this instance and it appears here, with one-click backups.");
       d.worlds.forEach((w) => {
         const card = document.createElement("div"); card.className = "world-card";
         const img = document.createElement(w.icon ? "img" : "div"); img.className = "world-icon";
@@ -3765,7 +3808,7 @@
       });
       const bh = $("inst-backups"); bh.replaceChildren();
       $("inst-backups-count").textContent = "(" + d.backups.length + ")";
-      if (!d.backups.length) bh.innerHTML = '<p class="hint">No backups yet.</p>';
+      if (!d.backups.length) emptyState(bh, "🗄", "No backups yet", "Press Back up on a world above. Deleting a world always makes a backup first.");
       d.backups.forEach((k) => {
         const row = document.createElement("div"); row.className = "backup-row";
         const t = document.createElement("span"); t.textContent = k.world + " · " + fmtWhen(k.at) + " · " + k.sizeMb + " MB" + (k.auto ? " · automatic" : "");
@@ -3896,8 +3939,13 @@
       const key = $("mb-instance").value;
       if (!force && mb.loadedFor === key && mb.rows) return;
       setStatus("mb-status", "Loading Modrinth…", "");
+      if (!mb.rows) { const h = $("mb-rows"); h.replaceChildren(); for (let r = 0; r < 3; r += 1) { const sec = document.createElement("div"); sec.className = "skel-row"; sec.setAttribute("aria-hidden", "true"); for (let i = 0; i < 5; i += 1) { const c = document.createElement("div"); c.className = "skel-card"; c.innerHTML = '<span class="skel icon"></span><span class="skel"></span><span class="skel short"></span>'; sec.appendChild(c); } h.appendChild(sec); } }
       const res = await post("/api/browse/rows", mbInstanceBody());
-      if (!res.data || !res.data.ok) { setStatus("mb-status", (res.data && res.data.error) || "Modrinth is unreachable.", "bad"); return; }
+      if (!res.data || !res.data.ok) {
+        setStatus("mb-status", (res.data && res.data.error) || "Modrinth is unreachable.", "bad");
+        if (!mb.rows) emptyState($("mb-rows"), "📡", "Couldn't reach Modrinth", "Check your internet connection. Mods you already installed keep working.", { label: "Try again", onClick: () => mbOpen(true) });
+        return;
+      }
       mb.rows = res.data.rows; mb.installed = res.data.installed || {}; mb.loadedFor = key;
       mb.ctx = { gameVersion: res.data.gameVersion, loader: res.data.loader };
       if (!$("mb-gamever").dataset.touched) $("mb-gamever").value = res.data.gameVersion || "";
@@ -3954,7 +4002,7 @@
     async function mbDetail(project) {
       const box = $("mb-detail");
       $("mb-overlay").hidden = false;
-      box.innerHTML = '<p class="hint">Loading…</p>';
+      skeleton(box, 6);
       const res = await post("/api/browse/details", Object.assign(mbInstanceBody(), { project: project }));
       if (!res.data || !res.data.ok) { box.innerHTML = '<p class="status bad">' + mbEsc((res.data && res.data.error) || "Could not load.") + "</p>"; return; }
       const p = res.data.project;
@@ -4081,7 +4129,7 @@
       });
       $("fr-nearby-box").hidden = !(d.nearby || []).length;
       const list = $("fr-list"); list.replaceChildren();
-      if (!(d.friends || []).length) list.innerHTML = '<p class="hint">No friends yet. Send someone your friend code, or paste theirs above.</p>';
+      if (!(d.friends || []).length) emptyState(list, "👋", "No friends yet", "Send someone your friend code, or paste theirs above. Friends on the same Wi-Fi show up on their own.");
       (d.friends || []).forEach((f) => {
         const card = document.createElement("div"); card.className = "fr-card glass" + (f.online ? " on" : "");
         const dot = document.createElement("span"); dot.className = "fr-dot " + (f.join ? "share" : f.online ? "on" : "off");

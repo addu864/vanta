@@ -96,7 +96,7 @@ def _handler_for(app: VantaApp) -> type[BaseHTTPRequestHandler]:
                 app.log.error(exc.message)
                 status, body, content_type = 400, _json_bytes({"ok": False, "error": exc.message}), JSON
             except Exception as exc:
-                message = "Something went wrong inside Vanta."
+                message = "Something went wrong inside Vanta. The details are in the Launcher log (bottom of the page)."
                 import traceback
 
                 detail = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
