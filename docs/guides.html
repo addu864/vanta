@@ -61,7 +61,7 @@
 <p class="note">Only invite people you trust: anyone with the address can join while the world is open. Close the world (or quit) to stop sharing.</p>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 <article class="guide glass" id="modpacks"><p class="eyebrow">Guide</p><h2>Modpacks (.mrpack)</h2>
-<p><b>Coming in Vanta 1.6.0.</b> <b>INSTANCES › Modpacks</b> searches Fabric modpacks on Modrinth, or imports a <code>.mrpack</code> file you downloaded.</p>
+<p>New in v1.6.0. <b>INSTANCES › Modpacks</b> searches Fabric modpacks on Modrinth, or imports a <code>.mrpack</code> file you downloaded.</p>
 <ul><li>Vanta installs the pack's Minecraft version as its own instance (or uses it if you already have it).</li>
 <li>Every file is downloaded from Modrinth, GitHub or GitLab only, and checked against the pack's SHA-512 hashes before anything changes.</li>
 <li>That instance's current mods, config, resource packs, shaders and options are moved to a <code>vanta-backup-&lt;time&gt;</code> folder first, so nothing is lost.</li>
@@ -71,7 +71,7 @@
 <a class="shot guide-img" href="img/shots/modpacks.webp" data-lightbox data-caption="Modpacks in the INSTANCES tab"><img src="img/shots/modpacks-thumb.webp" width="640" height="237" alt="Modpacks in the INSTANCES tab" loading="lazy" decoding="async"></a>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 <article class="guide glass" id="worlds"><p class="eyebrow">Guide</p><h2>World backups</h2>
-<p><b>Coming in Vanta 1.6.0.</b> <b>INSTANCES › Worlds</b> lists the worlds of the selected instance with their icon, mode, size and last played time.</p>
+<p>New in v1.6.0. <b>INSTANCES › Worlds</b> lists the worlds of the selected instance with their icon, mode, size and last played time.</p>
 <ul><li><b>Back up</b> zips the world. Backups are kept per instance in Vanta's data folder (<code>.vanta-data/backups</code> next to Vanta on Windows, <code>~/Library/Application Support/Vanta/backups</code> on macOS). <b>Open backups folder</b> shows them.</li>
 <li><b>Restore</b> never overwrites: if the world still exists, the backup is added as “World (restored date)”.</li>
 <li><b>Delete</b> asks you to type the folder name and always makes a backup first.</li>
@@ -100,9 +100,9 @@
 <details class="faq-item glass"><summary>Windows Firewall asks about Vanta or Java</summary><div><p>Allow <b>Private networks</b>. Vanta uses UDP 47786 on your local network for FRIENDS, and Java needs it to host or join LAN worlds. Public networks can stay unticked.</p></div></details>
 <details class="faq-item glass"><summary>Friends on the same Wi-Fi don't show up</summary><div><p>Both PCs need Vanta open and Vanta allowed on Private networks. Check that Windows treats your Wi-Fi as <b>Private</b> (Settings → Network → your Wi-Fi). Guest and school networks often isolate devices; use a world invite instead.</p></div></details>
 <details class="faq-item glass"><summary>“Java was not found” or “needs a newer Java”</summary><div><p>1.18–1.20.4 need Java 17, 1.20.5–1.21.x need Java 21, and 26.x needs Java 25. Install <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a> (tick “Add to PATH” on Windows) and restart Vanta. On macOS Vanta downloads it for you.</p></div></details>
-<details class="faq-item glass"><summary>Minecraft crashed</summary><div><p>The crash card on PLAY explains the likely cause in plain words and links the crash report. Out of memory: raise RAM in INSTANCES. A mod error: turn off the last mod you added.</p></div></details>
-<details class="faq-item glass"><summary>A download stopped or failed its hash check</summary><div><p>Vanta never keeps a file whose hash doesn't match. If a download fails, check your connection (or VPN/antivirus) and press <b>Try again</b>.</p></div></details>
-<details class="faq-item glass"><summary>The game is slow or stutters</summary><div><p>Set RAM in INSTANCES › Memory &amp; Java (4 GB suits most setups; more than 6–8 GB rarely helps), turn shaders off with <b>K</b>, lower render distance, and on laptops plug in and use the dedicated GPU.</p></div></details>
+<details class="faq-item glass"><summary>Minecraft crashed</summary><div><p>The crash card on PLAY explains the likely cause, lists the mods that were involved, and (for added instances) can turn a suspect mod off in one click. <b>Copy summary</b> gives you a short text to paste when asking for help.</p></div></details>
+<details class="faq-item glass"><summary>A download stopped or failed its hash check</summary><div><p>Vanta retries automatically and never keeps a file whose hash doesn't match. If it still fails, check your connection (or VPN/antivirus) and press <b>Try again</b>.</p></div></details>
+<details class="faq-item glass"><summary>The game is slow or stutters</summary><div><p>Use <b>Suggest RAM</b> in INSTANCES › Memory &amp; Java (more than 6–8 GB rarely helps), turn shaders off with <b>K</b>, lower render distance, and on laptops plug in and use the dedicated GPU.</p></div></details>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 </div>
 <div class="glass contact">
