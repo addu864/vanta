@@ -45,3 +45,22 @@ def test_screenshot_viewer_and_reveal_validation(tmp_path, monkeypatch):
     assert "gone" in app.reveal_screenshot({"name": "missing.png"})["error"]
     for needle in ('id="shot-viewer"', 'id="sv-copy"', "ClipboardItem", "/api/instances/screenshot-reveal"):
         assert needle in HTML
+
+
+def test_server_favourites_and_last_seen(tmp_path, monkeypatch):
+    from vanta.launcher.servers import popular
+    from vanta.launcher.ui.app import VantaApp
+    monkeypatch.setenv("VANTA_DATA_DIR", str(tmp_path))
+    app = VantaApp()
+    servers = popular.load_servers(tmp_path)
+    sid = servers[0]["id"]
+    assert not app.server_favourite({"id": "nope", "on": True})["ok"]
+    assert app.server_favourite({"id": sid, "on": True})["ids"] == [sid]
+    monkeypatch.setattr(popular, "statuses", lambda ss: [dict(s, address=popular.address(s), status={"online": s["id"] == sid, "players": 7, "maxPlayers": 50, "latencyMs": 40}) for s in ss])
+    rows = app.popular_servers()["servers"]
+    first = next(r for r in rows if r["id"] == sid)
+    assert first["favourite"] and first["status"]["latencyMs"] == 40
+    quick = next(r for r in app.popular_servers({"live": "0"})["servers"] if r["id"] == sid)
+    assert quick["last"]["players"] == 7
+    assert app.server_favourite({"id": sid, "on": False})["ids"] == []
+    assert 'id="browse-sort"' in HTML and "/api/popular-servers/favourite" in HTML

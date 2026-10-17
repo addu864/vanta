@@ -346,7 +346,11 @@
             <button type="button" class="ghost" id="browse-refresh">Refresh</button>
           </div>
           <p class="hint">Public servers that accept local (offline-mode) accounts. Not run by Vanta. Logos and descriptions come from each server's own status/MOTD, site or server-list entry. Live players appear only when the server answers a ping. Play picks an installed instance the server accepts, or offers to download one. Edit the list in popular-servers.json in Vanta's data folder.</p>
-          <input type="search" id="browse-filter" placeholder="Filter by name, mode or version" />
+          <div class="row browse-tools">
+            <input type="search" id="browse-filter" placeholder="Filter by name, mode or version" />
+            <label class="inline-label">Sort <select id="browse-sort"><option value="fav">Favourites first</option><option value="players">Most players</option><option value="ping">Lowest ping</option><option value="name">Name</option></select></label>
+            <label class="check"><input type="checkbox" id="browse-favs"> Favourites only</label>
+          </div>
           <div class="browse-grid" id="browse-grid"><p class="hint">Loading servers…</p></div>
           <div class="status" id="browse-status"></div>
         </div>
@@ -3257,7 +3261,23 @@
       const head = document.createElement("div"); head.className = "popular-card-head"; head.appendChild(name);
       if (live) {
         const badge = document.createElement("span"); badge.className = "popular-badge";
-        badge.textContent = st.players + " / " + st.maxPlayers + " online"; head.appendChild(badge);
+        badge.textContent = st.players + " / " + st.maxPlayers + " online" + (st.latencyMs != null && !compact ? " · " + st.latencyMs + " ms" : ""); head.appendChild(badge);
+      } else if (server.last && server.last.players != null && !compact) {
+        const badge = document.createElement("span"); badge.className = "popular-badge stale";
+        badge.textContent = server.last.players + " online when last checked"; head.appendChild(badge);
+      }
+      if (!compact) {
+        const star = document.createElement("button"); star.type = "button"; star.className = "star" + (server.favourite ? " on" : "");
+        star.textContent = server.favourite ? "★" : "☆"; star.setAttribute("aria-pressed", String(!!server.favourite));
+        star.setAttribute("aria-label", (server.favourite ? "Remove " : "Add ") + server.name + (server.favourite ? " from favourites" : " to favourites"));
+        star.addEventListener("click", async () => {
+          const r = await post("/api/popular-servers/favourite", { id: server.id, on: !server.favourite });
+          if (!r.data || !r.data.ok) { toast((r.data && r.data.error) || "Couldn't save.", "bad"); return; }
+          const ids = r.data.ids || [];
+          popularRows.forEach((x) => { x.favourite = ids.includes(x.id); });
+          renderPopular();
+        });
+        head.appendChild(star);
       }
       const ip = document.createElement("code"); ip.textContent = server.address;
       const desc = document.createElement("p"); desc.className = "hint popular-desc";
@@ -3281,15 +3301,23 @@
     function renderPopular() {
       const bar = $("popular-cards"); bar.replaceChildren();
       const featured = popularRows.filter((s) => s.featured);
-      (featured.length ? featured : popularRows.slice(0, 5)).forEach((s) => bar.appendChild(serverCard(s, true, "popular-status")));
+      const favs = popularRows.filter((s) => s.favourite);
+      const barRows = [...favs, ...(featured.length ? featured : popularRows.slice(0, 5)).filter((s) => !s.favourite)].slice(0, Math.max(5, favs.length));
+      barRows.forEach((s) => bar.appendChild(serverCard(s, true, "popular-status")));
       if (!popularRows.length) bar.innerHTML = '<p class="hint">No servers in popular-servers.json.</p>';
       const grid = $("browse-grid"); grid.replaceChildren();
       const needle = ($("browse-filter").value || "").toLowerCase().trim();
-      popularRows.forEach((s) => {
+      const mode = $("browse-sort").value, onlyFav = $("browse-favs").checked;
+      const players = (s) => (s.status && s.status.online ? s.status.players : (s.last && s.last.players) || -1);
+      const ping = (s) => (s.status && s.status.online && s.status.latencyMs != null ? s.status.latencyMs : 1e9);
+      const sorted = popularRows.filter((s) => !onlyFav || s.favourite).slice().sort((a, b) =>
+        mode === "players" ? players(b) - players(a) : mode === "ping" ? ping(a) - ping(b) : mode === "name" ? a.name.localeCompare(b.name)
+          : (b.favourite - a.favourite) || 0);
+      sorted.forEach((s) => {
         const card = serverCard(s, false, "browse-status");
         if (!needle || card.dataset.search.includes(needle)) grid.appendChild(card);
       });
-      if (!grid.children.length) grid.innerHTML = '<p class="hint">No servers match.</p>';
+      if (!grid.children.length) grid.innerHTML = onlyFav && !popularRows.some((s) => s.favourite) ? '<p class="hint">No favourites yet. Tap ☆ on a server to add it; favourites also show first on PLAY.</p>' : '<p class="hint">No servers match.</p>';
     }
     async function loadPopularServers() {
       // Bundled info first (instant), then live pings fill in players/logos when servers answer.
@@ -3305,6 +3333,8 @@
     $("popular-refresh").addEventListener("click", () => loadPopularServers());
     $("browse-refresh").addEventListener("click", () => loadPopularServers());
     $("browse-filter").addEventListener("input", () => renderPopular());
+    $("browse-sort").addEventListener("change", () => renderPopular());
+    $("browse-favs").addEventListener("change", () => renderPopular());
     loadPopularServers().catch(() => setStatus("popular-status", "Could not load servers.", "bad"));
 
     // ---- Game-running indicator, crash summary, live game log ----

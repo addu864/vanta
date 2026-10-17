@@ -648,13 +648,47 @@ class VantaApp:
         servers = popular.load_servers(self.data_dir)
         live = str((payload or {}).get("live", "1")) != "0"
         rows = popular.statuses(servers) if live else [dict(s, address=popular.address(s), status={}) for s in servers]
+        favs = set(self._server_favs())
+        last_path = self.data_dir / "cache" / "server-last.json"
+        last = read_json(last_path, {})
+        last = last if isinstance(last, dict) else {}
+        changed = False
         for row in rows:
             row["icon"] = f"/assets/servers/{row['id']}.png"
+            row["favourite"] = row["id"] in favs
             st = row.get("status") or {}
-            if not st.get("online"):
+            if st.get("online"):
+                last[row["id"]] = {k: st.get(k) for k in ("players", "maxPlayers", "latencyMs", "checkedAt")}
+                changed = True
+            else:
                 # No reply (or no raw TCP here): show only the bundled info, never "offline".
                 row["status"] = {"online": None, "checkedAt": st.get("checkedAt")}
+            if isinstance(last.get(row["id"]), dict):
+                row["last"] = last[row["id"]]
+        if changed:
+            try:
+                last_path.parent.mkdir(parents=True, exist_ok=True)
+                write_json(last_path, last)
+            except OSError:
+                pass
         return {"ok": True, "servers": rows, "config": str(self.data_dir / popular.CONFIG_NAME)}
+
+    def _server_favs(self) -> list[str]:
+        data = read_json(self.data_dir / "server-favourites.json", {})
+        ids = data.get("ids") if isinstance(data, dict) else None
+        return [str(i) for i in ids if isinstance(i, str)][:200] if isinstance(ids, list) else []
+
+    def server_favourite(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.servers import popular
+        body = payload or {}
+        sid = str(body.get("id") or "")
+        if sid not in {s["id"] for s in popular.load_servers(self.data_dir)}:
+            return {"ok": False, "error": "That server is not in the list."}
+        favs = [i for i in self._server_favs() if i != sid]
+        if body.get("on"):
+            favs.insert(0, sid)
+        write_json(self.data_dir / "server-favourites.json", {"ids": favs})
+        return {"ok": True, "ids": favs}
 
     def _installed_numbers(self, loader: str = "") -> list[str]:
         settings = self.config.get()

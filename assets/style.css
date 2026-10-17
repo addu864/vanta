@@ -953,3 +953,14 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .sv-box img { max-width: 100%; max-height: calc(94vh - 90px); object-fit: contain; border-radius: 10px; background: #000; }
 .sv-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .sv-bar .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.browse-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+.browse-tools input[type="search"] { flex: 1 1 260px; }
+.browse-tools .inline-label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+.browse-tools .check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; white-space: nowrap; }
+.browse-tools .check input { width: auto; min-height: 0; }
+.star { margin-left: auto; background: none; border: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px; min-height: 0; }
+.star.on { color: #ffd76a; }
+.popular-badge.stale { opacity: .7; }
+.browse-tools label, .log-tools label { flex-direction: row !important; justify-content: flex-start !important; align-items: center; margin: 0; width: auto; flex: 0 0 auto; gap: 6px; }
+.browse-tools select { width: auto; min-height: 36px; }
+.browse-tools .check input, .log-tools .check input { width: 16px !important; min-width: 0 !important; max-width: 16px; height: 16px; flex: 0 0 16px !important; padding: 0; }

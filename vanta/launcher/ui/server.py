@@ -338,6 +338,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return status, payload, content_type
     if method == "GET" and path == "/api/popular-servers":
         return _from_ok(app.popular_servers(_query_dict(raw_path)))
+    if method == "POST" and path == "/api/popular-servers/favourite":
+        return _from_ok(app.server_favourite(_payload(body)))
     if method == "POST" and path == "/api/popular-servers/join":
         return _from_ok(app.join_popular_server(_payload(body)))
     if method == "GET" and path == "/api/instances/available":
