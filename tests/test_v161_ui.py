@@ -64,3 +64,12 @@ def test_server_favourites_and_last_seen(tmp_path, monkeypatch):
     assert quick["last"]["players"] == 7
     assert app.server_favourite({"id": sid, "on": False})["ids"] == []
     assert 'id="browse-sort"' in HTML and "/api/popular-servers/favourite" in HTML
+
+
+def test_banner_from_search_hits_and_projects():
+    from vanta.launcher.mods.browser import card
+    assert card({"featured_gallery": "https://cdn.modrinth.com/a.png"})["banner"] == "https://cdn.modrinth.com/a.png"
+    assert card({"gallery": ["https://cdn.modrinth.com/b.png"]})["banner"] == "https://cdn.modrinth.com/b.png"
+    assert card({"gallery": [{"url": "https://x/1.png"}, {"url": "https://x/2.png", "featured": True}]})["banner"] == "https://x/2.png"
+    assert card({"gallery": [{"url": "http://insecure"}]})["banner"] is None
+    assert "has-banner" in HTML

@@ -572,6 +572,16 @@ def _present(instance: Path, p: dict[str, Any]) -> bool:
     return any(re.sub(r"[-_ ]", "", f.name.lower()).startswith(slug) for f in folder.iterdir())
 
 
+def _banner(p: dict[str, Any]) -> str | None:
+    """A preview image: search hits carry featured_gallery/gallery URLs, project objects carry gallery dicts."""
+    cands: list[Any] = [p.get("featured_gallery")]
+    gal = p.get("gallery")
+    if isinstance(gal, list):
+        dicts = [g for g in gal if isinstance(g, dict)]
+        cands += [g.get("url") for g in dicts if g.get("featured")] + [g.get("url") for g in dicts] + [g for g in gal if isinstance(g, str)]
+    return next((u for u in cands if isinstance(u, str) and u.startswith("https://")), None)
+
+
 def card(p: dict[str, Any]) -> dict[str, Any]:
     icon = p.get("icon_url")
     ptype = p.get("project_type") or "mod"
@@ -587,7 +597,7 @@ def card(p: dict[str, Any]) -> dict[str, Any]:
         "type": ptype if ptype in FOLDERS else str(ptype),
         "categories": [str(c) for c in (p.get("display_categories") or p.get("categories") or [])][:6],
         "updated": p.get("date_modified") or p.get("updated"),
-        "banner": next((u for u in [p.get("featured_gallery"), p.get("gallery", [None])[0] if isinstance(p.get("gallery"), list) and p.get("gallery") and isinstance(p.get("gallery")[0], str) else None] if isinstance(u, str) and u.startswith("https://")), None),
+        "banner": _banner(p),
     }
 
 

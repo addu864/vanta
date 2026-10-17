@@ -3781,7 +3781,9 @@
       el.className = "mb-card";
       const inst = mbIsInstalled(item.id);
       const icon = mbSafeUrl(item.icon);
-      el.innerHTML =
+      const banner = (item.type === "shader" || item.type === "resourcepack") ? mbSafeUrl(item.banner) : "";
+      if (banner) el.className += " has-banner";
+      el.innerHTML = (banner ? '<div class="mb-banner"><img loading="lazy" alt="Preview of ' + mbEsc(item.title) + '" src="' + mbEsc(banner) + '"></div>' : "") +
         '<div class="mb-icon">' + (icon ? '<img loading="lazy" alt="" src="' + mbEsc(icon) + '">' : '<span>' + mbEsc((item.title || "?").slice(0, 1)) + '</span>') + '</div>' +
         '<div class="mb-meta"><strong>' + mbEsc(item.title) + '</strong><small>by ' + mbEsc(item.author || "unknown") + ' · ⬇ ' + mbNum(item.downloads) + '</small>' +
         '<p>' + mbEsc(item.description) + '</p></div>' + (inst ? '<span class="mb-badge">Installed</span>' : '');
