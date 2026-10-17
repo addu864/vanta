@@ -348,7 +348,7 @@
               <h3>Notes &amp; playtime</h3>
               <p class="hint inst-playtime" id="inst-playtime">Not played with Vanta yet.</p>
               <label>Notes (only on this computer)<textarea id="inst-notes" maxlength="2000" rows="5" placeholder="Seeds, server IPs, what you were building, which mods to update…"></textarea></label>
-              <div class="row"><button type="button" class="ghost" id="inst-check">Check mods</button><span class="status" id="inst-notes-status" aria-live="polite"></span></div>
+              <div class="row"><button type="button" class="ghost" id="inst-check">Check mods</button><button type="button" class="ghost" id="inst-pt-reset" hidden>Reset playtime</button><span class="status" id="inst-notes-status" aria-live="polite"></span></div>
             </div>
             <div class="inst-box">
               <h3>Copy mods to another instance</h3>
@@ -3907,6 +3907,7 @@
       if (document.activeElement !== $("inst-notes")) { $("inst-notes").value = d.settings.notes || ""; $("inst-notes").dataset.saved = d.settings.notes || ""; $("inst-notes").dataset.target = JSON.stringify(v); }
       setStatus("inst-notes-status", "", "");
       const pt = d.playtime || {};
+      $("inst-pt-reset").hidden = !pt.seconds;
       $("inst-playtime").textContent = pt.seconds
         ? "⏱ " + fmtDur(pt.seconds) + " played in " + pt.sessions + (pt.sessions === 1 ? " session" : " sessions") + (pt.week ? " · " + fmtDur(pt.week) + " this week" : "") + (pt.lastSession ? " · last session " + fmtDur(pt.lastSession) : "") + (pt.last ? " · " + fmtAgo(pt.last) : "")
         : "Not played with Vanta yet. Playtime is counted while the game runs.";
@@ -4128,6 +4129,13 @@
     }
     $("inst-notes").addEventListener("input", () => { setStatus("inst-notes-status", "…", ""); clearTimeout(notesTimer); notesTimer = setTimeout(saveNotes, 800); });
     $("inst-notes").addEventListener("blur", () => { if (notesTimer) saveNotes(); });
+    $("inst-pt-reset").addEventListener("click", async () => {
+      if (!confirm("Reset the playtime for this instance? This can't be undone. Worlds and mods are not touched.")) return;
+      const r = await post("/api/instances/playtime/reset", instValue());
+      if (!r.data || !r.data.ok) { setStatus("inst-notes-status", (r.data && r.data.error) || "Couldn't reset playtime.", "bad"); return; }
+      await loadInstanceInfo();
+      toast("Playtime reset for this instance.", "good");
+    });
     $("inst-check").addEventListener("click", async () => {
       setStatus("inst-notes-status", "Checking mods…", "");
       const r = await post("/api/instances/conflicts", instValue());

@@ -57,6 +57,18 @@ def record(data_dir: Path, instance: Path, started: float, ended: float) -> int:
     return seconds
 
 
+def reset(data_dir: Path, instance: Path) -> int:
+    """Forget one instance's playtime. Returns the seconds that were cleared."""
+    key = _key(instance)
+    with _lock:
+        data = _load(data_dir)
+        row = data["instances"].pop(key, None)
+        if not isinstance(row, dict):
+            return 0
+        write_json(Path(data_dir) / FILE, data)
+    return int(row.get("seconds") or 0)
+
+
 def for_instance(data_dir: Path, instance: Path) -> dict[str, Any]:
     row = _load(data_dir)["instances"].get(_key(instance)) or {}
     week = sum(int(i[1]) for i in row.get("recent") or [] if isinstance(i, list) and len(i) == 2 and float(i[0]) >= time.time() - 7 * 86400)

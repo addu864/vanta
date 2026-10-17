@@ -1041,6 +1041,16 @@ class VantaApp:
         text = "".join(ch for ch in text if ch in "\n\t" or ord(ch) >= 32 and ord(ch) != 127)
         return text[:2000].rstrip()
 
+    def reset_instance_playtime(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        from vanta.launcher.minecraft import playtime
+        folder, _ = self._instance_dir(payload or {})
+        if folder is None:
+            return {"ok": False, "error": "That instance is not installed."}
+        cleared = playtime.reset(self.data_dir, folder)
+        if cleared:
+            self.log.info(f"Playtime reset for {folder.name} ({playtime.nice(cleared)} cleared).")
+        return {"ok": True, "cleared": cleared}
+
     def save_instance_notes(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
         folder, _ = self._instance_dir(body)

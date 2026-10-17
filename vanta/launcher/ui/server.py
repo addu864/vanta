@@ -272,6 +272,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
     if method == "POST" and path == "/api/settings":
         result = app.update_settings(_payload(body))
         return _from_ok(result)
+    if method == "POST" and path == "/api/instances/playtime/reset":
+        return _from_ok(app.reset_instance_playtime(_payload(body)))
     if method == "POST" and path == "/api/instances/notes":
         return _from_ok(app.save_instance_notes(_payload(body)))
     if method == "POST" and path == "/api/instances/conflicts/fix":
