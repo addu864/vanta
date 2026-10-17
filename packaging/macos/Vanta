@@ -1,16 +1,27 @@
 #!/bin/bash
-# Vanta launcher for macOS (Apple Silicon + Intel). Uses the bundled Python,
-# never the system one. Data: ~/Library/Application Support/Vanta
+# Vanta launcher for macOS. Uses the bundled Python, never the system one.
+# Intel build: Resources/python/x86_64 only. Apple Silicon build: arm64 only.
+# Universal build: both; the real CPU decides (even if Finder started us under Rosetta).
+# Data: ~/Library/Application Support/Vanta
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-case "$(uname -m)" in
-  arm64) PY="$HERE/Resources/python/arm64/bin/python3" ;;
-  *)     PY="$HERE/Resources/python/x86_64/bin/python3" ;;
-esac
+PYROOT="$HERE/Resources/python"
+ARMHW="$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)"
+RUN=()
+if [ "$ARMHW" = "1" ] && [ -x "$PYROOT/arm64/bin/python3" ]; then
+  PY="$PYROOT/arm64/bin/python3"
+  # Started under Rosetta ("Open using Rosetta")? Switch back to native arm64.
+  if [ "$(/usr/sbin/sysctl -n sysctl.proc_translated 2>/dev/null)" = "1" ]; then RUN=(/usr/bin/arch -arm64); fi
+elif [ -x "$PYROOT/x86_64/bin/python3" ]; then
+  PY="$PYROOT/x86_64/bin/python3"   # Intel Mac (native), or Apple Silicon with the Intel build (Rosetta 2)
+else
+  /usr/bin/osascript -e 'display alert "Vanta" message "This copy of Vanta is the Apple Silicon build. On an Intel Mac, download Vanta-macOS-Intel.zip from https://addu864.github.io/vanta/"' >/dev/null 2>&1
+  exit 1
+fi
 DATA="$HOME/Library/Application Support/Vanta"
 mkdir -p "$DATA"
 export VANTA_DATA_DIR="$DATA" VANTA_AUTO_INSTALL=1 VANTA_OPEN_BROWSER=1 PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
-# Make Homebrew / Adoptium Java visible to a Finder-launched app.
-export PATH="/opt/homebrew/opt/openjdk/bin:/usr/local/opt/openjdk/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# Make Homebrew / Adoptium Java visible to a Finder-launched app (Intel Homebrew lives in /usr/local).
+export PATH="/opt/homebrew/opt/openjdk/bin:/usr/local/opt/openjdk/bin:/usr/local/opt/openjdk@21/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 # Already running? Just open the UI.
 if /usr/bin/curl -s -o /dev/null --max-time 1 http://127.0.0.1:8765/api/servers; then
   /usr/bin/open "http://127.0.0.1:8765/"; exit 0
@@ -18,4 +29,4 @@ fi
 # Remove the download quarantine flag from our own bundled files (no-op if absent).
 /usr/bin/xattr -dr com.apple.quarantine "$HERE/Resources" 2>/dev/null || true
 cd "$HERE/Resources/app" || exit 1
-exec "$PY" -m vanta >>"$DATA/launcher-ui.log" 2>&1
+exec "${RUN[@]}" "$PY" -m vanta >>"$DATA/launcher-ui.log" 2>&1

@@ -29,6 +29,23 @@ def make_server(app: VantaApp, host: str, port: int) -> ThreadingHTTPServer:
     return httpd
 
 
+def _mac_java_warmup() -> None:
+    """On a Mac with no usable Java 21, start fetching Temurin for this CPU while Minecraft downloads."""
+    try:
+        from vanta.launcher.minecraft.launch import auto_java_enabled, start_java_download
+        from vanta.shared import java_download, macplatform
+        from vanta.shared.java import select_java
+
+        info = macplatform.current()
+        if not auto_java_enabled(info) or not info["mac"]:
+            return
+        arch, strict = java_download.java_arch_for("1.21.11", 21, info)
+        if select_java(21, arch=arch, strict=strict)[0] is None:
+            print(start_java_download(21, arch), flush=True)
+    except Exception as exc:  # noqa: BLE001 - never block startup
+        print(f"Java check skipped: {exc}", flush=True)
+
+
 def serve() -> None:
     host = "127.0.0.1"
     preferred = int(os.environ.get("VANTA_PORT", "8765"))
@@ -40,6 +57,7 @@ def serve() -> None:
     bound = httpd.server_address[1]
     print(f"Vanta 1.0 listening on http://{host}:{bound}/", flush=True)
     print(f"Data directory: {app.data_dir}", flush=True)
+    _mac_java_warmup()
     if os.environ.get("VANTA_LAN", "1") != "0":
         app.start_friends_lan()
     from vanta.launcher.minecraft.first_run import maybe_start
