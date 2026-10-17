@@ -795,7 +795,6 @@
       </div>
     </div>
   </div>
-  <script src="/assets/vendor/skinview3d.bundle.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     let versions = [];
@@ -3285,6 +3284,20 @@
       }
     }
 
+    // The 3D skin library (~470 KB) loads after start-up, off the critical path.
+    let skinLibPromise = null, skinLibFailed = false;
+    function loadSkinLib() {
+      if (window.skinview3d) return Promise.resolve(true);
+      if (!skinLibPromise) skinLibPromise = new Promise((resolve) => {
+        const el = document.createElement("script");
+        el.src = "/assets/vendor/skinview3d.bundle.js";
+        el.onload = () => resolve(true);
+        el.onerror = () => { skinLibFailed = true; resolve(false); };
+        document.head.appendChild(el);
+      });
+      return skinLibPromise;
+    }
+    (window.requestIdleCallback || ((fn) => setTimeout(fn, 1200)))(() => loadSkinLib(), { timeout: 3000 });
     function ensureSkinViewer() {
       if (skinViewer || skinViewerError) return skinViewer;
       if (!window.skinview3d) {
@@ -3320,6 +3333,11 @@
       if (!skin || !skin.previewPath) return;
       skinCache[skin.id] = skin;
       $("skin3d-name").textContent = skin.name || skin.username || "Skin";
+      if (!window.skinview3d && !skinLibFailed) {
+        $("skin3d-model").textContent = "Loading the 3D preview…";
+        loadSkinLib().then(() => showSkin3d(skin));
+        return;
+      }
       const viewer = ensureSkinViewer();
       if (!viewer) {
         $("skin3d-model").textContent = skinViewerError;

@@ -123,7 +123,9 @@ class VantaSkinLibrary(SkinRepository):
 
     def _items(self) -> list[dict]:
         items = [dict(item) for item in CATALOG]
-        for name in DEFAULT_SKINS:
+        # Minecraft's default skins come from the user's own client.jar; list them only when it's there
+        # (otherwise every card failed to load and SKINS showed an error).
+        for name in (DEFAULT_SKINS if self._client_jar() is not None else ()):
             for arms, model in (("wide", MODEL_STEVE), ("slim", MODEL_ALEX)):
                 items.append({
                     "id": f"mojang-{name}-{arms}",

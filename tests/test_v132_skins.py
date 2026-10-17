@@ -45,12 +45,14 @@ def test_skindex_offline_gives_clear_error(tmp_path: Path) -> None:
 
 def test_mojang_defaults_from_client_jar(tmp_path: Path) -> None:
     lib = VantaSkinLibrary(data_dir=tmp_path)
-    ids = [h.id for h in lib.catalog() if h.category == "Minecraft defaults"]
-    assert "mojang-steve-wide" in ids and "mojang-alex-slim" in ids and len(ids) == 18
-    with pytest.raises(SkinRepositoryError, match="after Minecraft"):
+    # 1.6.5: hidden until the user's own client.jar exists (they could only fail to load before)
+    assert not [h.id for h in lib.catalog() if h.category == "Minecraft defaults"]
+    with pytest.raises(SkinRepositoryError):
         lib.fetch_texture("mojang-steve-wide")
     jar = tmp_path / "game" / "1.21.11-fabric" / "client.jar"
     jar.parent.mkdir(parents=True)
     with zipfile.ZipFile(jar, "w") as zf:
         zf.writestr("assets/minecraft/textures/entity/player/wide/steve.png", _png())
+    ids = [h.id for h in lib.catalog() if h.category == "Minecraft defaults"]
+    assert "mojang-steve-wide" in ids and "mojang-alex-slim" in ids and len(ids) == 18
     assert lib.fetch_texture("mojang-steve-wide") == _png()
