@@ -343,6 +343,13 @@
               <button type="button" class="action" id="inst-save">Save</button>
               <div class="status" id="inst-settings-status"></div>
             </div>
+            <div class="inst-box">
+              <h3>Copy mods to another instance</h3>
+              <p class="hint">Adds this instance's Modrinth mods, shaders and resource packs to another Fabric instance, each one downloaded for that instance's Minecraft version and hash-checked. Mods without a build for that version are skipped and listed. Nothing is removed.</p>
+              <label>Copy to<select id="inst-copy-to"></select></label>
+              <button type="button" class="ghost" id="inst-copy">Copy mods</button>
+              <div class="status" id="inst-copy-status" aria-live="polite"></div>
+            </div>
           </div>
           <h3>Mods <small class="hint" id="inst-mods-note"></small></h3>
           <div class="inst-mods" id="inst-mods"></div>
@@ -3721,6 +3728,7 @@
         sel.appendChild(o);
       });
       if (keep && [...sel.options].some((o) => o.value === keep)) sel.value = keep;
+      fillCopyTargets();
       await loadInstanceInfo();
     }
     async function loadInstanceInfo() {
@@ -3908,7 +3916,40 @@
     }
     $("inst-saves-open").addEventListener("click", () => openFolder("saves"));
     $("inst-backups-open").addEventListener("click", () => worldsAct("openbackups", {}));
-    $("inst-select").addEventListener("change", () => loadInstanceInfo());
+    $("inst-select").addEventListener("change", () => { fillCopyTargets(); loadInstanceInfo(); });
+    function fillCopyTargets() {
+      const to = $("inst-copy-to"), from = $("inst-select").value; to.replaceChildren();
+      versions.filter((v) => v.supported && v.loader !== "vanilla" && (v.versionNumber + "|" + v.loader) !== from).forEach((v) => {
+        const o = document.createElement("option"); o.value = v.versionNumber + "|" + v.loader;
+        o.textContent = (v.label ? v.label + " · " : "") + v.versionNumber + " · " + v.loader; to.appendChild(o);
+      });
+      $("inst-copy").disabled = !to.options.length;
+      if (!to.options.length) setStatus("inst-copy-status", "Add another Fabric instance first (PLAY › Add instance).", "");
+      else setStatus("inst-copy-status", "", "");
+    }
+    $("inst-copy").addEventListener("click", async () => {
+      const [tn, tl] = ($("inst-copy-to").value || "").split("|");
+      if (!tn) return;
+      const label = $("inst-copy-to").selectedOptions[0].textContent;
+      if (!confirm("Add this instance's Modrinth mods, shaders and packs to " + label + "?\n\nEach is downloaded for that version; nothing is removed.")) return;
+      const r = await post("/api/instances/copy-mods", { from: instValue(), to: { versionNumber: tn, loader: tl } });
+      if (!r.data || !r.data.ok) { setStatus("inst-copy-status", (r.data && r.data.error) || "Couldn't start the copy.", "bad"); return; }
+      dlKick();
+      $("inst-copy").disabled = true;
+      for (;;) {
+        await new Promise((res) => setTimeout(res, 800));
+        const j = (await api("/api/browse/job?id=" + encodeURIComponent(r.data.job))).data || {};
+        if (j.state === "running") { setStatus("inst-copy-status", (j.step || "Working") + " (" + (j.done || 0) + "/" + (j.total || 1) + ")", ""); continue; }
+        $("inst-copy").disabled = false;
+        if (j.state === "done") {
+          const res = j.result || {};
+          const sk = (res.skipped || []).map((x) => x.title).join(", ");
+          setStatus("inst-copy-status", "Added " + (res.copied || []).length + " item(s)." + (res.already ? " " + res.already + " were already there." : "") + (sk ? " Not available for that version: " + sk + "." : ""), "good");
+          toast("Copied mods to " + label + ".", "good");
+        } else setStatus("inst-copy-status", j.error || "Copy failed.", "bad");
+        break;
+      }
+    });
     $("inst-open").addEventListener("click", () => openFolder(""));
     $("inst-shots-open").addEventListener("click", () => openFolder("screenshots"));
     $("inst-save").addEventListener("click", async () => {

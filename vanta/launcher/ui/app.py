@@ -1325,6 +1325,27 @@ class VantaApp:
         self.log.info(f"Modrinth install {project} -> {folder.name}.")
         return {"ok": True, "job": job}
 
+    def copy_instance_mods(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """INSTANCES › Copy mods: re-download the source's Modrinth content for the target's version (nothing is copied byte-for-byte)."""
+        body = payload or {}
+        src_body, dst_body = body.get("from") or {}, body.get("to") or {}
+        if not isinstance(src_body, dict) or not isinstance(dst_body, dict) or not src_body.get("versionNumber") or not dst_body.get("versionNumber"):
+            return {"ok": False, "error": "Pick two instances."}
+        src, sgame, sloader = self._browse_ctx(src_body)
+        dst, game, loader = self._browse_ctx(dst_body)
+        if src is None or dst is None:
+            return {"ok": False, "error": "Both instances must be installed."}
+        if src.resolve() == dst.resolve():
+            return {"ok": False, "error": "Pick a different instance to copy to."}
+        _, dver = self._instance_dir(dst_body)
+        if str((dver or {}).get("loader") or "").lower() in {"vanilla", ""}:
+            return {"ok": False, "error": "Vanilla instances can't load mods. Pick a Fabric instance."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first; files can't change while it's running."}
+        job = self.browser.start_copy_from(src, sgame, sloader, dst, game, loader)
+        self.log.info(f"Copy mods {src.name} -> {dst.name}.")
+        return {"ok": True, "job": job}
+
     def browse_update_all(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
         folder, game, loader = self._browse_ctx(body)

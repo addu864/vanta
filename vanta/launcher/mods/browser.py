@@ -544,6 +544,46 @@ class ModBrowser:
         progress("Done", len(todo), max(len(todo), 1))
         return {"updated": updated, "failed": failed, "checked": len(index)}
 
+    def copy_from(self, source: Path, source_game: str, source_loader: str, target: Path, game_version: str,
+                  loader: str = "fabric", progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:
+        """Install the source instance's Modrinth mods, shaders and packs into target, each picked for the target's version."""
+        progress = progress or (lambda *_: None)
+        progress("Reading the source instance", 0, 1)
+        src = self.installed(source, source_game, source_loader)
+        have = self.installed(target, game_version, loader)
+        todo = [(pid, r) for pid, r in src.items() if pid not in have and not str(r.get("file") or "").endswith(".disabled")]
+        copied, skipped = [], []
+        for i, (pid, rec) in enumerate(todo):
+            label = str(rec.get("title") or rec.get("file") or pid)
+            progress(f"Adding {label}", i, len(todo))
+            try:
+                res = self.install(target, pid, game_version, loader)
+                copied += [str(x.get("title") or label) for x in res.get("installed", [])] or [label]
+            except BrowserError as exc:
+                skipped.append({"title": label, "reason": str(exc)})
+        progress("Done", len(todo), max(len(todo), 1))
+        return {"copied": copied, "skipped": skipped, "already": len(src) - len(todo)}
+
+    def start_copy_from(self, source: Path, source_game: str, source_loader: str, target: Path, game_version: str,
+                        loader: str = "fabric") -> str:
+        job_id = hashlib.sha1(f"copy{time.time()}".encode()).hexdigest()[:10]
+        job = {"id": job_id, "project": "copy", "title": f"Copy mods to {target.name}", "instance": target.name,
+               "state": "running", "step": "Starting", "done": 0, "total": 1}
+        self.jobs[job_id] = job
+
+        def report(step: str, done: int, total: int) -> None:
+            job.update(step=step, done=done, total=max(total, 1))
+
+        def run() -> None:
+            try:
+                job["result"] = self.copy_from(source, source_game, source_loader, target, game_version, loader, progress=report)
+                job["state"] = "done"
+            except Exception as exc:  # noqa: BLE001
+                job.update(state="error", error=f"Copy failed: {exc}"[:300])
+
+        threading.Thread(target=run, daemon=True).start()
+        return job_id
+
     def start_update_all(self, instance: Path, game_version: str, loader: str = "fabric") -> str:
         job_id = hashlib.sha1(f"update-all{time.time()}".encode()).hexdigest()[:10]
         job = {"id": job_id, "project": "*", "state": "running", "step": "Starting", "done": 0, "total": 1}
