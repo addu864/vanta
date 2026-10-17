@@ -2,6 +2,10 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.3
+
+- **Copy mods to another instance** (INSTANCES): adds this instance's Modrinth mods, shaders and resource packs to another Fabric instance, each downloaded for that version and hash-checked. Mods without a build for that version are skipped and listed. Nothing is removed. Shows in the Downloads panel.
+
 ## New in 1.6.2
 
 - **Downloads panel** (top bar): everything Vanta is downloading in one place. Minecraft downloads can be paused, resumed or cancelled; a cancelled download removes only the unfinished version folder and keeps the shared assets.

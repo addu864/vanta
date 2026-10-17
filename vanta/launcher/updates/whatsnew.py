@@ -65,6 +65,10 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.3": [
+        "Copy mods to another instance: INSTANCES › Copy mods re-downloads each mod, shader and pack for the other instance's version.",
+        "Mods without a build for that version are skipped and listed; nothing is removed.",
+    ],
     "1.6.2": [
         "Downloads panel: see everything Vanta is downloading. Pause, resume or cancel Minecraft downloads.",
         "Name your instances; the name shows in PLAY and on the dashboard.",
