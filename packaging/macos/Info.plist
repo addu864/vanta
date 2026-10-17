@@ -10,5 +10,6 @@
   <key>CFBundleExecutable</key><string>Vanta</string>
   <key>CFBundleIconFile</key><string>Vanta</string>
   <key>LSMinimumSystemVersion</key><string>@MINOS@</string>
-@ARCHKEYS@  <key>NSHighResolutionCapable</key><true/>
+@ARCHKEYS@
+  <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
