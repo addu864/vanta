@@ -1017,3 +1017,9 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .skin3d-info label.toggle-row input { width: 16px; min-width: 0 !important; max-width: 16px; margin: 0; flex: none; }
 .cape-box { grid-template-columns: 1fr 1fr; }
 .cape-box .row, .cape-box .hint { grid-column: 1 / -1; }
+
+/* 1.6.4 offline browse note */
+.mb-offline { display: flex; align-items: center; gap: 12px; justify-content: space-between; margin: 6px 0 12px;
+  padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(226, 177, 90, .45);
+  background: rgba(226, 177, 90, .10); color: inherit; font-size: 13px; }
+.mb-offline[hidden] { display: none; }

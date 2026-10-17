@@ -186,6 +186,7 @@
           <button type="button" class="ghost" id="mb-clear" hidden>Back to rows</button>
         </div>
         <div class="status" id="mb-status"></div>
+        <div class="mb-offline" id="mb-offline" role="status" hidden></div>
         <div id="mb-results" class="mb-grid" hidden></div>
         <div class="glass mb-updates" id="mb-updates" hidden>
           <div><strong id="mb-updates-title">Updates available</strong><p class="hint" id="mb-updates-list"></p></div>
@@ -4037,6 +4038,11 @@
         '<div class="mb-icon">' + (icon ? '<img loading="lazy" alt="" src="' + mbEsc(icon) + '">' : '<span>' + mbEsc((item.title || "?").slice(0, 1)) + '</span>') + '</div>' +
         '<div class="mb-meta"><strong>' + mbEsc(item.title) + '</strong><small>by ' + mbEsc(item.author || "unknown") + ' · ⬇ ' + mbNum(item.downloads) + '</small>' +
         '<p>' + mbEsc(item.description) + '</p></div>' + (inst ? '<span class="mb-badge">Installed</span>' : '');
+      // Offline (or a dead CDN link): fall back to the first letter instead of a broken image.
+      const iconImg = el.querySelector(".mb-icon img");
+      if (iconImg) iconImg.addEventListener("error", () => { const sp = document.createElement("span"); sp.textContent = (item.title || "?").slice(0, 1); iconImg.replaceWith(sp); });
+      const bannerBox = el.querySelector(".mb-banner");
+      if (bannerBox) bannerBox.querySelector("img").addEventListener("error", () => { bannerBox.remove(); el.classList.remove("has-banner"); });
       el.addEventListener("click", () => mbDetail(item.slug || item.id));
       return el;
     }
@@ -4065,6 +4071,17 @@
         host.appendChild(sec);
       });
     }
+    function mbOffline(data) {
+      const box = $("mb-offline");
+      if (!data || !data.offline) { box.hidden = true; return; }
+      const when = data.savedAt ? new Date(data.savedAt * 1000).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+      box.replaceChildren();
+      const t = document.createElement("span");
+      t.textContent = "📡 Offline: Modrinth can't be reached, so these are saved results" + (when ? " from " + when : "") + ". Browsing and search work; installing needs the internet.";
+      const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = "Try again";
+      b.addEventListener("click", () => { mb.rows = null; mbOpen(true); });
+      box.append(t, b); box.hidden = false;
+    }
     async function mbOpen(force) {
       mbFillInstances();
       const key = $("mb-instance").value;
@@ -4074,10 +4091,12 @@
       const res = await post("/api/browse/rows", mbInstanceBody());
       if (!res.data || !res.data.ok) {
         setStatus("mb-status", (res.data && res.data.error) || "Modrinth is unreachable.", "bad");
+        mbOffline(null);
         if (!mb.rows) emptyState($("mb-rows"), "📡", "Couldn't reach Modrinth", "Check your internet connection. Mods you already installed keep working.", { label: "Try again", onClick: () => mbOpen(true) });
         return;
       }
       mb.rows = res.data.rows; mb.installed = res.data.installed || {}; mb.loadedFor = key;
+      mbOffline(res.data);
       mb.ctx = { gameVersion: res.data.gameVersion, loader: res.data.loader };
       if (!$("mb-gamever").dataset.touched) $("mb-gamever").value = res.data.gameVersion || "";
       if ([...$("mb-loader").options].some((o) => o.value === res.data.loader)) $("mb-loader").value = res.data.loader;
@@ -4106,6 +4125,7 @@
       setStatus("mb-status", "Searching…", "");
       const res = await post("/api/browse/search", body);
       if (!res.data || !res.data.ok) { setStatus("mb-status", (res.data && res.data.error) || "Search failed.", "bad"); return; }
+      mbOffline(res.data);
       const grid = $("mb-results");
       grid.replaceChildren();
       res.data.results.forEach((it) => grid.appendChild(mbCard(it)));

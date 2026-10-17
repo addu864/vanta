@@ -80,6 +80,11 @@ class ModBrowser:
         self.jobs: dict[str, dict[str, Any]] = {}
         self.download_attempts = 3
         self.retry_delay = 1.5
+        # Offline mode: after a network failure, skip Modrinth for a short while and answer
+        # from the saved cache straight away instead of waiting for every request to time out.
+        self.offline_backoff = 45.0
+        self._down_until = 0.0
+        self._stale = threading.local()
         self.curated = {"essentials": ESSENTIALS, "qol": QUALITY_OF_LIFE, "performance": PERFORMANCE}
         if curated_file is not None:
             self.curated.update(load_curated(curated_file))
@@ -123,14 +128,23 @@ class ModBrowser:
         except (OSError, ValueError):
             pass
         try:
+            if now < self._down_until:
+                raise BrowserError("Modrinth is unreachable right now; showing saved results.")
             value = self._request(method, path, params, body)
-        except BrowserError:
+        except BrowserError as exc:
+            if "unreachable" in str(exc) or "Can't reach" in str(exc):
+                self._down_until = max(self._down_until, now + self.offline_backoff) if now >= self._down_until else self._down_until
             if disk.is_file():  # stale is better than nothing when offline
                 try:
-                    return json.loads(disk.read_text(encoding="utf-8"))
+                    value = json.loads(disk.read_text(encoding="utf-8"))
+                    mtime = disk.stat().st_mtime
+                    prev = getattr(self._stale, "since", None)
+                    self._stale.since = mtime if prev is None else min(prev, mtime)
+                    return value
                 except (OSError, ValueError):
                     pass
             raise
+        self._down_until = 0.0
         with self._lock:
             self._mem[key] = (now, value)
         try:
@@ -141,6 +155,58 @@ class ModBrowser:
         except OSError:
             pass
         return value
+
+    @property
+    def offline(self) -> bool:
+        return time.time() < self._down_until
+
+    def stale_reset(self) -> None:
+        self._stale.since = None
+
+    def stale_since(self) -> float | None:
+        """Oldest saved answer served on this thread since stale_reset(), or None."""
+        return getattr(self._stale, "since", None)
+
+    def offline_search(self, query: str = "", *, game_version: str = "", project_type: str = "mod",
+                       limit: int = 40) -> tuple[list[dict[str, Any]], float | None]:
+        """Search every saved Modrinth answer on disk when Modrinth itself can't be reached."""
+        words = [w for w in re.split(r"\s+", (query or "").lower().strip()) if w][:8]
+        seen: dict[str, dict[str, Any]] = {}
+        oldest: float | None = None
+        try:
+            files = sorted(self.cache_dir.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)
+        except OSError:
+            files = []
+        for f in files[:600]:
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            hits = data.get("hits") if isinstance(data, dict) else None
+            if not isinstance(hits, list):
+                continue
+            used = False
+            for h in hits:
+                if not isinstance(h, dict):
+                    continue
+                pid = str(h.get("project_id") or h.get("slug") or "")
+                if not pid or pid in seen:
+                    continue
+                if (h.get("project_type") or "mod") != project_type:
+                    continue
+                versions = h.get("versions") or []
+                if game_version and isinstance(versions, list) and versions and game_version not in versions:
+                    continue
+                hay = " ".join(str(h.get(k) or "") for k in ("title", "slug", "description", "author")).lower()
+                hay += " " + " ".join(str(c) for c in (h.get("categories") or []))
+                if all(w in hay for w in words):
+                    seen[pid] = h
+                    used = True
+            if used:
+                m = f.stat().st_mtime
+                oldest = m if oldest is None else min(oldest, m)
+        ranked = sorted(seen.values(), key=lambda h: -(h.get("downloads") or 0))
+        return [card(h) for h in ranked[:max(1, min(int(limit), 100))]], oldest
 
     # ---- search / rows ----
     @staticmethod

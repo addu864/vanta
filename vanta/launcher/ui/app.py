@@ -1269,22 +1269,37 @@ class VantaApp:
         folder, game, loader = self._browse_ctx(body)
         if not game:
             return {"ok": False, "error": "Choose an instance first."}
+        self.browser.stale_reset()
         rows = self.browser.rows(game, loader)
         installed = self.browser.installed(folder, game, loader) if folder else {}
+        saved = self.browser.stale_since()
+        if not any(r.get("items") for r in rows) and all(r.get("error") for r in rows):
+            return {"ok": False, "offline": True,
+                    "error": "Can't reach Modrinth, and nothing is saved for this version yet. Mods you already installed keep working."}
         return {"ok": True, "gameVersion": game, "loader": loader, "rows": rows, "installed": installed,
-                "instance": folder.name if folder else ""}
+                "instance": folder.name if folder else "", "offline": bool(saved) or self.browser.offline,
+                "savedAt": saved}
 
     def browse_search(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
         _, game, loader = self._browse_ctx(body)
+        self.browser.stale_reset()
         try:
             items = self.browser.search(str(body.get("query") or ""), game_version=str(body.get("gameVersion") or game),
                                         loader=str(body.get("loader") or loader), project_type=str(body.get("type") or "mod"),
                                         category=str(body.get("category") or ""), index=str(body.get("sort") or "relevance"),
                                         limit=int(body.get("limit") or 30), offset=int(body.get("offset") or 0))
-        except (BrowserError, ValueError) as exc:
+        except ValueError as exc:
             return {"ok": False, "error": str(exc)}
-        return {"ok": True, "results": items}
+        except BrowserError as exc:
+            items, saved = self.browser.offline_search(str(body.get("query") or ""),
+                                                       game_version=str(body.get("gameVersion") or game),
+                                                       project_type=str(body.get("type") or "mod"))
+            if not items:
+                return {"ok": False, "offline": True, "error": f"{exc} No saved results match yet."}
+            return {"ok": True, "results": items, "offline": True, "savedAt": saved}
+        saved = self.browser.stale_since()
+        return {"ok": True, "results": items, "offline": bool(saved), "savedAt": saved}
 
     def browse_details(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
