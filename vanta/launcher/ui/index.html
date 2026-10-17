@@ -334,7 +334,8 @@
               <div class="status" id="inst-trailer-status"></div>
             </div>
             <div class="inst-box">
-              <h3>Memory &amp; Java</h3>
+              <h3>Name, memory &amp; Java</h3>
+              <label>Name (optional, shown in PLAY and lists)<input id="inst-label" maxlength="40" placeholder="e.g. Survival with friends" autocomplete="off"></label>
               <label>RAM for this instance (GB, 0 = PLAY slider)<input type="number" id="inst-ram" min="0" max="64" step="1" value="0"></label>
               <div class="row tune-row"><button type="button" class="ghost" id="inst-tune">Suggest RAM</button><span class="hint" id="inst-tune-note"></span></div>
               <label>Extra JVM arguments<input id="inst-jvm" placeholder="-XX:+UseG1GC -Dfoo=bar"></label>
@@ -915,7 +916,7 @@
         const option = document.createElement("option");
         option.value = version.versionNumber + "|" + version.loader;
         const mark = version.supported ? "" : " (not supported in 0.1)";
-        option.textContent = version.versionNumber + " / " + version.loader + mark;
+        option.textContent = (version.label ? version.label + " · " : "") + version.versionNumber + " / " + version.loader + mark;
         if (version.versionNumber === currentNumber && version.loader === currentLoader) {
           option.selected = true;
         }
@@ -1186,9 +1187,10 @@
       inst.forEach((it) => {
         const row = document.createElement("div"); row.className = "dash-inst";
         const txt = document.createElement("div");
-        const t = document.createElement("strong"); t.textContent = it.versionNumber + " · " + it.loader;
+        const t = document.createElement("strong"); t.textContent = it.label ? it.label : it.versionNumber + " · " + it.loader;
         const m = document.createElement("span"); m.className = "hint";
         const bits = [];
+        if (it.label) bits.push(it.versionNumber + " " + it.loader);
         if (it.modpack) bits.push(it.modpack);
         bits.push(it.mods + (it.mods === 1 ? " mod" : " mods"));
         bits.push(it.worlds + (it.worlds === 1 ? " world" : " worlds"));
@@ -3714,7 +3716,7 @@
       versions.filter((v) => v.supported).forEach((v) => {
         const o = document.createElement("option");
         o.value = v.versionNumber + "|" + v.loader;
-        o.textContent = v.versionNumber + " · " + v.loader + (v.downloaded ? "" : " (main)");
+        o.textContent = (v.label ? v.label + " · " : "") + v.versionNumber + " · " + v.loader + (v.downloaded ? "" : " (main)");
         sel.appendChild(o);
       });
       if (keep && [...sel.options].some((o) => o.value === keep)) sel.value = keep;
@@ -3732,6 +3734,7 @@
       tr.checked = !!d.trailer; tr.disabled = d.main || v.loader !== "fabric";
       setStatus("inst-trailer-status", d.main ? "Always on for the main 1.21.11 instance." : (v.loader !== "fabric" ? "Needs a Fabric instance." : ""), "");
       $("inst-ram").value = d.settings.ramGb || 0;
+      $("inst-label").value = d.settings.label || "";
       instTune = d.tune || null; $("inst-tune-note").textContent = "";
       $("inst-jvm").value = d.settings.jvmArgs || "";
       const mods = $("inst-mods"); mods.replaceChildren();
@@ -3908,8 +3911,11 @@
     $("inst-open").addEventListener("click", () => openFolder(""));
     $("inst-shots-open").addEventListener("click", () => openFolder("screenshots"));
     $("inst-save").addEventListener("click", async () => {
-      const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value }, instValue()));
-      if (r.data && r.data.ok) { setStatus("inst-settings-status", "Saved.", "good"); toast("Instance settings saved.", "good"); }
+      const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value, label: $("inst-label").value }, instValue()));
+      if (r.data && r.data.ok) {
+        setStatus("inst-settings-status", "Saved.", "good"); toast("Instance settings saved.", "good");
+        try { await refresh(); await loadInstancesTab(); loadDashboard(); } catch (_) {}
+      }
       else setStatus("inst-settings-status", (r.data && r.data.error) || "Could not save.", "bad");
     });
     $("inst-trailer").addEventListener("change", async () => {

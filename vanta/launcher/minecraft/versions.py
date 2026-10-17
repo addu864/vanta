@@ -24,6 +24,22 @@ def _raw_entries() -> list[dict[str, Any]]:
     return [dict(item) for item in data]
 
 
+def instance_label(folder: Path) -> str:
+    """The player's own name for an instance (INSTANCES › Name), or ""."""
+    import json
+    try:
+        data = json.loads((Path(folder) / "vanta-settings.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return clean_label(data.get("label") if isinstance(data, dict) else "")
+
+
+def clean_label(raw: Any) -> str:
+    import re
+    text = re.sub(r"[\x00-\x1f\x7f<>]", "", str(raw or "")).strip()
+    return " ".join(text.split())[:40]
+
+
 def list_versions(game_directory: str) -> list[dict[str, Any]]:
     base = Path(game_directory)
     versions: list[dict[str, Any]] = []
@@ -55,6 +71,8 @@ def list_versions(game_directory: str) -> list[dict[str, Any]]:
         }
         versions = [v for v in versions if not (v["versionNumber"] == number and v["loader"] == loader)]
         versions.append(entry)
+    for item in versions:
+        item["label"] = instance_label(Path(str(item.get("gameDirectory") or "")))
     return versions
 
 

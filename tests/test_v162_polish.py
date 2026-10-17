@@ -34,3 +34,22 @@ def test_launcher_accessibility_names():
         assert needle in HTML
     assert 'role="tablist"><button type="button" class="seg-btn' not in HTML
     assert 'card.setAttribute("role", "button");\n      card.setAttribute("aria-label", "Select and apply' not in HTML
+
+
+def test_instance_name_is_saved_cleaned_and_listed(tmp_path, monkeypatch):
+    import json
+    from vanta.launcher.minecraft import versions
+    from vanta.launcher.ui.app import VantaApp
+    monkeypatch.setenv("VANTA_DATA_DIR", str(tmp_path))
+    app = VantaApp()
+    folder = tmp_path / "inst"
+    folder.mkdir()
+    (folder / "vanta-settings.json").write_text(json.dumps({"ramGb": 4, "jvmArgs": "-Xss2m", "other": 1}))
+    monkeypatch.setattr(app, "_instance_dir", lambda body: (folder, None))
+    r = app.save_instance_settings({"ramGb": 6, "jvmArgs": "-Xss2m", "label": "  My <b>SMP</b>\x00 world " + "x" * 60})
+    assert r["ok"] and r["settings"]["label"].startswith("My bSMP/b world") and len(r["settings"]["label"]) == 40
+    data = json.loads((folder / "vanta-settings.json").read_text())
+    assert data["other"] == 1 and data["ramGb"] == 6  # other keys kept
+    app.save_instance_settings({"ramGb": 6, "jvmArgs": ""})  # no label key: name kept
+    assert versions.instance_label(folder) == r["settings"]["label"]
+    assert 'id="inst-label"' in HTML and "version.label ?" in HTML

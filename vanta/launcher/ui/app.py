@@ -347,6 +347,7 @@ class VantaApp:
             saves = folder / "saves"
             rows.append({
                 "versionNumber": item.get("versionNumber"), "loader": item.get("loader") or "fabric",
+                "label": item.get("label") or "",
                 "lastPlayed": max(stamps) if stamps else 0,
                 "mods": sum(1 for f in mods.glob("*.jar")) if mods.is_dir() else 0,
                 "worlds": sum(1 for f in saves.iterdir() if (f / "level.dat").is_file()) if saves.is_dir() else 0,
@@ -986,7 +987,8 @@ class VantaApp:
             data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
         except (OSError, ValueError):
             data = {}
-        return {"ramGb": int(data.get("ramGb") or 0), "jvmArgs": str(data.get("jvmArgs") or "")}
+        from vanta.launcher.minecraft.versions import clean_label
+        return {"ramGb": int(data.get("ramGb") or 0), "jvmArgs": str(data.get("jvmArgs") or ""), "label": clean_label(data.get("label"))}
 
     def save_instance_settings(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
@@ -1003,8 +1005,18 @@ class VantaApp:
         bad = [a for a in args.split() if not a.startswith(("-X", "-XX:", "-D"))]
         if bad:
             return {"ok": False, "error": "JVM arguments must start with -X, -XX: or -D. Not allowed: " + " ".join(bad[:3])}
-        (folder / "vanta-settings.json").write_text(json.dumps({"ramGb": ram, "jvmArgs": args}, indent=2), encoding="utf-8")
-        return {"ok": True, "settings": {"ramGb": ram, "jvmArgs": args}}
+        from vanta.launcher.minecraft.versions import clean_label
+        path = folder / "vanta-settings.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+        except (OSError, ValueError):
+            data = {}
+        data = data if isinstance(data, dict) else {}
+        data.update(ramGb=ram, jvmArgs=args)
+        if "label" in body:
+            data["label"] = clean_label(body.get("label"))
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return {"ok": True, "settings": {"ramGb": ram, "jvmArgs": args, "label": clean_label(data.get("label"))}}
 
     def toggle_instance_mod(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         from vanta.launcher.minecraft import instances
