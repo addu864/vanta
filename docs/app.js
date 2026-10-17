@@ -7,19 +7,57 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // OS-aware download button
+  // OS- and CPU-aware download buttons
   var main = $("#dl-main"), note = $("#dl-note");
+  var ua = navigator.userAgent || "", plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  var mobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1);
+  var isMac = !mobile && (/Mac/i.test(plat) || /Mac OS X/.test(ua));
+  var isWin = !mobile && (/Win/i.test(plat) || /Windows/.test(ua));
+  function gpuName() {
+    try {
+      var c = document.createElement("canvas"), gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+      if (!gl) return "";
+      var ext = gl.getExtension("WEBGL_debug_renderer_info");
+      return String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || "");
+    } catch (e) { return ""; }
+  }
+  function macArch() {
+    // Chromium browsers tell us directly; otherwise the GPU name is a good hint ("Apple M2" vs "Intel Iris").
+    var hint = navigator.userAgentData && navigator.userAgentData.getHighEntropyValues
+      ? navigator.userAgentData.getHighEntropyValues(["architecture"]).then(function (v) { return v.architecture === "arm" ? "arm" : v.architecture === "x86" ? "intel" : ""; }, function () { return ""; })
+      : Promise.resolve("");
+    return hint.then(function (a) {
+      if (a) return a;
+      var g = gpuName();
+      if (/Apple (M\d|GPU)/i.test(g)) return "arm";
+      if (/Intel|AMD|Radeon|NVIDIA|GeForce/i.test(g)) return "intel";
+      return "";
+    });
+  }
+  function pick(id, otherId) {
+    var a = $("#" + id), b = $("#" + otherId);
+    if (a) { a.classList.add("primary"); a.classList.remove("ghost"); a.insertAdjacentHTML("beforeend", ' <span class="badge">Your Mac</span>'); }
+    if (b) { b.classList.remove("primary"); b.classList.add("ghost"); }
+  }
   if (main) {
-    var ua = navigator.userAgent || "", plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
-    var mobile = /Android|iPhone|iPad|iPod/i.test(ua);
-    var isMac = /Mac/i.test(plat) || /Mac OS X/.test(ua);
-    var isWin = /Win/i.test(plat) || /Windows/.test(ua);
-    if (!mobile && isWin) {
+    var v = main.dataset.ver || "", vm = main.dataset.macver || "";
+    if (isWin) {
       main.href = main.dataset.win; main.textContent = "Download for Windows";
-      if (note) note.innerHTML = 'Windows 10/11 · v1.5.0 · 12 MB (game downloads on first launch). On a Mac? <a href="#dl-mac">Get the macOS version</a>.';
-    } else if (!mobile && isMac) {
+      if (note) note.innerHTML = "Windows 10/11 · " + v + ' · 12 MB (the game downloads on first launch). On a Mac? <a href="index.html#dl-mac">Get the macOS version</a>.';
+      var w = $("#dl-win"); if (w) w.classList.add("detected");
+    } else if (isMac) {
       main.href = main.dataset.mac; main.textContent = "Download for macOS";
-      if (note) note.innerHTML = 'macOS · v1.5.1-mac · universal 40 MB, or pick the <a href="#dl-mac">Intel Mac / Apple Silicon</a> build (21 MB). On Windows? <a href="#dl-win">Get the Windows version</a>.';
+      if (note) note.innerHTML = "macOS · " + vm + ' · universal zip. Or pick the <a href="index.html#dl-mac">Intel Mac / Apple Silicon</a> build.';
+      var m = $("#dl-mac"); if (m) m.classList.add("detected");
+      macArch().then(function (arch) {
+        if (arch === "arm") {
+          main.href = main.dataset.macArm; main.textContent = "Download for Apple Silicon Mac"; pick("dl-mac-arm", "dl-mac-intel");
+          if (note) note.innerHTML = "We think this Mac has an Apple chip (M1–M4) · " + vm + ' · native arm64. Not right? <a href="index.html#dl-mac">Pick another build</a>.';
+        } else if (arch === "intel") {
+          main.href = main.dataset.macIntel; main.textContent = "Download for Intel Mac"; pick("dl-mac-intel", "dl-mac-arm");
+          if (note) note.innerHTML = "We think this Mac has an Intel processor · " + vm + ' · native x86_64, macOS 12+. Not right? <a href="index.html#dl-mac">Pick another build</a>.';
+        }
+      });
     } else if (mobile && note) {
       note.textContent = "Vanta runs on Windows and macOS computers. Open this page on your PC or Mac to download.";
     }
@@ -137,6 +175,17 @@
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (d) { try { sessionStorage.setItem("vanta-rel", JSON.stringify({ t: Date.now(), d: d })); } catch (e) {} return d; });
   }
+  var clMode = "all";
+  function applyClFilter() {
+    $$("#changelog .rel").forEach(function (el) { el.hidden = clMode !== "all" && el.dataset.os !== clMode; });
+  }
+  $$(".cl-filter button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      clMode = b.dataset.os;
+      $$(".cl-filter button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      applyClFilter();
+    });
+  });
   getReleases().then(function (rels) {
     rels = rels.filter(function (r) { return !r.draft; });
     if (!rels.length) return;
@@ -151,10 +200,20 @@
     // older versions
     var older = $("#older-list");
     if (older) {
-      var list = rels.filter(function (r) { return ["v1.5.0", "v1.5.1-mac"].indexOf(r.tag_name) === -1; });
+      var list = rels.filter(function (r) { return ["v1.5.0", "v1.5.2-mac"].indexOf(r.tag_name) === -1; });
       if (list.length) older.innerHTML = list.map(function (r) {
         return '<li><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + "</a> <span class=\"small\">· " + fmtDate(r.published_at) + "</span></li>";
       }).join("");
+    }
+    // full changelog page
+    var cl = $("#changelog");
+    if (cl) {
+      cl.innerHTML = rels.map(function (r) {
+        var mac = /-mac$/.test(r.tag_name);
+        return '<article class="glass rel" data-os="' + (mac ? "mac" : "win") + '"><h3><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + '</a> <small>' + esc(r.tag_name) + " · " + fmtDate(r.published_at) + '</small> <span class="tags"><span class="tag">' + (mac ? "macOS" : "Windows") + "</span></span></h3><div class=\"body\">" + mdLite(r.body) + "</div></article>";
+      }).join("");
+      var src2 = $("#changelog-src"); if (src2) src2.textContent = "Live from GitHub Releases: " + rels.length + " releases.";
+      applyClFilter();
     }
     // updates
     var box = $("#releases");

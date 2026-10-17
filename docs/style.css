@@ -184,3 +184,29 @@ footer { text-align: center; padding: 48px 16px 60px; color: var(--muted); borde
   .shot img, .btn, .faq-item summary::after { transition: none; }
 }
 .dl-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* v3 subpages: guides + changelog */
+.page-head { padding-top: 56px; }
+.page-head h1 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -0.02em; }
+.toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 8px; }
+.toc-item { display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--text); padding: 14px 16px; transition: border-color 150ms, transform 150ms; }
+.toc-item small { color: var(--muted); }
+.toc-item:hover { border-color: var(--violet); transform: translateY(-2px); color: var(--text); }
+.guides { display: grid; gap: 20px; margin: 28px 0; }
+.guide { padding: 26px 28px; scroll-margin-top: 84px; }
+.guide h2 { font-size: clamp(24px, 3vw, 32px); }
+.guide h3 { margin-top: 22px; }
+.guide ol, .guide ul { padding-left: 22px; }
+.guide li { margin: 6px 0; }
+.guide .note { border-left: 3px solid var(--violet); padding: 6px 12px; background: rgba(140, 100, 240, 0.08); border-radius: 0 10px 10px 0; color: var(--muted); }
+.guide .guide-img { display: block; margin-top: 14px; max-width: 640px; }
+.guide .faq-item { margin: 10px 0; }
+.cl-list { display: grid; gap: 16px; margin: 24px 0; }
+.cl-filter { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 0; }
+.cl-filter button { background: var(--glass); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; font-size: 14px; }
+.cl-filter button[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-dim); }
+.rel .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.rel .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+@media (max-width: 640px) { .guide { padding: 20px 18px; } }
+.badge { display: inline-block; margin-left: 6px; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,0.18); vertical-align: middle; }
+.dl.detected { border-color: var(--violet); box-shadow: 0 0 0 1px var(--violet-dim), 0 18px 50px rgba(120, 80, 220, 0.25); }

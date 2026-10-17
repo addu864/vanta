@@ -28,7 +28,7 @@
   <a class="brand" href="#home" aria-label="Vanta home"><img src="img/logo.jpg" alt="" width="36" height="36"><span>VANTA</span></a>
   <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">☰</button>
   <nav id="site-nav" aria-label="Sections">
-    <a href="#features">Features</a><a href="#types">Download types</a><a href="#downloads">Downloads</a><a href="#servers">Servers</a><a href="#updates">Updates</a><a href="#support">Support</a><a href="#about">About</a>
+    <a href="#features">Features</a><a href="#types">Download types</a><a href="#downloads">Downloads</a><a href="#servers">Servers</a><a href="#updates">Updates</a><a href="guides.html">Guides</a><a href="changelog.html">Changelog</a><a href="#support">Support</a><a href="#about">About</a>
     <a class="gh" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>
   </nav>
 </header>
@@ -40,7 +40,7 @@
     <h1>Play any version.<br><span class="grad">No sign-in needed.</span></h1>
     <p class="lead">Vanta is a free launcher for Windows and macOS. Local accounts, every release from 1.18 to 26.3, one-click Fast or Trailer-style mod sets, a server browser and 3D skins.</p>
     <div class="cta">
-      <a class="btn primary big" id="dl-main" href="#downloads" data-win="https://github.com/addu864/vanta/releases/download/v1.5.0/Vanta-Windows-App.zip" data-mac="https://github.com/addu864/vanta/releases/download/v1.5.1-mac/Vanta-macOS.zip">Download Vanta</a>
+      <a class="btn primary big" id="dl-main" href="#downloads" data-ver="v1.5.0" data-macver="v1.5.2-mac" data-mac-intel="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS-Intel.zip" data-mac-arm="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS-AppleSilicon.zip" data-win="https://github.com/addu864/vanta/releases/download/v1.5.0/Vanta-Windows-App.zip" data-mac="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS.zip">Download Vanta</a>
       <a class="btn ghost big" href="#features">See features</a>
     </div>
     <p class="small" id="dl-note">Windows 10/11 and macOS (Apple Silicon &amp; Intel). Free; source code on GitHub.</p>
@@ -50,7 +50,7 @@
 
 <section id="features">
   <h2 class="reveal">Features</h2>
-  <p class="section-lead reveal">Everything below is in Vanta v1.5.0 (macOS: v1.5.1-mac). Click a screenshot to enlarge it.</p>
+  <p class="section-lead reveal">Everything below is in Vanta v1.5.0 (macOS: v1.5.2-mac). Click a screenshot to enlarge it.</p>
   <div class="features"><article class="feature reveal"><a class="shot " href="img/shots/play.webp" data-lightbox data-caption="PLAY tab screenshot"><img src="img/shots/play-thumb.webp" width="640" height="457" alt="PLAY tab screenshot" loading="lazy" decoding="async"></a><div><h3>PLAY tab</h3><p>Local account, version picker, RAM slider, a popular-servers bar and a big PLAY button. A green light shows while Minecraft is running, with a Stop button and a live game log.</p></div></article>
 <article class="feature reveal"><a class="shot " href="img/shots/add-instance.webp" data-lightbox data-caption="Any version, 1.18 to 26.3 screenshot"><img src="img/shots/add-instance-thumb.webp" width="158" height="640" alt="Any version, 1.18 to 26.3 screenshot" loading="lazy" decoding="async"></a><div><h3>Any version, 1.18 to 26.3</h3><p>Add instance downloads any real release into its own folder, with a progress bar. PLAY picks Java 17, 21 or 25 to match, and says clearly if none fits.</p></div></article>
 <article class="feature reveal"><a class="shot " href="img/shots/instances.webp" data-lightbox data-caption="INSTANCES tab screenshot"><img src="img/shots/instances-thumb.webp" width="633" height="640" alt="INSTANCES tab screenshot" loading="lazy" decoding="async"></a><div><h3>INSTANCES tab</h3><p>For each instance: RAM and extra Java flags, mod on/off switches, Trailer style on/off, a screenshots gallery and an Open game folder button.</p></div></article>
@@ -96,27 +96,28 @@
       <a class="btn primary" href="https://github.com/addu864/vanta/releases/download/v1.5.0/Vanta-Windows-App.zip">Download for Windows</a>
     </article>
     <article class="dl glass reveal" id="dl-mac">
-      <h3>macOS <small>v1.5.1-mac · not yet tested on a real Mac</small></h3>
-      <p class="size">Separate Intel and Apple Silicon builds · 21 MB each (universal 40 MB) · first run downloads Minecraft 1.21.11 + Fabric (several hundred MB)</p>
+      <h3>macOS <small>v1.5.2-mac · not yet tested on a real Mac</small></h3>
+      <p class="size">Separate Intel and Apple Silicon builds · 28 MB each (universal 53 MB) · first run downloads Minecraft 1.21.11 + Fabric (several hundred MB)</p>
       <ul>
         <li><b>Intel Mac</b>: native x86_64 build for macOS 12 Monterey and newer</li>
         <li><b>Apple Silicon</b> (M1–M4): native arm64 build, macOS 11+</li>
         <li>Not sure which Mac you have? Apple menu → About This Mac → Processor/Chip, or take the universal zip</li>
         <li><b>Java</b>: if none is installed, Vanta downloads <a href="https://adoptium.net/temurin/releases/?os=mac" target="_blank" rel="noopener">Temurin</a> for your CPU</li>
-        <li>Opens in your browser at 127.0.0.1:8765</li>
+        <li>Opens in its own native Mac window (no browser)</li>
       </ul>
       <details class="how"><summary>Gatekeeper steps</summary><ol><li>Double-click the zip to unpack <b>Vanta.app</b> (move it to Applications if you like).</li><li>Right-click Vanta.app → <b>Open</b> → <b>Open</b>.</li><li>If blocked: System Settings → Privacy &amp; Security → <b>Open Anyway</b>.</li></ol></details>
-      <p class="sha"><span>Intel SHA-256</span><code>600fcc0b9762796e006c880fa6d85cc1300daecf0fee6ee50b74b3a3d5343e60</code><button type="button" class="btn ghost tiny copy" data-copy="600fcc0b9762796e006c880fa6d85cc1300daecf0fee6ee50b74b3a3d5343e60" aria-label="Copy Intel SHA-256 SHA-256">Copy</button></p>
-      <p class="sha"><span>Apple Silicon SHA-256</span><code>6c44ca2d623fe349e0cc089a0e7f0432c672c8909e9a3642797178b77a5da666</code><button type="button" class="btn ghost tiny copy" data-copy="6c44ca2d623fe349e0cc089a0e7f0432c672c8909e9a3642797178b77a5da666" aria-label="Copy Apple Silicon SHA-256 SHA-256">Copy</button></p>
-      <p class="sha"><span>Universal SHA-256</span><code>4d88f490d5a6697bdb5735087d2cbd149c6548209e287e04f764a10b35cec082</code><button type="button" class="btn ghost tiny copy" data-copy="4d88f490d5a6697bdb5735087d2cbd149c6548209e287e04f764a10b35cec082" aria-label="Copy Universal SHA-256 SHA-256">Copy</button></p>
-      <p class="small live-count" data-tag="v1.5.1-mac"></p>
-      <div class="dl-btns"><a class="btn primary" id="dl-mac-intel" href="https://github.com/addu864/vanta/releases/download/v1.5.1-mac/Vanta-macOS-Intel.zip">Download for Intel Mac</a>
-      <a class="btn primary" id="dl-mac-arm" href="https://github.com/addu864/vanta/releases/download/v1.5.1-mac/Vanta-macOS-AppleSilicon.zip">Download for Apple Silicon</a></div>
-      <p class="small"><a href="https://github.com/addu864/vanta/releases/download/v1.5.1-mac/Vanta-macOS.zip">Universal zip (both, 40 MB)</a></p>
+      <p class="sha"><span>Intel SHA-256</span><code>494c9a958745b26fe72f3932e7a1cbbd1bd28422be9c7b745597ee58ee00d880</code><button type="button" class="btn ghost tiny copy" data-copy="494c9a958745b26fe72f3932e7a1cbbd1bd28422be9c7b745597ee58ee00d880" aria-label="Copy Intel SHA-256 SHA-256">Copy</button></p>
+      <p class="sha"><span>Apple Silicon SHA-256</span><code>ec215e3660af069f98dbf3d1708238787498a4b85d8dec2df88cc1ec551a2462</code><button type="button" class="btn ghost tiny copy" data-copy="ec215e3660af069f98dbf3d1708238787498a4b85d8dec2df88cc1ec551a2462" aria-label="Copy Apple Silicon SHA-256 SHA-256">Copy</button></p>
+      <p class="sha"><span>Universal SHA-256</span><code>863ca13ed2e14ef8267f8fefc020c2d91728d264f68a3ffd8b04524f78ad9750</code><button type="button" class="btn ghost tiny copy" data-copy="863ca13ed2e14ef8267f8fefc020c2d91728d264f68a3ffd8b04524f78ad9750" aria-label="Copy Universal SHA-256 SHA-256">Copy</button></p>
+      <p class="small live-count" data-tag="v1.5.2-mac"></p>
+      <div class="dl-btns"><a class="btn primary" id="dl-mac-intel" href="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS-Intel.zip">Download for Intel Mac</a>
+      <a class="btn primary" id="dl-mac-arm" href="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS-AppleSilicon.zip">Download for Apple Silicon</a></div>
+      <p class="small"><a href="https://github.com/addu864/vanta/releases/download/v1.5.2-mac/Vanta-macOS.zip">Universal zip (both, 53 MB)</a></p>
     </article>
   </div>
   <details class="glass older reveal"><summary>Older versions</summary>
     <ul id="older-list">
+      <li><a href="https://github.com/addu864/vanta/releases/tag/v1.5.1-mac">v1.5.1-mac</a></li>
       <li><a href="https://github.com/addu864/vanta/releases/tag/v1.3.1">v1.3.1</a> (Windows) · <a href="https://github.com/addu864/vanta/releases/tag/v1.3.1-mac">v1.3.1-mac</a></li>
       <li><a href="https://github.com/addu864/vanta/releases/tag/v1.3.0">v1.3.0</a> (Windows) · <a href="https://github.com/addu864/vanta/releases/tag/v1.3.0-mac">v1.3.0-mac</a></li>
       <li><a href="https://github.com/addu864/vanta/releases/tag/v1.2.0">v1.2.0</a> (Windows) · <a href="https://github.com/addu864/vanta/releases/tag/v1.2.0-mac">v1.2.0-mac</a></li>
@@ -159,6 +160,7 @@
   <h2 class="reveal">Updates</h2>
   <p class="small" id="updates-src">Release notes from GitHub Releases. A saved copy is shown if GitHub can't be reached.</p>
   <div id="releases" class="releases">
+    <article class="glass rel"><h3>Vanta v1.5.2 for macOS <small>v1.5.2-mac · 2026-10-17</small></h3><ul><li>Vanta now opens in its own native Mac window instead of your web browser. Links to GitHub or Modrinth still open in the browser.</li><li>Normal Mac menus and shortcuts: Cmd+Q, Cmd+W, copy and paste.</li><li>Intel (macOS 12+), Apple Silicon and universal builds, as before.</li></ul></article>
     <article class="glass rel"><h3>Vanta v1.5.1 for macOS <small>v1.5.1-mac · 2026-10-17</small></h3><ul><li>Separate Intel (x86_64, macOS 12 Monterey or newer) and Apple Silicon builds, plus a universal zip. All run natively, and Vanta leaves Rosetta if it was started under it.</li><li>Downloads Temurin Java for your CPU when none is installed. On an Intel Mac Vanta uses only x64 Java and the x64 LWJGL natives. Apple Silicon uses x64 Java under Rosetta for Minecraft before 1.19.</li><li>Intel defaults: 3–6 GB RAM based on your Mac's memory and G1 GC tuning. On Iris/UHD graphics, new instances start at render distance 8 with Fast graphics, 60 FPS and VSync, and Trailer style (shaders) warns first.</li></ul></article>
     <article class="glass rel"><h3>Vanta v1.5.0 <small>v1.5.0 · v1.5.0-mac · 2026-10-16</small></h3><ul><li>New FRIENDS tab, with no account, email or server: a friend code per install and a friend list stored on your PC.</li><li>Friends on the same network show online, with their version and world, and Join connects straight to their LAN world.</li><li>World invites: Vanta turns your e4all address into an invite code. A friend pastes it and joins in one click, and Vanta installs the matching version if needed.</li></ul></article>
     <article class="glass rel"><h3>Vanta v1.4.1 <small>v1.4.1 · v1.4.1-mac · 2026-10-13</small></h3><ul><li>Opening Vanta twice now brings the open window to the front instead of showing a WebView2 error.</li><li>If WebView2 is still busy, Vanta waits and retries, then says "Vanta is already open".</li><li>The Vanta Companion mod is only added when Fabric API 0.141.6 or newer is installed.</li></ul></article>

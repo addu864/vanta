@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vanta changelog: every release for Windows and macOS</title>
+<meta name="description" content="What changed in each Vanta release: modpacks, world backups, Friends, Intel Mac builds, crash help, mod browser and more.">
+<meta name="theme-color" content="#120a22">
+<link rel="canonical" href="https://addu864.github.io/vanta/changelog.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vanta changelog: every release for Windows and macOS">
+<meta property="og:description" content="What changed in each Vanta release: modpacks, world backups, Friends, Intel Mac builds, crash help, mod browser and more.">
+<meta property="og:url" content="https://addu864.github.io/vanta/changelog.html">
+<meta property="og:image" content="https://addu864.github.io/vanta/img/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://addu864.github.io/vanta/img/og.png">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="subpage">
+<a class="skip" href="#main">Skip to content</a>
+<div class="bg" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="grain"></div></div>
+<header class="top" id="top">
+  <a class="brand" href="index.html" aria-label="Vanta home"><img src="img/logo.jpg" alt="" width="36" height="36"><span>VANTA</span></a>
+  <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">☰</button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="index.html#features">Features</a><a href="index.html#downloads">Downloads</a><a href="guides.html">Guides</a><a href="changelog.html" class="active" aria-current="page">Changelog</a><a href="index.html#support">Support</a><a href="index.html#servers">Servers</a>
+    <a class="gh" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</header>
+<main id="main">
+<section class="page-head">
+  <p class="eyebrow">Vanta changelog</p>
+  <h1>Changelog</h1>
+  <p class="section-lead">Every Vanta release for Windows and macOS. Windows releases update in-app with the <b>Update</b> button; Mac releases end in <code>-mac</code>.</p>
+  <div class="cl-filter" role="group" aria-label="Show releases for"><button type="button" data-os="all" aria-pressed="true">All</button><button type="button" data-os="win" aria-pressed="false">Windows</button><button type="button" data-os="mac" aria-pressed="false">macOS</button></div>
+  <p class="small" id="changelog-src">Saved copy. The live list from GitHub Releases loads when it can.</p>
+</section>
+<div id="changelog" class="cl-list">
+<article class="glass rel" data-os="mac"><h3>Vanta v1.5.2 for macOS <small>v1.5.2-mac · 2026-10-17</small></h3><ul><li>Vanta now opens in its own native Mac window instead of your web browser. Links to GitHub or Modrinth still open in the browser.</li><li>Normal Mac menus and shortcuts: Cmd+Q, Cmd+W, copy and paste.</li><li>Intel (macOS 12+), Apple Silicon and universal builds, as before.</li></ul></article>
+
+    <article class="glass rel" data-os="win"><h3>Vanta v1.5.1 for macOS <small>v1.5.1-mac · 2026-10-17</small></h3><ul><li>Separate Intel (x86_64, macOS 12 Monterey or newer) and Apple Silicon builds, plus a universal zip. All run natively, and Vanta leaves Rosetta if it was started under it.</li><li>Downloads Temurin Java for your CPU when none is installed. On an Intel Mac Vanta uses only x64 Java and the x64 LWJGL natives. Apple Silicon uses x64 Java under Rosetta for Minecraft before 1.19.</li><li>Intel defaults: 3–6 GB RAM based on your Mac's memory and G1 GC tuning. On Iris/UHD graphics, new instances start at render distance 8 with Fast graphics, 60 FPS and VSync, and Trailer style (shaders) warns first.</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.5.0 <small>v1.5.0 · v1.5.0-mac · 2026-10-16</small></h3><ul><li>New FRIENDS tab, with no account, email or server: a friend code per install and a friend list stored on your PC.</li><li>Friends on the same network show online, with their version and world, and Join connects straight to their LAN world.</li><li>World invites: Vanta turns your e4all address into an invite code. A friend pastes it and joins in one click, and Vanta installs the matching version if needed.</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.4.1 <small>v1.4.1 · v1.4.1-mac · 2026-10-13</small></h3><ul><li>Opening Vanta twice now brings the open window to the front instead of showing a WebView2 error.</li><li>If WebView2 is still busy, Vanta waits and retries, then says "Vanta is already open".</li><li>The Vanta Companion mod is only added when Fabric API 0.141.6 or newer is installed.</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.4.0 <small>v1.4.0 · v1.4.0-mac · 2026-10-13</small></h3>
+      <ul><li>Skins: Skindex skins download from skindex.pro when you open them (cached and credited); Minecraft's default skins come from your own Minecraft files</li><li>Fixes "Access is denied" errors when saving settings on Windows</li><li>More reliable first-launch progress display</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.3.1 <small>v1.3.1 · v1.3.1-mac · 2026-10-13</small></h3>
+      <ul><li>Windows download is now 12 MB: Minecraft, mods and the Trailer packs download on first launch from Mojang, Fabric and Modrinth, with a progress bar on PLAY</li><li>Progress bar when turning Trailer style on</li><li>Better crash help: catches crashes in the first seconds and explains Fabric "mods are incompatible" errors</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.3.0 <small>v1.3.0 · v1.3.0-mac · 2026-10-13</small></h3>
+      <ul><li>Four download types: Vanilla, Fast, Custom (Modrinth picker) and Trailer style</li><li>INSTANCES tab: Trailer on/off, RAM and Java flags, mod switches, screenshots, Open folder</li><li>Minecraft-running indicator, live game log and plain-language crash help</li><li>Update button with hash-checked updates from GitHub</li><li>Pop-up notifications, keyboard shortcuts, faster startup, and fixes</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.2.0 <small>v1.2.0 · v1.2.0-mac · 2026-10-12</small></h3>
+      <ul><li>Downloadable instances 1.18–26.3 with per-version Java</li><li>BROWSE SERVERS with 20 servers that accept local accounts</li><li>3D skin preview</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta 1.1.0 for macOS <small>v1.1.0-mac · 2026-10-10</small></h3><ul><li>First macOS app (Apple Silicon and Intel)</li></ul></article>
+    <article class="glass rel" data-os="win"><h3>Vanta v1.0.1 <small>v1.0.1 · 2026-10-08</small></h3><ul><li>Double-click Windows app with Python built in</li></ul></article>
+  
+</div>
+<p class="small"><a href="https://github.com/addu864/vanta/releases">All releases and downloads on GitHub →</a></p>
+</main>
+<footer>
+  <p><a href="#top">Back to top ↑</a> · <a href="index.html">Home</a> · <a href="guides.html">Guides</a> · <a href="changelog.html">Changelog</a> · <a href="https://github.com/addu864/vanta/releases">Releases</a> · <a href="https://github.com/addu864/vanta/issues">Issues</a></p>
+  <p class="small">Vanta is a fan-made launcher. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.</p>
+</footer>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot" hidden>
+  <button type="button" class="lb-close" aria-label="Close">×</button>
+  <button type="button" class="lb-prev" aria-label="Previous screenshot">‹</button>
+  <figure><img alt="" id="lb-img"><figcaption id="lb-cap"></figcaption></figure>
+  <button type="button" class="lb-next" aria-label="Next screenshot">›</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js" defer></script>
+</body>
+</html>

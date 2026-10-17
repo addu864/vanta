@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vanta guides: friends, modpacks, world backups, Intel Mac, troubleshooting</title>
+<meta name="description" content="How to play with friends in Vanta (LAN and e4all invites), install .mrpack modpacks, back up worlds, use Trailer style, run Vanta on an Intel Mac, and fix WebView2, firewall and Java problems.">
+<meta name="theme-color" content="#120a22">
+<link rel="canonical" href="https://addu864.github.io/vanta/guides.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vanta guides: friends, modpacks, world backups, Intel Mac, troubleshooting">
+<meta property="og:description" content="How to play with friends in Vanta (LAN and e4all invites), install .mrpack modpacks, back up worlds, use Trailer style, run Vanta on an Intel Mac, and fix WebView2, firewall and Java problems.">
+<meta property="og:url" content="https://addu864.github.io/vanta/guides.html">
+<meta property="og:image" content="https://addu864.github.io/vanta/img/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://addu864.github.io/vanta/img/og.png">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="subpage">
+<a class="skip" href="#main">Skip to content</a>
+<div class="bg" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="grain"></div></div>
+<header class="top" id="top">
+  <a class="brand" href="index.html" aria-label="Vanta home"><img src="img/logo.jpg" alt="" width="36" height="36"><span>VANTA</span></a>
+  <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">☰</button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="index.html#features">Features</a><a href="index.html#downloads">Downloads</a><a href="guides.html" class="active" aria-current="page">Guides</a><a href="changelog.html">Changelog</a><a href="index.html#support">Support</a><a href="index.html#servers">Servers</a>
+    <a class="gh" href="https://github.com/addu864/vanta" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</header>
+<main id="main">
+<section id="guides-top" class="page-head">
+  <p class="eyebrow">Vanta guides</p>
+  <h1>Guides &amp; troubleshooting</h1>
+  <p class="section-lead">Short how-tos for friends, modpacks, world backups, Trailer style and Intel Macs, plus fixes for the most common problems.</p>
+  <div class="toc"><a class="toc-item glass" href="#friends"><strong>Play with friends</strong><small>FRIENDS tab · LAN · world invites</small></a><a class="toc-item glass" href="#e4all"><strong>e4all: let friends join your world</strong><small>Open to LAN with a public address</small></a><a class="toc-item glass" href="#modpacks"><strong>Modpacks (.mrpack)</strong><small>Install, import and share modpacks</small></a><a class="toc-item glass" href="#worlds"><strong>World backups</strong><small>Back up, restore and delete worlds safely</small></a><a class="toc-item glass" href="#trailer"><strong>Trailer style</strong><small>Shaders, animations and the cinematic look</small></a><a class="toc-item glass" href="#intel-mac"><strong>Intel Mac</strong><small>Which download, and what to expect</small></a><a class="toc-item glass" href="#troubleshooting"><strong>Troubleshooting</strong><small>WebView2, firewall, Java, crashes, downloads</small></a></div>
+</section>
+<div class="guides">
+<article class="guide glass" id="friends"><p class="eyebrow">Guide</p><h2>Play with friends</h2>
+<p>Vanta's FRIENDS tab works without any account, email or server. Everything stays on your PC.</p>
+<h3>1. Add each other</h3>
+<ol><li>Open <b>FRIENDS</b>. Your friend code looks like <code>itz_alone10-K7Q2M9XAF3-DA</code>. Click <b>Copy</b> and send it (Discord, WhatsApp…), or send the <code>vanta://friend/…</code> link.</li>
+<li>Your friend pastes it into <b>Add a friend</b>. On the same Wi-Fi you'll also see each other under <i>Nearby</i>, with an <b>Add back</b> button.</li></ol>
+<h3>2. Same Wi-Fi or LAN</h3>
+<p>Vanta announces itself on your local network every few seconds on <b>UDP port 47786</b>. Friends nearby show as online with their Minecraft version and the world they're hosting. When a friend opens a world to LAN, <b>Join</b> connects straight to it.</p>
+<p class="note">If Windows Firewall asks, allow Vanta on <b>Private networks</b>. Public Wi-Fi (school, café) often blocks devices from seeing each other; use a world invite instead.</p>
+<h3>3. Friends anywhere: world invites</h3>
+<ol><li>In your world press <b>Esc → Open to LAN</b>, set <b>Online Mode: OFF</b>, and start it. e4all (part of the main 1.21.11 instance; add it from MODS for other versions) prints a public address in chat.</li>
+<li>In Vanta's FRIENDS tab, paste the address and click <b>Copy invite</b>. The invite code works for 6 hours.</li>
+<li>Your friend pastes the invite into FRIENDS and clicks <b>Join</b>. Vanta picks (or installs) the matching Minecraft version and joins directly.</li></ol>
+<p class="note">Honest limit: with no server, Vanta can't show whether friends <i>outside</i> your network are online.</p>
+<a class="shot guide-img" href="img/shots/friends.webp" data-lightbox data-caption="FRIENDS tab"><img src="img/shots/friends-thumb.webp" width="640" height="551" alt="FRIENDS tab" loading="lazy" decoding="async"></a>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="e4all"><p class="eyebrow">Guide</p><h2>e4all: let friends join your world</h2>
+<p><a href="https://modrinth.com/mod/e4all" target="_blank" rel="noopener">e4all</a> is a Fabric mod that gives your <b>Open to LAN</b> world a public address, so friends outside your home can join without port forwarding. It comes with Vanta's main 1.21.11 instance. For another instance, open <b>MODS</b>, pick that instance and search <i>e4all</i>.</p>
+<ol><li>Start your singleplayer world, press <b>Esc → Open to LAN</b>.</li>
+<li>Set <b>Online Mode: OFF</b> so friends on local accounts can join, then <b>Start LAN World</b>.</li>
+<li>e4all prints the address in chat. Friends use <b>Multiplayer → Direct Connection</b>, or you turn it into a one-click invite in FRIENDS.</li></ol>
+<p class="note">Only invite people you trust: anyone with the address can join while the world is open. Close the world (or quit) to stop sharing.</p>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="modpacks"><p class="eyebrow">Guide</p><h2>Modpacks (.mrpack)</h2>
+<p><b>Coming in Vanta 1.6.0.</b> <b>INSTANCES › Modpacks</b> searches Fabric modpacks on Modrinth, or imports a <code>.mrpack</code> file you downloaded.</p>
+<ul><li>Vanta installs the pack's Minecraft version as its own instance (or uses it if you already have it).</li>
+<li>Every file is downloaded from Modrinth, GitHub or GitLab only, and checked against the pack's SHA-512 hashes before anything changes.</li>
+<li>That instance's current mods, config, resource packs, shaders and options are moved to a <code>vanta-backup-&lt;time&gt;</code> folder first, so nothing is lost.</li>
+<li>Your main 1.21.11 instance is never replaced.</li></ul>
+<h3>Share your own setup</h3>
+<p>Pick an instance and click <b>Export .mrpack</b>. Mods that are on Modrinth are linked (small file); anything else, plus your config and options, is bundled. The file is saved to your Downloads folder.</p>
+<a class="shot guide-img" href="img/shots/modpacks.webp" data-lightbox data-caption="Modpacks in the INSTANCES tab"><img src="img/shots/modpacks-thumb.webp" width="640" height="237" alt="Modpacks in the INSTANCES tab" loading="lazy" decoding="async"></a>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="worlds"><p class="eyebrow">Guide</p><h2>World backups</h2>
+<p><b>Coming in Vanta 1.6.0.</b> <b>INSTANCES › Worlds</b> lists the worlds of the selected instance with their icon, mode, size and last played time.</p>
+<ul><li><b>Back up</b> zips the world. Backups are kept per instance in Vanta's data folder (<code>.vanta-data/backups</code> next to Vanta on Windows, <code>~/Library/Application Support/Vanta/backups</code> on macOS). <b>Open backups folder</b> shows them.</li>
+<li><b>Restore</b> never overwrites: if the world still exists, the backup is added as “World (restored date)”.</li>
+<li><b>Delete</b> asks you to type the folder name and always makes a backup first.</li>
+<li>Close Minecraft before restoring or deleting; Vanta refuses while the game is running.</li></ul>
+<a class="shot guide-img" href="img/shots/worlds.webp" data-lightbox data-caption="Worlds and backups"><img src="img/shots/worlds-thumb.webp" width="640" height="202" alt="Worlds and backups" loading="lazy" decoding="async"></a>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="trailer"><p class="eyebrow">Guide</p><h2>Trailer style</h2>
+<p>Trailer style is the Fast set plus Iris with Complementary Reimagined (Unbound as an alternative), Bare Bones + Fresh Animations, EMF/ETF, Not Enough Animations and Visuality. Turn it on when adding an instance, or later for any Fabric instance in <b>INSTANCES › Trailer style</b>.</p>
+<ul><li><b>K</b> turns shaders on/off in game (Iris). Switch packs in Options → Video Settings → Shader Packs.</li>
+<li><b>B</b> toggles Gamma Utils night vision (fullbright), which still works with shaders on.</li>
+<li>Shaders are heavy. On laptops, make sure Java runs on the dedicated GPU (Windows: Settings → System → Display → Graphics → add <code>javaw.exe</code> → High performance).</li>
+<li>4 GB of RAM (INSTANCES › Memory &amp; Java) is plenty for most shader setups.</li>
+<li>On Intel Macs with Iris/UHD graphics, Vanta warns before turning Trailer style on.</li></ul>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="intel-mac"><p class="eyebrow">Guide</p><h2>Intel Mac</h2>
+<ol><li>Apple menu → <b>About This Mac</b>. “Processor: Intel” means the <b>Intel Mac</b> download; “Chip: Apple M…” means <b>Apple Silicon</b>. The downloads section picks for you when it can.</li>
+<li>The Intel build is native x86_64 and needs macOS 12 Monterey or newer.</li>
+<li>Unzip, then right-click <b>Vanta.app → Open → Open</b> the first time (the app is unsigned). If it's still blocked: System Settings → Privacy &amp; Security → <b>Open Anyway</b>.</li>
+<li>If no Java is installed, Vanta downloads the matching Temurin build (x64 on Intel) from Adoptium.</li></ol>
+<p>Intel defaults: 3–6 GB RAM based on your Mac's memory, G1 GC, and on Iris/UHD graphics new instances start at render distance 8 with Fast graphics, 60 FPS and VSync.</p>
+<p class="note">Honest limit: the Mac builds are built and tested on Linux and Windows; they have not been run on a real Mac yet. Please report problems on GitHub.</p>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="troubleshooting"><p class="eyebrow">Guide</p><h2>Troubleshooting</h2>
+<details class="faq-item glass"><summary>“WebView2 failed to start … resource is in use (0x800700AA)”</summary><div><p>Vanta is already open (or still closing). Since v1.4.1 opening it again brings the existing window to the front; if you just closed it, wait a few seconds. If no window is visible, end <b>Vanta</b> in Task Manager and open it again.</p></div></details>
+<details class="faq-item glass"><summary>“WebView2 Runtime not found”</summary><div><p>Windows 11 includes it. On Windows 10 install the free <a href="https://developer.microsoft.com/microsoft-edge/webview2/" target="_blank" rel="noopener">Evergreen WebView2 Runtime</a> from Microsoft, then open Vanta again.</p></div></details>
+<details class="faq-item glass"><summary>Windows Firewall asks about Vanta or Java</summary><div><p>Allow <b>Private networks</b>. Vanta uses UDP 47786 on your local network for FRIENDS, and Java needs it to host or join LAN worlds. Public networks can stay unticked.</p></div></details>
+<details class="faq-item glass"><summary>Friends on the same Wi-Fi don't show up</summary><div><p>Both PCs need Vanta open and Vanta allowed on Private networks. Check that Windows treats your Wi-Fi as <b>Private</b> (Settings → Network → your Wi-Fi). Guest and school networks often isolate devices; use a world invite instead.</p></div></details>
+<details class="faq-item glass"><summary>“Java was not found” or “needs a newer Java”</summary><div><p>1.18–1.20.4 need Java 17, 1.20.5–1.21.x need Java 21, and 26.x needs Java 25. Install <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a> (tick “Add to PATH” on Windows) and restart Vanta. On macOS Vanta downloads it for you.</p></div></details>
+<details class="faq-item glass"><summary>Minecraft crashed</summary><div><p>The crash card on PLAY explains the likely cause in plain words and links the crash report. Out of memory: raise RAM in INSTANCES. A mod error: turn off the last mod you added.</p></div></details>
+<details class="faq-item glass"><summary>A download stopped or failed its hash check</summary><div><p>Vanta never keeps a file whose hash doesn't match. If a download fails, check your connection (or VPN/antivirus) and press <b>Try again</b>.</p></div></details>
+<details class="faq-item glass"><summary>The game is slow or stutters</summary><div><p>Set RAM in INSTANCES › Memory &amp; Java (4 GB suits most setups; more than 6–8 GB rarely helps), turn shaders off with <b>K</b>, lower render distance, and on laptops plug in and use the dedicated GPU.</p></div></details>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+</div>
+<div class="glass contact">
+  <h3>Still stuck?</h3>
+  <p>Open an issue on GitHub. Say what happened, and attach the crash summary or the Game log (Copy log in Vanta). Never post account files or passwords.</p>
+  <a class="btn primary" href="https://github.com/addu864/vanta/issues/new" target="_blank" rel="noopener">Open a GitHub issue</a>
+</div>
+</main>
+<footer>
+  <p><a href="#top">Back to top ↑</a> · <a href="index.html">Home</a> · <a href="guides.html">Guides</a> · <a href="changelog.html">Changelog</a> · <a href="https://github.com/addu864/vanta/releases">Releases</a> · <a href="https://github.com/addu864/vanta/issues">Issues</a></p>
+  <p class="small">Vanta is a fan-made launcher. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.</p>
+</footer>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot" hidden>
+  <button type="button" class="lb-close" aria-label="Close">×</button>
+  <button type="button" class="lb-prev" aria-label="Previous screenshot">‹</button>
+  <figure><img alt="" id="lb-img"><figcaption id="lb-cap"></figcaption></figure>
+  <button type="button" class="lb-next" aria-label="Next screenshot">›</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js" defer></script>
+</body>
+</html>
