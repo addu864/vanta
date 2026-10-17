@@ -66,6 +66,9 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.7": [
+        "Ctrl K finds your instances by name or by what's in their notes, like a seed, a base location or a server IP.",
+    ],
     "1.6.6": [
         "Crash card: Check mods runs the mod check on the instance that crashed.",
         "Mod check: a needed mod that is turned off gets a Turn it back on button.",
