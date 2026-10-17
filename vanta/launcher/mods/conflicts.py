@@ -95,12 +95,14 @@ def read_jar(path: Path) -> dict[str, Any]:
 
 
 def _newest(group: list[dict[str, Any]], folder: Path) -> dict[str, Any]:
-    def key(m: dict[str, Any]) -> tuple[list[int], float]:
+    def key(m: dict[str, Any]) -> tuple[list[int], bool, float]:
         try:
             mtime = (folder / m["file"]).stat().st_mtime
         except OSError:
             mtime = 0.0
-        return (_parts(str(m.get("version") or "")) or [], mtime)
+        # Same version: prefer the original over a browser re-download copy like "mod (1).jar".
+        copy = bool(re.search(r"\s\(\d+\)\.jar(\.disabled)?$", m["file"]))
+        return (_parts(str(m.get("version") or "")) or [], not copy, mtime)
     return max(group, key=key)
 
 
@@ -167,6 +169,23 @@ def version_matches(spec: Any, version: str) -> bool | None:
     return None if seen_unknown else False
 
 
+def _disabled_index(folder: Path) -> dict[str, list[dict[str, Any]]]:
+    """Mod id -> turned-off jars (*.jar.disabled) that would provide it."""
+    out: dict[str, list[dict[str, Any]]] = {}
+    for p in sorted(folder.glob("*.jar.disabled")):
+        if not p.is_file():
+            continue
+        m = read_jar(p)
+        if m.get("kind") != "fabric":
+            continue
+        keys = {m.get("id")} | set(m.get("provides") or [])
+        if m.get("id") in {"fabric-api", "fabric"}:
+            keys |= {"fabric-api", "fabric"}
+        for k in keys - {None, ""}:
+            out.setdefault(k, []).append(m)
+    return out
+
+
 def check(mods_dir: Path, game_version: str = "", loader: str = "fabric") -> dict[str, Any]:
     """Return {"ok", "warnings": [{"level": "error"|"warn", "title", "detail", "files"}], "count"}."""
     folder = Path(mods_dir)
@@ -231,13 +250,24 @@ def check(mods_dir: Path, game_version: str = "", loader: str = "fabric") -> dic
                 if key == "fabric-api" and "fabric-api" in provided:
                     continue
                 missing.setdefault(key, []).append(m.get("name") or m["file"])
+        off = _disabled_index(folder) if missing else {}
         for dep, who in sorted(missing.items()):
             who = sorted(set(who))
             nice = "Fabric API" if dep == "fabric-api" else dep
+            needed_by = f"Needed by {', '.join(who[:4])}{' and more' if len(who) > 4 else ''}."
+            parked = off.get(dep) or []
+            if parked:
+                pick = _newest(parked, folder)
+                label = pick.get("name") or nice
+                warnings.append({"level": "error", "title": f"{label} is turned off",
+                                 "detail": f"{needed_by} It's in the mods folder but turned off; turn it back on.",
+                                 "files": [pick["file"]], "missing": dep,
+                                 "fix": {"action": "enable", "files": [pick["file"]], "label": f"Turn {label} back on"}})
+                continue
             fix = ({"action": "install", "project": "fabric-api", "label": "Install Fabric API"} if dep == "fabric-api"
                    else {"action": "search", "query": dep, "label": f"Find {dep} in MODS"})
             warnings.append({"level": "error", "title": f"Missing {nice}",
-                             "detail": f"Needed by {', '.join(who[:4])}{' and more' if len(who) > 4 else ''}. Install it from MODS.",
+                             "detail": f"{needed_by} Install it from MODS.",
                              "files": [], "missing": dep, "fix": fix})
         for m in mods:
             for dep, spec in (m.get("depends") or {}).items():

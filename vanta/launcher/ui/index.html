@@ -1478,6 +1478,14 @@
         btn.textContent = "✓ Turned off " + d.disabled.length + (d.disabled.length === 1 ? " file" : " files");
         toast("Turned off " + d.disabled.join(", ") + ". Undo in INSTANCES › Mods.", "good");
         if (typeof loadInstanceInfo === "function" && !$("panel-instances").hidden) loadInstanceInfo();
+      } else if (fix.action === "enable") {
+        const r = await post("/api/instances/conflicts/fix", Object.assign({ action: "enable", files: fix.files }, target));
+        const d = r.data || {};
+        if (!d.ok) { btn.disabled = false; toast(d.error || "Couldn't turn that mod back on.", "bad"); return; }
+        li.classList.add("cf-fixed");
+        btn.textContent = "✓ Turned back on";
+        toast("Turned on " + d.enabled.join(", ") + ".", "good");
+        if (typeof loadInstanceInfo === "function" && !$("panel-instances").hidden) loadInstanceInfo();
       } else if (fix.action === "install") {
         const r = await post("/api/browse/install", Object.assign({ project: fix.project, title: "Fabric API" }, target));
         const d = r.data || {};

@@ -705,28 +705,32 @@ class VantaApp:
         return result
 
     def fix_conflict(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Mod check quick fix: turn mod files off (renamed to .jar.disabled, undo in INSTANCES › Mods)."""
+        """Mod check quick fix: turn mod files off (renamed to .jar.disabled) or back on. Undo in INSTANCES › Mods."""
         body = payload or {}
-        if str(body.get("action") or "") != "disable":
+        action = str(body.get("action") or "")
+        if action not in {"disable", "enable"}:
             return {"ok": False, "error": "Unknown fix."}
+        turn_on = action == "enable"
+        suffix = ".jar.disabled" if turn_on else ".jar"
         files = [str(f) for f in (body.get("files") or []) if isinstance(f, str)][:40]
         if not files:
-            return {"ok": False, "error": "Nothing to turn off."}
+            return {"ok": False, "error": "Nothing to turn on." if turn_on else "Nothing to turn off."}
         done: list[str] = []
         failed: list[str] = []
         first_error = ""
         for name in files:
-            res = self.toggle_instance_mod(dict(body, file=name)) if name.endswith(".jar") else {"ok": False}
-            if res.get("ok") and not res.get("enabled"):
+            res = self.toggle_instance_mod(dict(body, file=name)) if name.endswith(suffix) else {"ok": False}
+            if res.get("ok") and bool(res.get("enabled")) == turn_on:
                 done.append(name)
             else:
                 failed.append(name)
                 first_error = first_error or str(res.get("error") or "")
         if done:
-            self.log.info(f"Mod check: turned off {', '.join(done)} (renamed to .jar.disabled).")
+            self.log.info(f"Mod check: turned {'on' if turn_on else 'off'} {', '.join(done)}"
+                          + ("." if turn_on else " (renamed to .jar.disabled)."))
         if failed and not done:
-            return {"ok": False, "error": first_error or "Couldn't turn those mods off."}
-        return {"ok": True, "disabled": done, "failed": failed}
+            return {"ok": False, "error": first_error or f"Couldn't turn those mods {'on' if turn_on else 'off'}."}
+        return {"ok": True, ("enabled" if turn_on else "disabled"): done, "failed": failed}
 
     def play(self, payload: dict[str, Any] | None) -> dict[str, Any]:
         payload = dict(payload or {})
