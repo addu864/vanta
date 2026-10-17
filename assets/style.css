@@ -938,3 +938,10 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .crash-suspects p { margin: 0; flex: 1 1 100%; }
 .tune-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 10px; }
 .tune-row .hint { margin: 0; flex: 1 1 200px; }
+.log-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.log-tools input[type="search"] { width: 220px; min-height: 36px; }
+#log mark { background: rgba(var(--acc-l), .55); color: #fff; border-radius: 3px; }
+#log .log-bad { color: var(--bad); }
+#log .log-warn { color: var(--warn); }
+.log-tools .check { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; font-size: 13px; }
+.log-tools .check input { width: auto; min-height: 0; }

@@ -689,9 +689,14 @@
       <section class="panel" id="log-panel">
         <div class="log-head">
           <div class="seg" role="tablist"><button type="button" class="seg-btn active" id="log-tab-vanta">Launcher log</button><button type="button" class="seg-btn" id="log-tab-game">Game log</button></div>
-          <div class="row"><button type="button" class="ghost" id="copy-log">Copy log</button><button type="button" class="ghost" id="copy-error">Copy last error</button></div>
+          <div class="row log-tools">
+            <input type="search" id="log-filter" placeholder="Search the log" aria-label="Search the log" autocomplete="off">
+            <label class="check"><input type="checkbox" id="log-errors"> Errors &amp; warnings only</label>
+            <span class="hint" id="log-count" aria-live="polite"></span>
+            <button type="button" class="ghost" id="copy-log">Copy log</button><button type="button" class="ghost" id="copy-error">Copy last error</button>
+          </div>
         </div>
-        <pre id="log"></pre>
+        <pre id="log" tabindex="0" aria-label="Log"></pre>
         <p id="copy-note" class="hint"></p>
       </section>
       <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -930,17 +935,49 @@
     }
 
     let logMode = "vanta";
+    let logLines = [], logEmpty = "", logShown = [];
+    const LOG_BAD = /\b(ERROR|FATAL|WARN(ING)?|SEVERE)\b|Exception|Caused by:|crash/i;
+    function setLogLines(lines, emptyText) { logLines = lines || []; logEmpty = emptyText || ""; renderLog(); }
+    function renderLog() {
+      const box = $("log");
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+      const q = ($("log-filter").value || "").trim().toLowerCase();
+      const bad = $("log-errors").checked;
+      logShown = logLines.filter((l) => (!q || l.toLowerCase().includes(q)) && (!bad || LOG_BAD.test(l)));
+      box.replaceChildren();
+      if (!logLines.length) { box.textContent = logEmpty; $("log-count").textContent = ""; return; }
+      const frag = document.createDocumentFragment();
+      logShown.forEach((line, i) => {
+        if (i) frag.appendChild(document.createTextNode("\n"));
+        const span = document.createElement("span");
+        if (LOG_BAD.test(line)) span.className = /WARN/i.test(line) && !/ERROR|FATAL|Exception/i.test(line) ? "log-warn" : "log-bad";
+        if (q) {
+          let at = 0; const low = line.toLowerCase();
+          for (let k = low.indexOf(q); k !== -1; k = low.indexOf(q, at)) {
+            span.appendChild(document.createTextNode(line.slice(at, k)));
+            const m = document.createElement("mark"); m.textContent = line.slice(k, k + q.length); span.appendChild(m);
+            at = k + q.length;
+          }
+          span.appendChild(document.createTextNode(line.slice(at)));
+        } else span.textContent = line;
+        frag.appendChild(span);
+      });
+      if (!logShown.length) frag.appendChild(document.createTextNode("No lines match."));
+      box.appendChild(frag);
+      $("log-count").textContent = (q || bad) ? `${logShown.length} of ${logLines.length} lines` : "";
+      if (atBottom || !(q || bad)) box.scrollTop = box.scrollHeight;
+    }
     async function refreshLogs() {
       if (logMode === "game") {
         const g = await api("/api/game");
-        const lines = (g.data && g.data.log) || [];
-        $("log").textContent = lines.length ? lines.join("\n") : "No game log yet. Press PLAY to start Minecraft.";
+        setLogLines((g.data && g.data.log) || [], "No game log yet. Press PLAY to start Minecraft.");
       } else {
         const result = await api("/api/logs");
-        $("log").textContent = ((result.data && result.data.lines) || []).join("\n");
+        setLogLines((result.data && result.data.lines) || [], "");
       }
-      const box = $("log"); box.scrollTop = box.scrollHeight;
     }
+    $("log-filter").addEventListener("input", renderLog);
+    $("log-errors").addEventListener("change", renderLog);
 
     let platformInfo = {}, platformNoted = false;
     const TRAILER_IGPU_WARN = "This Mac has Intel integrated graphics. Trailer style turns on Iris shaders and animated packs, which usually run at low FPS on Intel Iris/UHD. Fast is recommended.";
@@ -3272,9 +3309,7 @@
       }
       lastCrash = c;
       if (logMode === "game") {
-        const lines = g.log || [];
-        $("log").textContent = lines.length ? lines.join("\n") : "No game log yet. Press PLAY to start Minecraft.";
-        const box = $("log"); box.scrollTop = box.scrollHeight;
+        setLogLines(g.log || [], "No game log yet. Press PLAY to start Minecraft.");
       }
     }
     setInterval(() => pollGame().catch(() => {}), 2000);
@@ -3338,7 +3373,9 @@
     $("log-tab-vanta").addEventListener("click", () => setLogMode("vanta"));
     $("log-tab-game").addEventListener("click", () => setLogMode("game"));
     $("copy-log").addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText($("log").textContent); toast("Log copied.", "good"); }
+      const filtered = ($("log-filter").value || "").trim() || $("log-errors").checked;
+      const text = (filtered ? logShown : logLines).join("\n");
+      try { await navigator.clipboard.writeText(text); toast(filtered ? `Copied ${logShown.length} matching lines.` : "Log copied.", "good"); }
       catch (e) { toast("Select the log text and press Ctrl+C.", ""); }
     });
 
