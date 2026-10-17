@@ -183,3 +183,4 @@ footer { text-align: center; padding: 48px 16px 60px; color: var(--muted); borde
   .js .reveal { opacity: 1; transform: none; transition: none; }
   .shot img, .btn, .faq-item summary::after { transition: none; }
 }
+.dl-btns { display: flex; gap: 10px; flex-wrap: wrap; }
