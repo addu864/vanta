@@ -276,9 +276,18 @@
       </section>
 
       <section class="panel" data-panel="instances" id="panel-instances" hidden>
+        <div class="glass packs-box">
+          <div class="popular-head"><h2>Modpacks</h2>
+            <div class="row"><label class="ghost file-btn">Import .mrpack<input type="file" id="pack-file" accept=".mrpack,application/zip" hidden></label></div>
+          </div>
+          <p class="hint">Fabric modpacks from Modrinth. Vanta installs the pack's Minecraft version as its own instance (or uses it if you have it), checks every file's hash, and moves that instance's current mods and config to a vanta-backup folder first. Your main 1.21.11 instance is never replaced.</p>
+          <div class="row mods-search-row"><input type="search" id="pack-query" maxlength="80" placeholder="Search Fabric modpacks (empty = most downloaded)"><button type="button" class="action" id="pack-search">Search</button></div>
+          <div class="pack-job" id="pack-job" hidden><strong id="pack-job-title"></strong><div class="progress"><div class="progress-bar" id="pack-job-bar"></div></div><p class="hint" id="pack-job-step"></p></div>
+          <div class="pack-row" id="pack-results"></div>
+        </div>
         <div class="glass">
           <div class="popular-head"><h2>Instances</h2>
-            <div class="row"><select id="inst-select" aria-label="Instance"></select><button type="button" class="ghost" id="inst-open">Open game folder</button></div>
+            <div class="row"><select id="inst-select" aria-label="Instance"></select><button type="button" class="ghost" id="inst-open">Open game folder</button><button type="button" class="ghost" id="inst-export">Export .mrpack</button></div>
           </div>
           <p class="hint" id="inst-summary">Choose an instance.</p>
           <div class="inst-grid">
@@ -680,6 +689,7 @@
       }
       if (name === "instances") {
         loadInstancesTab().catch(() => {});
+        if (!$("pack-results").children.length) packSearch().catch(() => {});
       }
       if (name === "browse") {
         loadPopularServers().catch(() => {});
@@ -3285,6 +3295,66 @@
       });
       loadWorlds().catch(() => {});
     }
+    // ---- Modpacks ----
+    let packTimer = null;
+    function fmtCount(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "K" : String(n); }
+    async function packSearch() {
+      const host = $("pack-results"); host.innerHTML = '<p class="hint">Searching Modrinth…</p>';
+      const r = await post("/api/modpacks/search", { query: $("pack-query").value }); const d = r.data || {};
+      host.replaceChildren();
+      if (!d.ok) { const p = document.createElement("p"); p.className = "hint"; p.textContent = d.error || "Modrinth didn't answer."; host.appendChild(p); return; }
+      if (!d.packs.length) host.innerHTML = '<p class="hint">No Fabric modpacks found.</p>';
+      d.packs.forEach((m) => {
+        const card = document.createElement("div"); card.className = "pack-card";
+        const img = document.createElement("img"); img.className = "pack-icon"; img.alt = ""; img.loading = "lazy"; if (m.icon) img.src = m.icon;
+        const t = document.createElement("strong"); t.textContent = m.title;
+        const by = document.createElement("small"); by.className = "hint"; by.textContent = (m.author ? "by " + m.author + " · " : "") + fmtCount(m.downloads) + " downloads" + (m.gameVersions.length ? " · " + m.gameVersions[m.gameVersions.length - 1] : "");
+        const desc = document.createElement("p"); desc.textContent = m.description;
+        const go = document.createElement("button"); go.type = "button"; go.className = "action tiny"; go.textContent = "Install";
+        go.addEventListener("click", () => packStart("install", { project: m.id, title: m.title }));
+        card.append(img, t, by, desc, go); host.appendChild(card);
+      });
+    }
+    async function packStart(action, body) {
+      const r = await post("/api/modpacks/" + action, body); const d = r.data || {};
+      if (!d.ok) { toast(d.error || "Could not start the modpack install.", "bad"); return; }
+      packWatch();
+    }
+    function packWatch() {
+      $("pack-job").hidden = false;
+      if (packTimer) clearInterval(packTimer);
+      packTimer = setInterval(async () => {
+        const j = (((await post("/api/modpacks/job", {})).data) || {}).job || {};
+        $("pack-job-title").textContent = (j.name || j.label || "Modpack") + (j.minecraft ? " · Minecraft " + j.minecraft : "");
+        $("pack-job-bar").style.width = Math.max(2, j.percent || 0) + "%";
+        $("pack-job-step").textContent = j.state === "failed" ? "Failed: " + j.error : j.step || "";
+        if (j.state === "done" || j.state === "failed") {
+          clearInterval(packTimer); packTimer = null;
+          if (j.state === "done") {
+            const res = j.result || {};
+            toast("Installed " + (j.name || "the modpack") + ": " + res.files + " files" + (res.backup ? ". Old mods kept in " + res.backup : "") + ".", "good");
+            await refresh(); await loadInstancesTab();
+          } else toast(j.error || "Modpack install failed.", "bad");
+        }
+      }, 1000);
+    }
+    $("pack-search").addEventListener("click", () => packSearch().catch(() => {}));
+    $("pack-query").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pack-search").click(); });
+    $("pack-file").addEventListener("change", () => {
+      const f = $("pack-file").files[0]; if (!f) return;
+      if (f.size > 60 * 1024 * 1024) { toast("That .mrpack is too large (60 MB max).", "bad"); return; }
+      const reader = new FileReader();
+      reader.onload = () => { const b64 = String(reader.result).split(",")[1] || ""; packStart("import", { data: b64, filename: f.name }); $("pack-file").value = ""; };
+      reader.readAsDataURL(f);
+    });
+    $("inst-export").addEventListener("click", async () => {
+      const name = window.prompt("Name for the exported modpack:", "My Vanta pack"); if (name === null) return;
+      toast("Exporting… Vanta looks up each mod on Modrinth so the pack stays small.", "");
+      const r = await post("/api/modpacks/export", Object.assign({ name: name }, instValue())); const d = r.data || {};
+      if (!d.ok) { toast(d.error || "Export failed.", "bad"); return; }
+      toast("Saved " + d.file + " (" + d.sizeMb + " MB, " + d.linked + " from Modrinth, " + d.bundled + " bundled).", "good");
+    });
+
     // ---- World manager ----
     function fmtWhen(sec) { const d = new Date(sec * 1000); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
     async function worldsAct(action, body, okText) {

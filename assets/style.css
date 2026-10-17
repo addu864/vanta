@@ -865,3 +865,13 @@ button.tiny { padding: 4px 10px; font-size: .78rem; }
 .glass-sub summary { cursor: pointer; font-weight: 600; }
 button.danger { color: #ff9db0; border-color: rgba(255, 120, 150, .35); }
 button.danger:hover { background: rgba(255, 90, 130, .14); }
+/* v1.6.0 modpacks */
+.pack-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 260px); gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; }
+.pack-card { scroll-snap-align: start; display: grid; gap: 6px; align-content: start; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg-sink); }
+.pack-card p { margin: 0; font-size: .82rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pack-card button { justify-self: start; }
+.pack-icon { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background: rgba(140, 90, 255, .25); }
+.pack-job { margin: 8px 0; display: grid; gap: 6px; }
+.file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); }
+.file-btn:hover { background: rgba(140, 90, 255, .14); }
+.file-btn:focus-within { outline: 2px solid var(--violet, #a77bff); outline-offset: 2px; }

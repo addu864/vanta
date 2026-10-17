@@ -830,6 +830,111 @@ class VantaApp:
         path = folder / "screenshots" / name
         return (200, path.read_bytes(), "image/png") if path.is_file() else (404, b"Not found", "text/plain")
 
+    # ---- Modpacks (.mrpack import/export, v1.6.0) ----
+    _pack_job: dict[str, Any] = {}
+
+    def modpacks_call(self, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        import base64
+        import threading
+        from vanta.launcher.minecraft import instances, mrpack
+        from vanta.launcher.mods.browser import BrowserError
+        body = payload or {}
+        try:
+            if action == "search":
+                return {"ok": True, "packs": self.browser.modpacks(str(body.get("query") or ""), str(body.get("gameVersion") or ""))}
+            if action == "job":
+                return {"ok": True, "job": dict(self._pack_job)}
+            if action == "export":
+                folder, version = self._instance_dir(body)
+                if folder is None or version is None:
+                    return {"ok": False, "error": "That instance is not installed."}
+                meta = {}
+                if (folder / instances.META_NAME).is_file():
+                    meta = json.loads((folder / instances.META_NAME).read_text(encoding="utf-8"))
+                downloads = Path.home() / "Downloads"
+                target_dir = downloads if downloads.is_dir() else self.data_dir / "exports"
+                name = str(body.get("name") or f"Vanta {version['versionNumber']}").strip()[:60] or "Vanta pack"
+                safe = re.sub(r"[^\w .()-]", "_", name)
+                out = mrpack.export_pack(folder, target_dir / f"{safe}.mrpack", name=name, minecraft=str(version["versionNumber"]),
+                                         fabric_loader=str(meta.get("fabricLoader") or "") if version.get("loader") == "fabric" else "")
+                self.log.info(f"Exported {folder.name} as {out['file']} ({out['linked']} Modrinth files, {out['bundled']} bundled).")
+                return out
+            if action in {"import", "install"}:
+                if self._pack_job.get("state") == "running":
+                    return {"ok": False, "error": "A modpack is already being installed."}
+                if self._game_running():
+                    return {"ok": False, "error": "Close Minecraft first."}
+                if action == "import":
+                    raw = base64.b64decode(str(body.get("data") or ""), validate=False)
+                    if not raw:
+                        return {"ok": False, "error": "Choose a .mrpack file."}
+                    source = {"bytes": raw, "label": str(body.get("filename") or "modpack.mrpack")[:80]}
+                else:
+                    pick = self.browser.modpack_file(str(body.get("project") or ""), instances.in_range)
+                    source = {"remote": pick, "label": str(body.get("title") or pick["name"])[:80]}
+                self._pack_job = {"state": "running", "step": "Reading the modpack", "percent": 0, "error": "", "label": source["label"]}
+                threading.Thread(target=self._run_pack_job, args=(source,), name="vanta-modpack", daemon=True).start()
+                return {"ok": True, "job": dict(self._pack_job)}
+        except (BrowserError, mrpack.PackError, ValueError) as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": False, "error": "Unknown modpack action."}
+
+    def _run_pack_job(self, source: dict[str, Any]) -> None:
+        import hashlib
+        import io
+        import zipfile
+        from vanta.launcher.minecraft import instances, mrpack
+        job = self._pack_job
+        try:
+            if "remote" in source:
+                job.update(step="Downloading the modpack from Modrinth", percent=2)
+                cache = self.data_dir / "cache"
+                cache.mkdir(parents=True, exist_ok=True)
+                data = mrpack.http_download(source["remote"]["url"], cache / "modpack-download.mrpack")
+                want = source["remote"].get("sha512")
+                h = hashlib.sha512()
+                with data.open("rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        h.update(chunk)
+                if want and h.hexdigest() != want:
+                    raise mrpack.PackError("The modpack download didn't match Modrinth's SHA-512.")
+            else:
+                data = source["bytes"]
+            with zipfile.ZipFile(io.BytesIO(data) if isinstance(data, bytes) else data) as z:
+                info = mrpack.read_index(z)
+            mc, loader = info["minecraft"], info["loader"]
+            if loader != "fabric":
+                raise mrpack.PackError("Vanta installs Fabric modpacks only.")
+            if not instances.in_range(mc):
+                raise mrpack.PackError(f"This pack is for Minecraft {mc}; Vanta supports 1.18 to 26.3.")
+            name = instances.instance_name(mc, "fabric")
+            if name in instances.PROTECTED:
+                raise mrpack.PackError(f"This pack is for {mc}, Vanta's main instance, which modpacks don't replace. "
+                                       "Pick a pack build for another Minecraft version.")
+            job.update(name=info["name"], minecraft=mc, instance=name)
+            folder = self._game_root() / name
+            if not (folder / instances.META_NAME).is_file():
+                job.update(step=f"Downloading Minecraft {mc} + Fabric", percent=5)
+                started = instances.start_install(self._game_root(), mc, "fabric", preset="custom", include_fast=False)
+                if not started.get("ok"):
+                    raise mrpack.PackError(str(started.get("error")))
+                while True:
+                    j = instances.job(name)
+                    if j.get("state") == "done":
+                        break
+                    if j.get("state") in {"failed", "unknown"}:
+                        raise mrpack.PackError(f"Minecraft {mc} failed to install: {j.get('error') or 'unknown error'}")
+                    job.update(percent=5 + int((j.get("percent") or 0) * 0.45))
+                    time.sleep(1)
+            job.update(step="Downloading the pack's mods (each one hash-checked)", percent=50)
+            result = mrpack.apply_pack(folder, data, progress=lambda i, n: job.update(percent=50 + int(49 * i / max(n, 1))))
+            job.update(state="done", percent=100, step="Done", result=result)
+            self.log.info(f"Installed modpack {info['name']} into {name}: {result['files']} files"
+                          + (f", previous mods moved to {result['backup']}" if result["backup"] else "") + ".")
+        except Exception as exc:  # noqa: BLE001 - shown in the UI
+            job.update(state="failed", error=str(exc)[:400])
+            self.log.error(f"Modpack install failed: {exc}")
+
     # ---- World manager (v1.6.0) ----
     def worlds_call(self, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         from vanta.launcher.minecraft import worlds

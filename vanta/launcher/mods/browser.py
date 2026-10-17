@@ -164,6 +164,38 @@ class ModBrowser:
         data = self.cached("GET", "/search", params, ttl=1800) or {}
         return [card(h) for h in data.get("hits") or [] if isinstance(h, dict)]
 
+    def modpacks(self, query: str = "", game_version: str = "", limit: int = 20) -> list[dict[str, Any]]:
+        """Fabric modpacks on Modrinth (newest Minecraft first when no version is given)."""
+        facets = [["project_type:modpack"], ["categories:fabric"]]
+        if game_version:
+            facets.append([f"versions:{game_version}"])
+        params = {"query": (query or "")[:100], "facets": json.dumps(facets), "index": "relevance" if query else "downloads",
+                  "limit": str(max(1, min(int(limit), 50)))}
+        data = self.cached("GET", "/search", params, ttl=1800) or {}
+        out = []
+        for h in data.get("hits") or []:
+            if isinstance(h, dict):
+                c = card(h)
+                c["gameVersions"] = [v for v in (h.get("versions") or []) if isinstance(v, str)][-6:]
+                out.append(c)
+        return out
+
+    def modpack_file(self, project: str, in_range: Callable[[str], bool]) -> dict[str, Any]:
+        """Newest Fabric .mrpack of a project for a Minecraft version Vanta supports."""
+        if not re.fullmatch(r"[\w\-]{1,64}", project or ""):
+            raise BrowserError("Unknown modpack.")
+        versions = self.cached("GET", f"/project/{project}/version", {"loaders": json.dumps(["fabric"])}, ttl=900) or []
+        for v in versions:
+            games = [g for g in v.get("game_versions") or [] if in_range(g)]
+            if not games:
+                continue
+            f = next((f for f in v.get("files") or [] if str(f.get("filename", "")).endswith(".mrpack") and f.get("primary")), None) \
+                or next((f for f in v.get("files") or [] if str(f.get("filename", "")).endswith(".mrpack")), None)
+            if f and str(f.get("url", "")).startswith("https://cdn.modrinth.com/"):
+                return {"url": f["url"], "sha512": (f.get("hashes") or {}).get("sha512", ""), "name": v.get("name") or "",
+                        "version": v.get("version_number") or "", "minecraft": games[0], "size": f.get("size") or 0}
+        raise BrowserError("This modpack has no Fabric build for Minecraft 1.18 to 26.3.")
+
     def curated_row(self, slugs: list[str], game_version: str, loader: str) -> list[dict[str, Any]]:
         data = self.cached("GET", "/projects", {"ids": json.dumps(slugs)}, ttl=6 * 3600) or []
         data = self._with_authors([p for p in data if isinstance(p, dict)])

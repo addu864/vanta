@@ -112,7 +112,7 @@ def _handler_for(app: VantaApp) -> type[BaseHTTPRequestHandler]:
         def _read_body(self) -> bytes:
             length = int(self.headers.get("Content-Length") or "0")
             path = urlparse(self.path).path
-            limit = 512 * 1024 if path == "/api/skins/import" else 65536
+            limit = {"/api/skins/import": 512 * 1024, "/api/modpacks/import": 80 * 1024 * 1024}.get(path, 65536)
             if length < 0 or length > limit:
                 raise BadRequest("That request is too large.")
             if length == 0:
@@ -188,6 +188,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(app.toggle_instance_mod(_payload(body)))
     if method == "POST" and path == "/api/instances/open-folder":
         return _from_ok(app.open_folder(_payload(body)))
+    if method == "POST" and path.startswith("/api/modpacks/"):
+        return _from_ok(app.modpacks_call(path[len("/api/modpacks/"):], _payload(body)))
     if method == "GET" and path == "/api/worlds/icon":
         return app.world_icon(_query_dict(raw_path))
     if method == "POST" and path.startswith("/api/worlds/"):
