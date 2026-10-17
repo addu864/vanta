@@ -37,7 +37,7 @@
   <p class="eyebrow">Vanta guides</p>
   <h1>Guides &amp; troubleshooting</h1>
   <p class="section-lead">Short how-tos for friends, modpacks, world backups, Trailer style and Intel Macs, plus fixes for the most common problems.</p>
-  <div class="toc"><a class="toc-item glass" href="#friends"><strong>Play with friends</strong><small>FRIENDS tab · LAN · world invites</small></a><a class="toc-item glass" href="#e4all"><strong>e4all: let friends join your world</strong><small>Open to LAN with a public address</small></a><a class="toc-item glass" href="#modpacks"><strong>Modpacks (.mrpack)</strong><small>Install, import and share modpacks</small></a><a class="toc-item glass" href="#worlds"><strong>World backups</strong><small>Back up, restore and delete worlds safely</small></a><a class="toc-item glass" href="#trailer"><strong>Trailer style</strong><small>Shaders, animations and the cinematic look</small></a><a class="toc-item glass" href="#intel-mac"><strong>Intel Mac</strong><small>Which download, and what to expect</small></a><a class="toc-item glass" href="#troubleshooting"><strong>Troubleshooting</strong><small>WebView2, firewall, Java, crashes, downloads</small></a></div>
+  <div class="toc"><a class="toc-item glass" href="#friends"><strong>Play with friends</strong><small>FRIENDS tab · LAN · world invites</small></a><a class="toc-item glass" href="#e4all"><strong>e4all: let friends join your world</strong><small>Open to LAN with a public address</small></a><a class="toc-item glass" href="#modpacks"><strong>Modpacks (.mrpack)</strong><small>Install, import and share modpacks</small></a><a class="toc-item glass" href="#worlds"><strong>World backups</strong><small>Back up, restore and delete worlds safely</small></a><a class="toc-item glass" href="#downloads"><strong>Downloads</strong><small>Pause, resume or cancel; what's kept</small></a><a class="toc-item glass" href="#trailer"><strong>Trailer style</strong><small>Shaders, animations and the cinematic look</small></a><a class="toc-item glass" href="#intel-mac"><strong>Intel Mac</strong><small>Which download, and what to expect</small></a><a class="toc-item glass" href="#troubleshooting"><strong>Troubleshooting</strong><small>WebView2, firewall, Java, crashes, downloads</small></a></div>
 </section>
 <div class="guides">
 <article class="guide glass" id="friends"><p class="eyebrow">Guide</p><h2>Play with friends</h2>
@@ -80,12 +80,21 @@
 <li>Close Minecraft before restoring or deleting; Vanta refuses while the game is running.</li></ul>
 <a class="shot guide-img" href="img/shots/worlds.webp" data-lightbox data-caption="Worlds and backups"><img src="img/shots/worlds-thumb.webp" width="640" height="202" alt="Worlds and backups" loading="lazy" decoding="async"></a>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
+<article class="guide glass" id="downloads"><p class="eyebrow">Guide</p><h2>Downloads</h2>
+<p>New in v1.6.2. Whenever Vanta is downloading something, a <b>Downloads</b> button appears in the top bar. Click it (or press Ctrl+K and type <i>downloads</i>) to see every download: Minecraft versions, mods, modpacks, Java and Vanta updates.</p>
+<ul><li><b>Pause</b> stops a Minecraft download where it is; <b>Resume</b> carries on from there.</li>
+<li><b>Cancel</b> removes only the unfinished version folder. The shared sound and asset files are kept, so starting the same version again is faster.</li>
+<li>Files that were already complete and pass their hash check are never downloaded twice.</li>
+<li>Mods, modpacks, Java and Vanta updates are shown with their progress; they finish quickly and can't be paused.</li>
+<li><b>Clear finished</b> hides completed and failed downloads for this session.</li></ul>
+<a class="shot guide-img" href="img/shots/downloads.webp" data-lightbox data-caption="The Downloads panel with a paused download"><img src="img/shots/downloads-thumb.webp" width="640" height="411" alt="The Downloads panel with a paused download" loading="lazy" decoding="async"></a>
+<p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 <article class="guide glass" id="trailer"><p class="eyebrow">Guide</p><h2>Trailer style</h2>
 <p>Trailer style is the Fast set plus Iris with Complementary Reimagined (Unbound as an alternative), Bare Bones + Fresh Animations, EMF/ETF, Not Enough Animations and Visuality. Turn it on when adding an instance, or later for any Fabric instance in <b>INSTANCES › Trailer style</b>.</p>
 <ul><li><b>K</b> turns shaders on/off in game (Iris). Switch packs in Options → Video Settings → Shader Packs.</li>
 <li><b>B</b> toggles Gamma Utils night vision (fullbright), which still works with shaders on.</li>
 <li>Shaders are heavy. On laptops, make sure Java runs on the dedicated GPU (Windows: Settings → System → Display → Graphics → add <code>javaw.exe</code> → High performance).</li>
-<li>4 GB of RAM (INSTANCES › Memory &amp; Java) is plenty for most shader setups.</li>
+<li>4 GB of RAM (INSTANCES › Name, memory &amp; Java) is plenty for most shader setups.</li>
 <li>On Intel Macs with Iris/UHD graphics, Vanta warns before turning Trailer style on.</li></ul>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 <article class="guide glass" id="intel-mac"><p class="eyebrow">Guide</p><h2>Intel Mac</h2>
@@ -104,7 +113,7 @@
 <details class="faq-item glass"><summary>“Java was not found” or “needs a newer Java”</summary><div><p>1.18–1.20.4 need Java 17, 1.20.5–1.21.x need Java 21, and 26.x needs Java 25. Install <a href="https://adoptium.net/temurin/releases/" target="_blank" rel="noopener">Eclipse Temurin</a> (tick “Add to PATH” on Windows) and restart Vanta. On macOS Vanta downloads it for you.</p></div></details>
 <details class="faq-item glass"><summary>Minecraft crashed</summary><div><p>The crash card on PLAY explains the likely cause, lists the mods that were involved, and (for added instances) can turn a suspect mod off in one click. <b>Copy summary</b> gives you a short text to paste when asking for help.</p></div></details>
 <details class="faq-item glass"><summary>A download stopped or failed its hash check</summary><div><p>Vanta retries automatically and never keeps a file whose hash doesn't match. If it still fails, check your connection (or VPN/antivirus) and press <b>Try again</b>.</p></div></details>
-<details class="faq-item glass"><summary>The game is slow or stutters</summary><div><p>Use <b>Suggest RAM</b> in INSTANCES › Memory &amp; Java (more than 6–8 GB rarely helps), turn shaders off with <b>K</b>, lower render distance, and on laptops plug in and use the dedicated GPU.</p></div></details>
+<details class="faq-item glass"><summary>The game is slow or stutters</summary><div><p>Use <b>Suggest RAM</b> in INSTANCES › Name, memory &amp; Java (more than 6–8 GB rarely helps), turn shaders off with <b>K</b>, lower render distance, and on laptops plug in and use the dedicated GPU.</p></div></details>
 <p class="small"><a href="#guides-top">Back to all guides ↑</a></p></article>
 </div>
 <div class="glass contact">

@@ -200,7 +200,7 @@
     // older versions
     var older = $("#older-list");
     if (older) {
-      var list = rels.filter(function (r) { return ["v1.6.1", "v1.6.1-mac", "v1.6.0", "v1.6.0-mac"].indexOf(r.tag_name) === -1; });
+      var list = rels.filter(function (r) { return ["v1.6.2", "v1.6.2-mac", "v1.6.1", "v1.6.1-mac", "v1.6.0", "v1.6.0-mac"].indexOf(r.tag_name) === -1; });
       if (list.length) older.innerHTML = list.map(function (r) {
         return '<li><a href="' + esc(r.html_url) + '">' + esc(r.name || r.tag_name) + "</a> <span class=\"small\">· " + fmtDate(r.published_at) + "</span></li>";
       }).join("");
