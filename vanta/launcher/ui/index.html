@@ -1220,6 +1220,7 @@
       }
       const list = $("dash-instances"); list.replaceChildren();
       const inst = d.instances || [];
+      window.palInstances = inst;
       if (!inst.length) emptyState(list, "⛏", "No instances yet", "Download a Minecraft version with Add instance below, or install a modpack in INSTANCES.");
       inst.forEach((it) => {
         const row = document.createElement("div"); row.className = "dash-inst";
@@ -4631,14 +4632,20 @@
     function palRender() {
       const q = $("palette-input").value.trim().toLowerCase();
       const words = q.split(/\s+/).filter(Boolean);
-      palItems = PALETTE.filter(([t, h]) => words.every((w) => (t + " " + h).toLowerCase().includes(w)));
+      // Typing also finds instances by name or by what's in their notes (seeds, server IPs...).
+      const insts = words.length ? (window.palInstances || []).map((it) => [
+        "Instance: " + (it.label || (it.versionNumber + " " + it.loader)),
+        "INSTANCES" + (it.label ? " · " + it.versionNumber + " " + it.loader : "") + (it.notesText ? " · 📝 " + it.notesText : ""),
+        () => { showTab("instances"); setTimeout(() => { const sel = $("inst-select"); sel.value = it.versionNumber + "|" + it.loader; sel.dispatchEvent(new Event("change")); }, 150); },
+      ]) : [];
+      palItems = PALETTE.concat(insts).filter(([t, h]) => words.every((w) => (t + " " + h).toLowerCase().includes(w)));
       palSel = Math.min(palSel, Math.max(0, palItems.length - 1));
       const ul = $("palette-list"); ul.replaceChildren();
       if (!palItems.length) { const li = document.createElement("li"); li.className = "hint"; li.textContent = "Nothing matches."; ul.appendChild(li); }
       palItems.forEach(([t, h, fn], i) => {
         const li = document.createElement("li"); li.setAttribute("role", "option"); li.id = "pal-" + i;
         li.setAttribute("aria-selected", String(i === palSel)); if (i === palSel) li.className = "sel";
-        const b = document.createElement("strong"); b.textContent = t; const sm = document.createElement("small"); sm.textContent = h;
+        const b = document.createElement("strong"); b.textContent = t; const sm = document.createElement("small"); sm.textContent = h.length > 110 ? h.slice(0, 107) + "…" : h;
         li.append(b, sm); li.addEventListener("click", () => { palClose(); fn(); }); ul.appendChild(li);
       });
       $("palette-input").setAttribute("aria-activedescendant", palItems.length ? "pal-" + palSel : "");

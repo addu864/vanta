@@ -354,7 +354,7 @@ class VantaApp:
                 "worlds": sum(1 for f in saves.iterdir() if (f / "level.dat").is_file()) if saves.is_dir() else 0,
                 "modpack": self._modpack_name(folder),
                 "playtime": playtime.for_instance(self.data_dir, folder)["seconds"],
-                "notes": bool(self._instance_settings(folder).get("notes")),
+                **self._notes_fields(folder),
             })
         rows.sort(key=lambda r: r["lastPlayed"], reverse=True)
         friends: dict[str, Any] = {"online": 0, "hosting": 0, "total": 0, "nearby": 0}
@@ -1050,6 +1050,10 @@ class VantaApp:
         if cleared:
             self.log.info(f"Playtime reset for {folder.name} ({playtime.nice(cleared)} cleared).")
         return {"ok": True, "cleared": cleared}
+
+    def _notes_fields(self, folder: Path) -> dict[str, Any]:
+        notes = str(self._instance_settings(folder).get("notes") or "")
+        return {"notes": bool(notes.strip()), "notesText": " ".join(notes.split())[:300]}
 
     def save_instance_notes(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}
