@@ -2,6 +2,14 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.5
+
+- **Mod check quick fixes**: in the mod check, turn off the older copy of a duplicate mod, turn off Forge or damaged jars (renamed to `.jar.disabled`, undo in INSTANCES › Mods), install Fabric API, or jump to MODS to find a missing mod.
+- The mod check also runs before **joining a server** from BROWSE SERVERS or the PLAY server cards.
+- **Crash card › Find a fix online** opens the website's troubleshooting search with the error filled in (only the error line is in the link).
+- **Faster start**: the 3D skin library (~470 KB) loads after Vanta opens instead of before.
+- SKINS no longer shows "Could not load the skin preview" before Minecraft 1.21.11 is downloaded; the default skins appear once it is.
+
 ## New in 1.6.4
 
 - **Mod check before launch**: PLAY reads the mods in the instance first and warns about duplicate mods, Forge mods in a Fabric instance, missing Fabric API or other required mods, mods made for another Minecraft version, version mismatches between mods, known clashes (OptiFine + Sodium, ...) and damaged jars. Launch anyway, open MODS, or cancel. INSTANCES › Check mods runs it any time. Read-only: nothing is changed.

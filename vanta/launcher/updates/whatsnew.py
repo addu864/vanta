@@ -66,6 +66,13 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.5": [
+        "Mod check quick fixes: turn off the older copy of a duplicate mod, turn off Forge or damaged jars, or install Fabric API in one click.",
+        "The mod check also runs before joining a server from the server cards.",
+        "Crash card: Find a fix online opens the website's troubleshooting search with the error filled in.",
+        "Faster start: the 3D skin library loads after Vanta opens.",
+        "SKINS no longer shows an error before Minecraft 1.21.11 is downloaded.",
+    ],
     "1.6.4": [
         "Mod check before PLAY: duplicate mods, Forge mods in Fabric, missing Fabric API or other needed mods, wrong versions and known clashes. Launch anyway or fix first.",
         "Playtime per instance on Home and in INSTANCES, plus a notes box for each instance.",
