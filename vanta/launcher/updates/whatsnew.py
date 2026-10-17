@@ -67,8 +67,10 @@ def _has_version(releases: list[Any], current: str) -> bool:
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
     "1.6.2": [
         "Downloads panel: see everything Vanta is downloading. Pause, resume or cancel Minecraft downloads.",
-        "Clearer empty states, error messages and loading placeholders.",
-        "What's new now works offline right after an update.",
+        "Name your instances; the name shows in PLAY and on the dashboard.",
+        "Cape and elytra preview on the 3D skin (preview only).",
+        "Loading placeholders, clearer empty states and error messages, and a reconnect banner.",
+        "Accessibility fixes across every tab.",
     ],
     "1.6.1": [
         "What's new popup after an update.",

@@ -2,6 +2,19 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.2
+
+- **Downloads panel** (top bar): everything Vanta is downloading in one place. Minecraft downloads can be paused, resumed or cancelled; a cancelled download removes only the unfinished version folder and keeps the shared assets.
+- **Instance names**: INSTANCES › Name, memory & Java. The name shows in PLAY, the dashboard and lists.
+- **Cape and elytra preview** on the 3D skin, with built-in designs or your own 64×32 PNG. Preview only: it doesn't change what other players see.
+- Loading placeholders, clearer empty states, plain error messages and a reconnect banner if the background service stops answering.
+- Accessibility: every control has a name (axe-core clean on all tabs).
+- Fix: the What's new popup now fetches fresh notes right after an update, and has built-in notes when offline.
+
+## New in 1.6.1
+
+- What's new popup after an update; logs viewer with search and an errors-only filter; full-size screenshot viewer with copy and show in folder; server favourites with sort by players, ping or name; preview images on shader and resource pack cards.
+
 ## New in 1.6.0
 
 - Home dashboard on PLAY (recent instances, friends online on your network, release notes)
