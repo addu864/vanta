@@ -760,6 +760,15 @@
       <div class="row"><button type="button" class="ghost" id="wn-tour">Show the tour</button><button type="button" class="action" id="wn-ok">Got it</button></div>
     </div>
   </div>
+  <div class="tour-overlay" id="conflicts" hidden>
+    <div class="tour glass conflicts-box" role="dialog" aria-modal="true" aria-labelledby="cf-title">
+      <p class="eyebrow" id="cf-inst">Before you play</p>
+      <h2 id="cf-title">Mod problems found</h2>
+      <p class="hint">Vanta read the mods in this instance. These usually crash the game or break it. Nothing was changed.</p>
+      <ul class="cf-list" id="cf-list"></ul>
+      <div class="row"><button type="button" class="ghost" id="cf-cancel">Cancel</button><button type="button" class="ghost" id="cf-mods">Open MODS</button><button type="button" class="action" id="cf-play">Launch anyway</button></div>
+    </div>
+  </div>
   <div class="dl-panel glass" id="dl-panel" role="dialog" aria-label="Downloads" hidden>
     <div class="dl-head"><strong>Downloads</strong><button type="button" class="ghost small-btn" id="dl-clear">Clear finished</button><button type="button" class="ghost small-btn" id="dl-close" aria-label="Close downloads">✕</button></div>
     <div id="dl-list" class="dl-list" aria-live="polite"></div>
@@ -1439,18 +1448,54 @@
       await saveInstanceFolder(result.data.path);
     });
 
+    function showConflicts(data) {
+      return new Promise((resolve) => {
+        const box = $("conflicts"), list = $("cf-list");
+        $("cf-inst").textContent = "Before you play" + (data.instance ? " · " + data.instance : "");
+        $("cf-title").textContent = data.conflicts.length === 1 ? "1 mod problem found" : data.conflicts.length + " mod problems found";
+        list.replaceChildren();
+        data.conflicts.forEach((w) => {
+          const li = document.createElement("li"); li.className = "cf-" + (w.level === "error" ? "error" : "warn");
+          const t = document.createElement("strong"); t.textContent = (w.level === "error" ? "⛔ " : "⚠ ") + w.title;
+          const d = document.createElement("span"); d.textContent = w.detail;
+          li.append(t, d);
+          if ((w.files || []).length) { const f = document.createElement("code"); f.textContent = w.files.slice(0, 6).join(", ") + (w.files.length > 6 ? " +" + (w.files.length - 6) + " more" : ""); li.appendChild(f); }
+          list.appendChild(li);
+        });
+        const done = (v) => { box.hidden = true; ["cf-cancel", "cf-mods", "cf-play"].forEach((id) => { $(id).onclick = null; }); document.removeEventListener("keydown", esc); resolve(v); };
+        const esc = (e) => { if (e.key === "Escape") done("cancel"); };
+        $("cf-cancel").onclick = () => done("cancel");
+        $("cf-mods").onclick = () => done("mods");
+        $("cf-play").onclick = () => done("play");
+        document.addEventListener("keydown", esc);
+        box.hidden = false; $("cf-cancel").focus();
+      });
+    }
     $("play").addEventListener("click", async () => {
       $("play").disabled = true;
       const chosen = selectedVersionValue();
-      const result = await post("/api/play", {
+      const body = {
         accountId: $("account").value || null,
         versionNumber: chosen.versionNumber,
         loader: chosen.loader,
         ramGb: Number($("ram").value),
         profileName: selectedProfile,
-        targetMode: "local"
-      });
-      const data = result.data || {};
+        targetMode: "local",
+        checkConflicts: true
+      };
+      let result = await post("/api/play", body);
+      let data = result.data || {};
+      if (data.needsConfirm && (data.conflicts || []).length) {
+        const pick = await showConflicts(data);
+        if (pick !== "play") {
+          setStatus("play-status", pick === "mods" ? "Fix the mods, then press PLAY again." : "Launch cancelled. Nothing was changed.", "");
+          $("play").disabled = false;
+          if (pick === "mods") { const tab = document.querySelector('[data-tab="mods"]'); if (tab) tab.click(); }
+          return;
+        }
+        result = await post("/api/play", Object.assign(body, { conflictsOk: true }));
+        data = result.data || {};
+      }
       if (data.launched === true && data.pid) {
         const kind = data.minecraftClient ? "Minecraft client" : "Java process";
         setStatus("play-status", "Started a local " + kind + ". pid " + data.pid + ". LOCAL TEST ACCOUNT was not sent to an online-mode server.", "good");

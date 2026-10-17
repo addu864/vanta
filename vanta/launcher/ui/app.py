@@ -684,6 +684,20 @@ class VantaApp:
         self.log.info("Saved settings. JVM arguments were stored and not executed.")
         return {"ok": True, "settings": saved, "jvmArgsExecuted": False}
 
+    def instance_conflicts(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Pre-launch mod check for one instance (read-only)."""
+        from vanta.launcher.mods import conflicts
+
+        folder, version = self._instance_dir(payload or {})
+        if folder is None or version is None:
+            return {"ok": False, "error": "Choose an installed instance first."}
+        loader = str(version.get("loader") or "fabric").lower()
+        if loader == "vanilla":
+            return {"ok": True, "warnings": [], "count": 0, "errors": 0}
+        result = conflicts.check(folder / "mods", str(version.get("versionNumber") or ""), loader)
+        result["instance"] = str(version.get("label") or folder.name)
+        return result
+
     def play(self, payload: dict[str, Any] | None) -> dict[str, Any]:
         payload = dict(payload or {})
         try:
@@ -694,6 +708,17 @@ class VantaApp:
                     payload["ramGb"] = ram
         except Exception:  # noqa: BLE001 - settings are optional
             pass
+        try:
+            found = self.instance_conflicts(payload)
+        except Exception as exc:  # noqa: BLE001 - a check must never stop PLAY by itself crashing
+            found = {"warnings": []}
+            self.log.info(f"Mod check skipped: {exc}")
+        warns = found.get("warnings") or []
+        for w in warns:
+            self.log.info(f"Mod check: {w['title']}. {w['detail']} {', '.join(w.get('files') or [])}".strip())
+        if warns and payload.get("checkConflicts") and not payload.get("conflictsOk"):
+            return {"ok": False, "launched": False, "needsConfirm": True, "conflicts": warns,
+                    "instance": found.get("instance"), "error": f"{len(warns)} mod problem(s) found before launch."}
         return attempt_play(
             config=self.config,
             accounts=self.accounts,

@@ -1023,3 +1023,12 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
   padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(226, 177, 90, .45);
   background: rgba(226, 177, 90, .10); color: inherit; font-size: 13px; }
 .mb-offline[hidden] { display: none; }
+
+/* 1.6.4 pre-launch mod check */
+.conflicts-box { max-width: 620px; }
+.cf-list { list-style: none; margin: 10px 0 14px; padding: 0; display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
+.cf-list li { display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+.cf-list li.cf-error { border-color: rgba(240, 100, 110, .45); }
+.cf-list li.cf-warn { border-color: rgba(226, 177, 90, .45); }
+.cf-list span { color: var(--muted); font-size: 13px; }
+.cf-list code { font-size: 12px; color: var(--muted); word-break: break-all; }

@@ -272,6 +272,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
     if method == "POST" and path == "/api/settings":
         result = app.update_settings(_payload(body))
         return _from_ok(result)
+    if method == "POST" and path == "/api/instances/conflicts":
+        return _ok(app.instance_conflicts(_payload(body)))
     if method == "POST" and path == "/api/play":
         result = app.play(_payload(body))
         status = 200 if result.get("status") in {"Ready", "Started"} else 400
