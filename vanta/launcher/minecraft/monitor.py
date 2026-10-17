@@ -35,6 +35,54 @@ def _tail_since_start(path: Path, limit: int = 300) -> list[str]:
     return text.splitlines()[-limit:]
 
 
+_SUSPECT_PATTERNS = (
+    r"Mixin apply for mod ([a-z0-9_\-]{2,64}) failed",
+    r"from mod ([a-z0-9_\-]{2,64})\b",
+    r"Suspected Mods?: ([^\n]+)",
+    r"Mod '[^']+' \(([a-z0-9_\-]{2,64})\)",
+    r"\b([a-z0-9_\-]{2,64})\.mixins\.json",
+)
+_NOT_SUSPECTS = {"minecraft", "java", "fabricloader", "fabric", "mixinextras", "none", "unknown", "fabric-api", "vanta"}
+
+
+def suspect_mods(text: str, limit: int = 4) -> list[str]:
+    """Mod ids named by Mixin failures, Fabric's resolution errors or the 'Suspected Mods' line."""
+    found: list[str] = []
+    for pattern in _SUSPECT_PATTERNS:
+        for m in re.finditer(pattern, text or "", re.I):
+            raw = m.group(1)
+            parts = re.findall(r"[A-Za-z0-9_\-]{2,64}", raw) if pattern.startswith("Suspected") else [raw]
+            for part in parts:
+                ident = part.lower()
+                if ident not in _NOT_SUSPECTS and not ident.startswith("fabric-") and ident not in found:
+                    found.append(ident)
+    return found[:limit]
+
+
+def mod_files_for(instance: Path, ids: list[str]) -> list[dict[str, str]]:
+    """Match mod ids to jars in the instance (reads fabric.mod.json, falls back to the file name)."""
+    import json
+    import zipfile
+
+    out: list[dict[str, str]] = []
+    folder = Path(instance) / "mods"
+    if not ids or not folder.is_dir():
+        return out
+    for jar in sorted(folder.glob("*.jar")):
+        mod_id = ""
+        try:
+            with zipfile.ZipFile(jar) as zf:
+                mod_id = str(json.loads(zf.read("fabric.mod.json").decode("utf-8", "replace")).get("id") or "").lower()
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+            pass
+        flat = re.sub(r"[-_ ]", "", jar.name.lower())
+        for ident in ids:
+            if ident == mod_id or (not mod_id and flat.startswith(re.sub(r"[-_ ]", "", ident))):
+                out.append({"id": ident, "file": jar.name})
+                break
+    return out
+
+
 def summarize_crash(lines: list[str], crash_report: str = "") -> dict[str, Any]:
     text = crash_report or "\n".join(lines)
     desc = ""
@@ -64,7 +112,7 @@ def summarize_crash(lines: list[str], crash_report: str = "") -> dict[str, Any]:
     if details:
         exc = "\n".join(details)
     return {"title": title, "exception": exc, "hint": hint or "Open the log below for details, or copy it when asking for help.",
-            "details": details}
+            "details": details, "suspects": suspect_mods(text)}
 
 
 def newest_crash_report(instance: Path, since: float) -> Path | None:
@@ -103,8 +151,10 @@ def game_status(data_dir: Path, *, lines: int = 200) -> dict[str, Any]:
             r"Minecraft Crash Report|has crashed|Exception in thread \"(?:main|Render thread)\"|exit code (?!0)\d+|Incompatible mods? found|Mod resolution failed", joined)))
         if crashed:
             body = report.read_text(encoding="utf-8", errors="replace")[:20000] if report else ""
-            _state["crash"] = summarize_crash(log_lines, body) | {"report": str(report) if report else "", "at": int(time.time()),
-                                                                 "exitCode": code}
+            info = summarize_crash(log_lines, body)
+            info["suspectFiles"] = mod_files_for(instance, info["suspects"]) if instance else []
+            _state["crash"] = info | {"report": str(report) if report else "", "at": int(time.time()), "exitCode": code,
+                                      "instance": instance.name if instance else ""}
         _state.update(pid=0)
         launch._clear_session(data_dir)
     return {

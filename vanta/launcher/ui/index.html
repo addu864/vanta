@@ -74,7 +74,8 @@
               <strong id="crash-title">Minecraft crashed</strong>
               <p id="crash-hint"></p>
               <code id="crash-exception"></code>
-              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
+              <div class="crash-suspects" id="crash-suspects" hidden></div>
+              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-copy">Copy summary</button><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
             </div>
             <div class="first-run" id="first-run" hidden role="status" aria-live="polite">
               <strong id="first-run-title">Setting up Minecraft 1.21.11</strong>
@@ -3266,7 +3267,9 @@
         $("crash-title").textContent = "Minecraft crashed: " + (c.title || "unknown reason");
         $("crash-hint").textContent = c.hint || "";
         $("crash-exception").textContent = c.exception || "";
+        paintCrashSuspects(c);
       }
+      lastCrash = c;
       if (logMode === "game") {
         const lines = g.log || [];
         $("log").textContent = lines.length ? lines.join("\n") : "No game log yet. Press PLAY to start Minecraft.";
@@ -3281,6 +3284,40 @@
       const r = await post("/api/game/stop", {});
       toast((r.data && r.data.stopped) ? "Minecraft stopped." : ((r.data && r.data.error) || "Could not stop Minecraft."), (r.data && r.data.stopped) ? "good" : "bad");
       pollGame();
+    });
+    let lastCrash = null, crashPainted = "";
+    function paintCrashSuspects(c) {
+      const key = JSON.stringify([c.at, c.suspects, c.suspectFiles]);
+      if (key === crashPainted) return;
+      crashPainted = key;
+      const host = $("crash-suspects"); host.replaceChildren();
+      const sus = c.suspects || [];
+      host.hidden = !sus.length;
+      if (!sus.length) return;
+      const p = document.createElement("p"); p.textContent = "Likely involved: " + sus.join(", ") + ".";
+      host.appendChild(p);
+      const main = c.instance === "1.21.11-fabric";
+      (c.suspectFiles || []).forEach((f) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "ghost tiny";
+        b.textContent = "Turn off " + f.file;
+        b.addEventListener("click", async () => {
+          const r = await post("/api/game/crash-disable", { file: f.file });
+          const d = r.data || {};
+          toast(d.ok ? "Turned off " + f.file + ". Press PLAY to try again; turn it back on in INSTANCES › Mods." : (d.error || "Couldn't turn it off."), d.ok ? "good" : "bad");
+          if (d.ok) { b.disabled = true; b.textContent = "Turned off " + f.file; }
+        });
+        if (main) { b.disabled = true; b.title = "Main instance: use MODS › Profile mods"; }
+        host.appendChild(b);
+      });
+      if (main) { const n = document.createElement("p"); n.className = "hint"; n.textContent = "This is your main instance, so turn mods off in MODS › Profile mods."; host.appendChild(n); }
+    }
+    $("crash-copy").addEventListener("click", async () => {
+      const c = lastCrash || {};
+      const text = ["Vanta " + ($("app-version").textContent || "") + " crash summary", "Instance: " + (c.instance || "?"),
+        "Problem: " + (c.title || "?"), c.exitCode != null ? "Exit code: " + c.exitCode : "", "Hint: " + (c.hint || ""),
+        c.exception ? "Error: " + c.exception : "", (c.suspects || []).length ? "Suspected mods: " + c.suspects.join(", ") : "",
+        c.report ? "Crash report file: " + c.report.split(/[\\/]/).pop() : ""].filter(Boolean).join("\n");
+      try { await navigator.clipboard.writeText(text); toast("Crash summary copied.", "good"); } catch (e) { window.prompt("Copy this:", text); }
     });
     $("crash-dismiss").addEventListener("click", async () => { await post("/api/game/dismiss-crash", {}); $("crash-card").hidden = true; });
     $("crash-log").addEventListener("click", () => { setLogMode("game"); $("log-panel").scrollIntoView({ behavior: "smooth" }); });

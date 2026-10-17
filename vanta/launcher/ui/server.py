@@ -172,6 +172,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _ok(app.game_status())
     if method == "POST" and path == "/api/game/stop":
         return _ok(app.stop_game())
+    if method == "POST" and path == "/api/game/crash-disable":
+        return _from_ok(app.crash_disable(_payload(body)))
     if method == "POST" and path == "/api/game/dismiss-crash":
         return _ok(app.dismiss_crash())
     if method == "GET" and path == "/api/instances/presets":

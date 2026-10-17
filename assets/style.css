@@ -934,3 +934,5 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .tour p#tour-body { line-height: 1.55; color: var(--text); }
 .tour .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
 .tour #tour-skip { margin-right: auto; }
+.crash-suspects { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.crash-suspects p { margin: 0; flex: 1 1 100%; }

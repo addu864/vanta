@@ -752,6 +752,27 @@ class VantaApp:
         monitor.dismiss_crash()
         return {"ok": True}
 
+    def crash_disable(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Crash helper: turn off a suspected mod in the instance that crashed (renames it to .jar.disabled)."""
+        from vanta.launcher.minecraft import instances, monitor
+        crash = monitor._state.get("crash") or {}
+        name = str((payload or {}).get("file") or "")
+        allowed = {f.get("file") for f in crash.get("suspectFiles") or []}
+        inst = str(crash.get("instance") or "")
+        if not crash or name not in allowed or not inst or "/" in inst or "\\" in inst or ".." in inst:
+            return {"ok": False, "error": "That mod isn't one of the crash suspects."}
+        if inst in instances.PROTECTED:
+            return {"ok": False, "error": "This is your main instance; turn the mod off in MODS › Profile mods instead."}
+        if self._game_running():
+            return {"ok": False, "error": "Close Minecraft first."}
+        jar = self._game_root() / inst / "mods" / name
+        if not jar.is_file():
+            return {"ok": False, "error": "That mod file is gone."}
+        jar.rename(jar.with_name(name + ".disabled"))
+        crash["suspectFiles"] = [f for f in crash.get("suspectFiles") or [] if f.get("file") != name]
+        self.log.info(f"Crash helper: disabled {name} in {inst}. Re-enable it under INSTANCES › Mods.")
+        return {"ok": True, "file": name + ".disabled"}
+
     # ---- per-instance tools ----
     def _instance_dir(self, body: dict[str, Any]) -> tuple[Path | None, dict[str, Any] | None]:
         settings = self.config.get()
