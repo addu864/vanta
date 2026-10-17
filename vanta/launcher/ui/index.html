@@ -78,7 +78,7 @@
               <p id="crash-hint"></p>
               <code id="crash-exception"></code>
               <div class="crash-suspects" id="crash-suspects" hidden></div>
-              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-copy">Copy summary</button><a class="ghost btn-link" id="crash-help" target="_blank" rel="noopener" href="https://addu864.github.io/vanta/guides.html#troubleshooting">Find a fix online</a><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
+              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-check">Check mods</button><button type="button" class="ghost" id="crash-copy">Copy summary</button><a class="ghost btn-link" id="crash-help" target="_blank" rel="noopener" href="https://addu864.github.io/vanta/guides.html#troubleshooting">Find a fix online</a><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
             </div>
             <div class="first-run" id="first-run" hidden role="status" aria-live="polite">
               <strong id="first-run-title">Setting up Minecraft 1.21.11</strong>
@@ -1215,7 +1215,7 @@
       const pt = d.playtime || {}, ptEl = $("dash-playtime");
       ptEl.hidden = !pt.total;
       if (pt.total) {
-        ptEl.textContent = "⏱ " + fmtDur(pt.total) + " played";
+        ptEl.textContent = "⏱ " + fmtDur(pt.total) + " played" + (pt.week ? " · " + fmtDur(pt.week) + " this week" : "");
         ptEl.title = "Time in game, counted by Vanta on this computer" + ((pt.top || []).length ? "\n" + pt.top.map((t) => t.label + ": " + fmtDur(t.seconds)).join("\n") : "");
       }
       const list = $("dash-instances"); list.replaceChildren();
@@ -1224,7 +1224,8 @@
       inst.forEach((it) => {
         const row = document.createElement("div"); row.className = "dash-inst";
         const txt = document.createElement("div");
-        const t = document.createElement("strong"); t.textContent = it.label ? it.label : it.versionNumber + " · " + it.loader;
+        const t = document.createElement("strong"); t.textContent = (it.label ? it.label : it.versionNumber + " · " + it.loader) + (it.notes ? " 📝" : "");
+        if (it.notes) t.title = "Has notes (INSTANCES › Notes & playtime)";
         const m = document.createElement("span"); m.className = "hint";
         const bits = [];
         if (it.label) bits.push(it.versionNumber + " " + it.loader);
@@ -1507,8 +1508,18 @@
           }
           list.appendChild(li);
         });
-        const done = (v) => { box.hidden = true; ["cf-cancel", "cf-mods", "cf-play"].forEach((id) => { $(id).onclick = null; }); document.removeEventListener("keydown", esc); resolve(v); };
-        const esc = (e) => { if (e.key === "Escape") done("cancel"); };
+        const opener = document.activeElement;
+        const done = (v) => { box.hidden = true; if (opener && opener.focus) setTimeout(() => opener.focus(), 0); ["cf-cancel", "cf-mods", "cf-play"].forEach((id) => { $(id).onclick = null; }); document.removeEventListener("keydown", esc); resolve(v); };
+        const esc = (e) => {
+          if (e.key === "Escape") { done("cancel"); return; }
+          if (e.key !== "Tab") return;
+          // keep keyboard focus inside the dialog
+          const f = [...box.querySelectorAll("button:not([disabled]):not([hidden])")];
+          if (!f.length) return;
+          const i = f.indexOf(document.activeElement);
+          if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+          else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+        };
         $("cf-cancel").onclick = () => done("cancel");
         $("cf-mods").onclick = () => done("mods");
         $("cf-play").onclick = () => done("play");
@@ -3690,6 +3701,19 @@
         c.report ? "Crash report file: " + c.report.split(/[\\/]/).pop() : ""].filter(Boolean).join("\n");
       try { await navigator.clipboard.writeText(text); toast("Crash summary copied.", "good"); } catch (e) { window.prompt("Copy this:", text); }
     });
+    $("crash-check").addEventListener("click", async () => {
+      const c = lastCrash || {};
+      const m = /^(.+)-(fabric|quilt|forge|neoforge|vanilla)$/.exec(c.instance || "");
+      const target = m ? { versionNumber: m[1], loader: m[2] } : selectedVersionValue();
+      const r = await post("/api/instances/conflicts", target);
+      const d = r.data || {};
+      if (!d.ok) { toast(d.error || "Couldn't check the mods.", "bad"); return; }
+      if (!(d.warnings || []).length) { toast("The mod check found no problems in " + d.count + (d.count === 1 ? " mod" : " mods") + ". Try Find a fix online.", "good"); return; }
+      $("cf-play").hidden = true;
+      const pick = await showConflicts({ conflicts: d.warnings, instance: d.instance }, target);
+      $("cf-play").hidden = false;
+      if (pick === "mods" || String(pick).startsWith("search:")) openModsFor(target, String(pick).startsWith("search:") ? pick.slice(7) : "");
+    });
     $("crash-dismiss").addEventListener("click", async () => { await post("/api/game/dismiss-crash", {}); $("crash-card").hidden = true; });
     $("crash-log").addEventListener("click", () => { setLogMode("game"); $("log-panel").scrollIntoView({ behavior: "smooth" }); });
     $("crash-folder").addEventListener("click", () => openFolder("crash-reports"));
@@ -3876,7 +3900,7 @@
       setStatus("inst-notes-status", "", "");
       const pt = d.playtime || {};
       $("inst-playtime").textContent = pt.seconds
-        ? "⏱ " + fmtDur(pt.seconds) + " played in " + pt.sessions + (pt.sessions === 1 ? " session" : " sessions") + (pt.lastSession ? " · last session " + fmtDur(pt.lastSession) : "") + (pt.last ? " · " + fmtAgo(pt.last) : "")
+        ? "⏱ " + fmtDur(pt.seconds) + " played in " + pt.sessions + (pt.sessions === 1 ? " session" : " sessions") + (pt.week ? " · " + fmtDur(pt.week) + " this week" : "") + (pt.lastSession ? " · last session " + fmtDur(pt.lastSession) : "") + (pt.last ? " · " + fmtAgo(pt.last) : "")
         : "Not played with Vanta yet. Playtime is counted while the game runs.";
       const mods = $("inst-mods"); mods.replaceChildren();
       $("inst-mods-note").textContent = d.main ? "(manage the main instance's mods in the MODS tab)" : "";

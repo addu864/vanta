@@ -48,8 +48,10 @@ def record(data_dir: Path, instance: Path, started: float, ended: float) -> int:
         last_start = float(row.get("lastStart") or 0)
         if abs(last_start - float(started)) < 1:  # same session judged twice (e.g. two polls at once)
             return 0
+        recent = [r for r in (row.get("recent") or []) if isinstance(r, list) and len(r) == 2][-59:]
+        recent.append([int(ended), seconds])
         row.update(seconds=int(row.get("seconds") or 0) + seconds, sessions=int(row.get("sessions") or 0) + 1,
-                   last=int(ended), lastStart=float(started), lastSession=seconds)
+                   last=int(ended), lastStart=float(started), lastSession=seconds, recent=recent)
         data["instances"][key] = row
         write_json(Path(data_dir) / FILE, data)
     return seconds
@@ -57,12 +59,27 @@ def record(data_dir: Path, instance: Path, started: float, ended: float) -> int:
 
 def for_instance(data_dir: Path, instance: Path) -> dict[str, Any]:
     row = _load(data_dir)["instances"].get(_key(instance)) or {}
+    week = sum(int(i[1]) for i in row.get("recent") or [] if isinstance(i, list) and len(i) == 2 and float(i[0]) >= time.time() - 7 * 86400)
     return {"seconds": int(row.get("seconds") or 0), "sessions": int(row.get("sessions") or 0),
-            "last": int(row.get("last") or 0), "lastSession": int(row.get("lastSession") or 0)}
+            "last": int(row.get("last") or 0), "lastSession": int(row.get("lastSession") or 0), "week": week}
 
 
 def total(data_dir: Path) -> int:
     return sum(int((r or {}).get("seconds") or 0) for r in _load(data_dir)["instances"].values() if isinstance(r, dict))
+
+
+def recent_total(data_dir: Path, days: float = 7, now: float | None = None, instance: Path | None = None) -> int:
+    """Seconds played in the last `days` days (from the last 60 sessions of each instance)."""
+    cutoff = (time.time() if now is None else now) - days * 86400
+    rows = _load(data_dir)["instances"]
+    if instance is not None:
+        rows = {k: v for k, v in rows.items() if k == _key(instance)}
+    out = 0
+    for row in rows.values():
+        for item in (row or {}).get("recent") or []:
+            if isinstance(item, list) and len(item) == 2 and float(item[0]) >= cutoff:
+                out += int(item[1])
+    return out
 
 
 def nice(seconds: int) -> str:

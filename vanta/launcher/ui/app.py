@@ -354,6 +354,7 @@ class VantaApp:
                 "worlds": sum(1 for f in saves.iterdir() if (f / "level.dat").is_file()) if saves.is_dir() else 0,
                 "modpack": self._modpack_name(folder),
                 "playtime": playtime.for_instance(self.data_dir, folder)["seconds"],
+                "notes": bool(self._instance_settings(folder).get("notes")),
             })
         rows.sort(key=lambda r: r["lastPlayed"], reverse=True)
         friends: dict[str, Any] = {"online": 0, "hosting": 0, "total": 0, "nearby": 0}
@@ -367,7 +368,7 @@ class VantaApp:
             pass
         news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json", background=True)
         return {"ok": True, "instances": rows[:4], "friends": friends, "news": news,
-                "playtime": {"total": playtime.total(self.data_dir),
+                "playtime": {"total": playtime.total(self.data_dir), "week": playtime.recent_total(self.data_dir),
                              "top": sorted(({"label": r["label"] or f"{r['versionNumber']} {r['loader']}", "seconds": r["playtime"]}
                                             for r in rows if r["playtime"]), key=lambda x: -x["seconds"])[:3]}}
 
