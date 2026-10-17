@@ -34,3 +34,14 @@ def test_whats_new_after_160_without_seen_file(tmp_path, monkeypatch):
     monkeypatch.setattr(whatsnew, "whats_new", lambda *a, **k: {"releases": []})
     r = VantaApp().whats_new_popup()
     assert r["show"] == (vanta.__version__ != "1.6.0") and r.get("seen") == "1.6.0"
+
+
+def test_screenshot_viewer_and_reveal_validation(tmp_path, monkeypatch):
+    from vanta.launcher.ui.app import VantaApp
+    monkeypatch.setenv("VANTA_DATA_DIR", str(tmp_path))
+    app = VantaApp()
+    monkeypatch.setattr(app, "_instance_dir", lambda body: (tmp_path / "inst", {}))
+    assert not app.reveal_screenshot({"name": "../evil.png"})["ok"]
+    assert "gone" in app.reveal_screenshot({"name": "missing.png"})["error"]
+    for needle in ('id="shot-viewer"', 'id="sv-copy"', "ClipboardItem", "/api/instances/screenshot-reveal"):
+        assert needle in HTML

@@ -939,6 +939,29 @@ class VantaApp:
         path = folder / "screenshots" / name
         return (200, path.read_bytes(), "image/png") if path.is_file() else (404, b"Not found", "text/plain")
 
+    def reveal_screenshot(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Show one screenshot selected in Explorer / Finder."""
+        import subprocess
+        import sys
+        body = payload or {}
+        folder, _ = self._instance_dir(body)
+        name = str(body.get("name") or "")
+        if folder is None or not re.fullmatch(r"[\w .()-]+\.png", name):
+            return {"ok": False, "error": "Unknown screenshot."}
+        path = folder / "screenshots" / name
+        if not path.is_file():
+            return {"ok": False, "error": "That screenshot is gone."}
+        try:
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", str(path)])
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", str(path)])
+            else:
+                return self._open_path(path.parent)
+        except OSError as exc:
+            return {"ok": False, "error": f"Could not open the folder: {exc}"}
+        return {"ok": True, "path": str(path)}
+
     # ---- Modpacks (.mrpack import/export, v1.6.0) ----
     _pack_job: dict[str, Any] = {}
 

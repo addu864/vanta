@@ -947,3 +947,9 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 .log-tools .check input { width: auto; min-height: 0; }
 .wn-list { margin: 6px 0 4px; padding-left: 20px; line-height: 1.5; }
 .wn-list li { margin: 6px 0; }
+.shot-viewer { position: fixed; inset: 0; z-index: 85; background: rgba(4, 2, 10, 0.82); display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; }
+.shot-viewer[hidden] { display: none; }
+.sv-box { max-width: 94vw; max-height: 94vh; display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.sv-box img { max-width: 100%; max-height: calc(94vh - 90px); object-fit: contain; border-radius: 10px; background: #000; }
+.sv-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sv-bar .row { display: flex; gap: 8px; flex-wrap: wrap; }
