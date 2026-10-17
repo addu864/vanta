@@ -281,7 +281,11 @@ def ensure_options(instance: Path) -> Path:
     options = Path(instance) / "options.txt"
     if not options.is_file():
         options.parent.mkdir(parents=True, exist_ok=True)
-        options.write_text("toggleUse:false\ntoggleCrouch:false\nlang:en_us\n", encoding="utf-8")
+        lines = ["toggleUse:false", "toggleCrouch:false", "lang:en_us"]
+        from vanta.shared import macplatform
+        if macplatform.intel_igpu_only():
+            lines += [f"{k}:{v}" for k, v in macplatform.INTEL_IGPU_OPTIONS.items()]
+        options.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return options
 
 

@@ -81,7 +81,7 @@ def install_client(
     libraries = instance / "libraries"
     natives_dir = instance / "natives"
     kept = 0
-    allowed = [lib for lib in vanilla.get("libraries", []) if _rules_allow(lib.get("rules"))]
+    allowed = [lib for lib in vanilla.get("libraries", []) if _rules_allow(lib.get("rules")) and library_wanted(lib)]
     for index, library in enumerate(allowed):
         report("libraries", index, len(allowed))
         downloads = library.get("downloads") or {}
@@ -218,7 +218,7 @@ def build_official_command(
             if path.is_file():
                 classpath.append(str(path))
     for library in vanilla.get("libraries", []):
-        if not _rules_allow(library.get("rules")):
+        if not _rules_allow(library.get("rules")) or not library_wanted(library):
             continue
         artifact = (library.get("downloads") or {}).get("artifact")
         if not artifact or not artifact.get("path"):
@@ -370,6 +370,25 @@ def _rule_matches(rule: dict[str, Any]) -> bool:
         return False
     arch = os_rule.get("arch")
     if arch and arch != _arch_name():
+        return False
+    return True
+
+
+def library_wanted(library: dict[str, Any], os_name: str | None = None, hardware: str | None = None) -> bool:
+    """Mojang lists both LWJGL `natives-macos` (x64) and `natives-macos-arm64` for every Mac.
+
+    An Intel Mac can never load arm64 code, so the arm64 jars are skipped there (smaller download,
+    and no wrong-arch dylib on the classpath). Apple Silicon keeps both: Rosetta (x64) Java needs
+    the x64 natives, native Java the arm64 ones.
+    """
+    os_name = os_name or _os_name()
+    if os_name != "osx":
+        return True
+    if hardware is None:
+        from vanta.shared import macplatform
+        hardware = macplatform.current()["hardware"]
+    name = str(library.get("name") or "")
+    if hardware == "x64" and (name.endswith(":natives-macos-arm64") or name.endswith(":natives-osx-arm64")):
         return False
     return True
 

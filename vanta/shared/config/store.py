@@ -22,6 +22,19 @@ FORBIDDEN_KEYS = {
 }
 
 
+def _default_ram_gb() -> int:
+    """4 GB, or what suits this Mac's memory (Intel Macs with 8 GB get 3 GB)."""
+    try:
+        from vanta.shared import macplatform
+
+        info = macplatform.current()
+        if info["mac"]:
+            return macplatform.recommended_ram_gb(int(info["memGb"]), intel_mac=bool(info["intel"]))
+    except Exception:  # noqa: BLE001 - never block config loading
+        pass
+    return 4
+
+
 class ConfigStore:
     def __init__(self, directory: Path) -> None:
         self.directory = directory
@@ -36,7 +49,7 @@ class ConfigStore:
             "theme": "dark",
             "defaultVersion": "1.21.11",
             "defaultLoader": "fabric",
-            "defaultRamGb": 4,
+            "defaultRamGb": _default_ram_gb(),
             "gameDirectory": str(self.directory / "game"),
             "jvmArgs": "",
             "jvmArgsExecuted": False,

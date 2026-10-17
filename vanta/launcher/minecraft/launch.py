@@ -57,14 +57,44 @@ def required_java(instance: Path, version_number: str) -> int:
 
 
 def java_for_instance(instance: Path, version_number: str) -> tuple[str | None, str]:
-    """Pick an installed Java that suits this Minecraft version."""
+    """Pick an installed Java that suits this Minecraft version and this CPU.
+
+    On a Mac with no suitable Java, Vanta downloads Temurin for the right architecture
+    (x64 on Intel; arm64 on Apple Silicon, or x64 under Rosetta for Minecraft < 1.19).
+    """
+    from vanta.shared import java_download, macplatform
     from vanta.shared.java import find_java, select_java
 
     needed = required_java(instance, version_number)
-    if needed <= 8:
+    info = macplatform.current()
+    if needed <= 8 and not info["mac"]:
         found = find_java()
         return found, "" if found else JAVA_MISSING
-    return select_java(needed)
+    arch, strict = java_download.java_arch_for(version_number, needed, info)
+    found, error = select_java(needed, arch=arch if info["mac"] else None, strict=strict and info["mac"])
+    if found or not auto_java_enabled(info):
+        return found, error
+    return None, start_java_download(needed, arch)
+
+
+def auto_java_enabled(info: dict[str, Any]) -> bool:
+    flag = os.environ.get("VANTA_AUTO_JAVA", "")
+    return flag == "1" or (bool(info.get("mac")) and flag != "0")
+
+
+def start_java_download(major: int, arch: str) -> str:
+    from vanta.shared import java_download
+    from vanta.shared.config.paths import default_data_dir
+
+    label = {"x64": "Intel (x64)", "arm64": "Apple Silicon (arm64)"}.get(arch, arch)
+    job = java_download.start(default_data_dir(), major, arch)
+    if job["state"] == "failed":
+        return (f"Vanta couldn't download Java {major} for {label}: {job['error']} "
+                f"Install Temurin {major} from https://adoptium.net/temurin/releases/?os=mac and try again.")
+    if job["state"] == "done":
+        return f"Java {major} for {label} is ready. Press PLAY again."
+    return (f"Downloading Java {major} (Eclipse Temurin, {label}) for this Minecraft version: {job.get('percent', 0)}%. "
+            "Press PLAY again when it finishes (about a minute).")
 
 
 def prepare_command(version: dict[str, Any], account: dict[str, Any], ram_gb: int) -> dict[str, Any]:
@@ -86,7 +116,45 @@ def instance_jvm_args(instance: Path) -> list[str]:
         raw = str(json.loads(path.read_text(encoding="utf-8")).get("jvmArgs") or "") if path.is_file() else ""
     except (OSError, ValueError):
         return []
-    return [a for a in raw.split() if a.startswith(("-X", "-XX:", "-D"))][:40]
+    args = [a for a in raw.split() if a.startswith(("-X", "-XX:", "-D"))][:40]
+    from vanta.shared import macplatform
+    return drop_foreign_flags(args, macplatform.current()["hardware"])
+
+
+# HotSpot flags that only exist on AArch64; an x64 JVM refuses to start with them.
+ARM_ONLY_FLAGS = ("UseSVE", "UseLSE", "UseSIMDForMemoryOps", "UseBlockZeroing", "UseNeon", "UseCRC32",
+                  "SoftwarePrefetchHintDistance", "UseSimpleArrayEquals", "AvoidUnalignedAccesses")
+
+
+def drop_foreign_flags(args: list[str], hardware: str) -> list[str]:
+    if hardware != "x64":
+        return args
+    return [a for a in args if not any(flag in a for flag in ARM_ONLY_FLAGS)]
+
+
+# G1 tuning for client play (low pauses on 4-core Intel Macs too). Only common HotSpot flags.
+MAC_GC_FLAGS = ["-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:MaxGCPauseMillis=130",
+                "-XX:+UnlockExperimentalVMOptions", "-XX:+DisableExplicitGC", "-XX:G1NewSizePercent=30",
+                "-XX:G1MaxNewSizePercent=40", "-XX:G1HeapRegionSize=8M", "-XX:G1ReservePercent=20"]
+
+
+def mac_jvm_flags(command: list[str], info: dict[str, Any], ram_gb: int) -> list[str]:
+    """macOS: GLFW needs -XstartOnFirstThread (exactly once); add G1 tuning unless the player set a GC."""
+    if not info.get("mac") or len(command) < 2:
+        return command
+    out = [command[0]] + [a for a in command[1:] if a != "-XstartOnFirstThread"]
+    extra = ["-XstartOnFirstThread"]
+    if not any(a.startswith(("-XX:+Use", "-XX:-Use")) and "GC" in a for a in out):
+        extra += MAC_GC_FLAGS
+    at = 2 if len(out) > 1 and out[1].startswith("-Dvanta.clientJar=") else 1
+    return [*out[:at], *extra, *out[at:]]
+
+
+def merge_user_jvm_args(command: list[str], user: list[str]) -> list[str]:
+    """Player flags win: if they pick a GC, Vanta's G1 tuning is dropped (two GCs stop the JVM)."""
+    if any(a.startswith(("-XX:+Use", "-XX:-Use")) and "GC" in a for a in user):
+        command = [a for a in command if a not in MAC_GC_FLAGS]
+    return [command[0], *user, *command[1:]]
 
 
 def detect_java() -> dict[str, Any]:
@@ -359,7 +427,7 @@ def _launch_local(
         from vanta.launcher.servers.popular import join_arguments
 
         command.extend(join_arguments(str(version.get("versionNumber") or ""), str(join["host"]), join.get("port")))
-    command[1:1] = instance_jvm_args(jar.parent)
+    command = merge_user_jvm_args(command, instance_jvm_args(jar.parent))
     log_path = data_dir / "client.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handle = log_path.open("a", encoding="utf-8")
@@ -479,7 +547,8 @@ def _build_command(
         version_number=str(version["versionNumber"]),
         ram_gb=ram_gb,
     )
-    return command, True
+    from vanta.shared import macplatform
+    return mac_jvm_flags(command, macplatform.current(), ram_gb), True
 
 
 def _running_result(

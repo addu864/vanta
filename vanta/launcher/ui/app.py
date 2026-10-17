@@ -79,7 +79,21 @@ class VantaApp:
             "defaultLoader": settings["defaultLoader"],
             "modsRepository": self.mod_repository.describe(),
             "skinsRepository": self.skin_repository.describe(),
+            "platform": self.platform_info(),
         }
+
+    def platform_info(self) -> dict[str, Any]:
+        from vanta.shared import macplatform
+        info = dict(macplatform.current())
+        info["intelIgpu"] = macplatform.intel_igpu_only()
+        note = ""
+        if info["mac"] and info["rosetta"]:
+            note = ("Vanta is running under Rosetta on an Apple Silicon Mac. It works, but is slower: "
+                    "in Finder, Get Info on Vanta.app and untick \"Open using Rosetta\".")
+        elif info["mac"] and info["intel"] and 0 < macplatform.macos_major(info["macos"]) < 12:
+            note = f"Vanta for Intel Macs supports macOS 12 Monterey or newer; this Mac runs macOS {info['macos']}."
+        info["note"] = note
+        return info
 
     def versions(self) -> dict[str, Any]:
         settings = self.config.get()
@@ -691,7 +705,10 @@ class VantaApp:
 
     def instance_presets(self) -> dict[str, Any]:
         from vanta.launcher.minecraft import instances
-        return {"ok": True, "presets": [{"id": k, **v, "mods": [t for _, t in instances.preset_mod_list(k)]} for k, v in instances.PRESETS.items()]}
+        from vanta.shared import macplatform
+        warn = macplatform.TRAILER_IGPU_WARNING if macplatform.intel_igpu_only() else ""
+        return {"ok": True, "presets": [{"id": k, **v, "mods": [t for _, t in instances.preset_mod_list(k)],
+                                         "warning": warn if k == "trailer" else ""} for k, v in instances.PRESETS.items()]}
 
     def instance_mod_search(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = payload or {}

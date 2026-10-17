@@ -851,3 +851,4 @@ button.tiny { padding: 4px 10px; font-size: .78rem; }
 .fr-code-row code { font-size: 1.15rem; letter-spacing: .04em; padding: 6px 10px; border-radius: 10px; background: rgba(140, 90, 255, .16); border: 1px solid rgba(180, 140, 255, .35); user-select: all; }
 .fr-h2 { margin-top: 14px !important; }
 .fr-inv-out { word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: .78rem; }
+.preset-warn { display: block; margin-top: 6px; color: #ffcf7a; font-size: .78rem; line-height: 1.3; }

@@ -135,7 +135,43 @@ def _parse_major(value: str) -> int | None:
     return first
 
 
-def candidate_javas(*, which=shutil.which, runner=subprocess.run, mac: bool | None = None) -> list[str]:
+def java_arch(java: str, runner=subprocess.run) -> str | None:
+    """CPU architecture of a JDK/JRE (x64 or arm64): the ``release`` file's OS_ARCH, else os.arch."""
+    from vanta.shared.macplatform import norm_arch
+
+    path = Path(java)
+    for home in (path.parent.parent, path.resolve().parent.parent):
+        release = home / "release"
+        if release.is_file():
+            try:
+                for line in release.read_text(encoding="utf-8", errors="replace").splitlines():
+                    if line.startswith("OS_ARCH="):
+                        return norm_arch(line.split("=", 1)[1].strip().strip('"'))
+            except OSError:
+                pass
+    try:
+        done = runner([java, "-XshowSettings:properties", "-version"], capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    import re
+
+    match = re.search(r"os\.arch = (\S+)", (done.stderr or "") + (done.stdout or ""))
+    return norm_arch(match.group(1)) if match else None
+
+
+def _runtime_javas() -> list[str]:
+    """Temurin builds Vanta downloaded itself (<data>/runtime)."""
+    try:
+        from vanta.shared.config.paths import default_data_dir
+        from vanta.shared.java_download import installed_runtimes
+
+        return installed_runtimes(default_data_dir())
+    except Exception:  # noqa: BLE001 - optional
+        return []
+
+
+def candidate_javas(*, which=shutil.which, runner=subprocess.run, mac: bool | None = None,
+                    runtime=None) -> list[str]:
     """Every java executable Vanta can see, without duplicates."""
     mac = is_mac() if mac is None else mac
     found: list[str] = []
@@ -148,6 +184,8 @@ def candidate_javas(*, which=shutil.which, runner=subprocess.run, mac: bool | No
             if real not in {os.path.realpath(p) for p in found}:
                 found.append(path)
 
+    for java in (runtime() if runtime is not None else _runtime_javas()):
+        add(java)
     add(_java_home_bin(os.environ.get("JAVA_HOME")))
     if mac:
         add(_java_home_bin(mac_java_home(runner)))
@@ -177,19 +215,27 @@ def list_javas(**kwargs) -> list[dict[str, object]]:
     runner = kwargs.get("runner", subprocess.run)
     items = []
     for path in candidate_javas(**kwargs):
-        items.append({"path": path, "major": java_major(path, runner=runner)})
+        items.append({"path": path, "major": java_major(path, runner=runner), "arch": java_arch(path, runner=runner)})
     return items
 
 
-def select_java(required: int, javas: list[dict[str, object]] | None = None) -> tuple[str | None, str]:
+def select_java(required: int, javas: list[dict[str, object]] | None = None, *,
+                arch: str | None = None, strict: bool = False) -> tuple[str | None, str]:
     """Smallest installed major >= required (closest match is safest for older Minecraft).
 
+    ``arch`` prefers a Java built for that CPU (x64 / arm64); with ``strict`` other
+    architectures are not used at all (an arm64 JDK cannot run on an Intel Mac, and
+    Minecraft before 1.19 needs x64 Java under Rosetta on Apple Silicon).
     Returns (path, "") or (None, error message).
     """
     javas = list_javas() if javas is None else javas
     usable = [j for j in javas if isinstance(j.get("major"), int) and int(j["major"]) >= required]
+    if arch:
+        if strict:
+            usable = [j for j in usable if j.get("arch") in (arch, None)]
+        usable.sort(key=lambda j: (j.get("arch") != arch, int(j["major"])))
     if usable:
-        best = min(usable, key=lambda j: int(j["major"]))
+        best = usable[0] if arch else min(usable, key=lambda j: int(j["major"]))
         return str(best["path"]), ""
     seen = ", ".join(f"Java {j.get('major') or '?'}" for j in javas) or "none"
     return None, (

@@ -872,11 +872,15 @@
       const box = $("log"); box.scrollTop = box.scrollHeight;
     }
 
+    let platformInfo = {}, platformNoted = false;
+    const TRAILER_IGPU_WARN = "This Mac has Intel integrated graphics. Trailer style turns on Iris shaders and animated packs, which usually run at low FPS on Intel Iris/UHD. Fast is recommended.";
     async function refresh() {
       const [status, versionResult, accountResult, profileResult, settingsResult] = await Promise.all([
         api("/api/status"), api("/api/versions"), api("/api/accounts"), api("/api/profiles"), api("/api/settings")
       ]);
       versions = (versionResult.data && versionResult.data.versions) || [];
+      platformInfo = (status.data && status.data.platform) || {};
+      if (platformInfo.note && !platformNoted) { platformNoted = true; toast(platformInfo.note, ""); }
       const settings = (settingsResult.data && settingsResult.data.settings) || {};
       const profiles = (profileResult.data && profileResult.data.profiles) || [];
       const selectedName = (profileResult.data && profileResult.data.selectedProfileName) || settings.selectedProfileName || "";
@@ -2847,6 +2851,7 @@
         const t = document.createElement("strong"); t.textContent = p.title.toUpperCase();
         const d = document.createElement("span"); d.textContent = p.description;
         card.appendChild(t); card.appendChild(d);
+        if (p.warning) { const w = document.createElement("small"); w.className = "preset-warn"; w.textContent = "⚠ " + p.warning; card.appendChild(w); }
         card.addEventListener("click", () => { chosenPreset = p.id; loadPresets(); });
         host.appendChild(card);
       });
@@ -3285,6 +3290,8 @@
     });
     $("inst-trailer").addEventListener("change", async () => {
       const on = $("inst-trailer").checked;
+      const trailerWarn = platformInfo.intelIgpu ? TRAILER_IGPU_WARN : "";
+      if (on && trailerWarn && !confirm(trailerWarn + "\n\nTurn Trailer style on anyway?")) { $("inst-trailer").checked = false; return; }
       $("inst-trailer").disabled = true;
       setStatus("inst-trailer-status", on ? "Downloading trailer mods and packs from Modrinth… this can take a minute." : "Turning trailer style off…", "");
       let trailerTimer = null;
