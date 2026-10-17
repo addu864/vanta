@@ -132,6 +132,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _read_asset("wordmark.svg", "image/svg+xml")
     if method == "GET" and path == "/assets/vendor/skinview3d.bundle.js":
         return _read_asset("vendor/skinview3d.bundle.js", "text/javascript; charset=utf-8")
+    if method == "GET" and path in {"/favicon.ico", "/assets/vanta.ico"}:
+        return _read_asset("vanta.ico", "image/x-icon")
     if method == "GET" and path == "/assets/logo.jpg":
         return _read_asset("logo.jpg", "image/jpeg")
     if method == "GET" and path.startswith("/assets/servers/"):

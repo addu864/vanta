@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VANTA</title>
+    <link rel="icon" href="/assets/vanta.ico">
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -4353,6 +4354,11 @@
       ["Controller", "SETTINGS › Controller", () => { showTab("settings"); $("controller-settings").scrollIntoView({ block: "center" }); }],
       ["Copy launcher log", "Log panel", () => { $("log-panel").scrollIntoView({ block: "center" }); }],
       ["Welcome tour", "What's new in this version", () => startTour()],
+      ["Downloads", "Everything Vanta is downloading; pause or cancel", () => { $("dl-pill").hidden = false; dlToggle(true); }],
+      ["Search the log", "Log panel", () => { $("log-panel").scrollIntoView({ block: "center" }); $("log-filter").focus(); }],
+      ["Cape preview", "SKINS › 3D preview", () => { showTab("skins"); $("cape-pick").focus(); }],
+      ["Rename instance", "INSTANCES › Name, memory & Java", () => { showTab("instances"); setTimeout(() => { $("inst-label").scrollIntoView({ block: "center" }); $("inst-label").focus(); }, 200); }],
+      ["Favourite servers", "BROWSE SERVERS", () => { showTab("browse"); $("browse-favs").focus(); }],
     ];
     let palSel = 0, palItems = [];
     function palRender() {
