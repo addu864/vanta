@@ -1042,3 +1042,10 @@ button.danger:hover { background: rgba(255, 90, 130, .14); }
 #inst-notes { width: 100%; min-height: 96px; resize: vertical; font: inherit; font-size: 13px; line-height: 1.45; padding: 8px 10px;
   border-radius: 10px; border: 1px solid var(--line); background: rgba(0, 0, 0, .25); color: inherit; box-sizing: border-box; }
 .inst-playtime { margin-top: 0; }
+
+.cf-list .cf-fix { justify-self: start; margin-top: 6px; padding: 5px 12px; font-size: 13px; }
+.cf-list li.cf-fixed { opacity: .75; border-color: rgba(120, 220, 160, .45); }
+#conflicts { z-index: 86; }
+a.ghost.btn-link { display: inline-flex; align-items: center; border-radius: 14px; border: 1px solid rgba(198, 196, 210, 0.5); padding: 12px 14px;
+  font-size: 13px; line-height: 1.45; background: rgba(14, 8, 22, 0.46); color: #f6f3fb; text-decoration: none; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
+a.ghost.btn-link:hover { border-color: rgba(var(--acc-l), .8); }

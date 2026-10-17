@@ -274,6 +274,8 @@ def dispatch(app: VantaApp, method: str, raw_path: str, body: bytes | None) -> t
         return _from_ok(result)
     if method == "POST" and path == "/api/instances/notes":
         return _from_ok(app.save_instance_notes(_payload(body)))
+    if method == "POST" and path == "/api/instances/conflicts/fix":
+        return _from_ok(app.fix_conflict(_payload(body)))
     if method == "POST" and path == "/api/instances/conflicts":
         return _ok(app.instance_conflicts(_payload(body)))
     if method == "POST" and path == "/api/play":

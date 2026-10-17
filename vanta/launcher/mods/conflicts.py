@@ -94,6 +94,16 @@ def read_jar(path: Path) -> dict[str, Any]:
     return info
 
 
+def _newest(group: list[dict[str, Any]], folder: Path) -> dict[str, Any]:
+    def key(m: dict[str, Any]) -> tuple[list[int], float]:
+        try:
+            mtime = (folder / m["file"]).stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        return (_parts(str(m.get("version") or "")) or [], mtime)
+    return max(group, key=key)
+
+
 # ---- tiny version-range matcher for "depends": {"minecraft": ">=1.21 <1.22"} ----
 def _parts(v: str) -> list[int] | None:
     v = v.strip().lstrip("v")
@@ -178,15 +188,17 @@ def check(mods_dir: Path, game_version: str = "", loader: str = "fabric") -> dic
 
     for mid, group in sorted(by_id.items()):
         if len(group) > 1:
+            keep = _newest(group, folder)
             warnings.append({"level": "error", "title": f"{group[0].get('name') or mid} is installed {len(group)} times",
-                             "detail": "Two copies of the same mod stop the game from starting. Keep the newest and remove the rest.",
-                             "files": [g["file"] for g in group]})
+                             "detail": f"Two copies of the same mod stop the game from starting. Keep the newest ({keep['file']}) and turn off the rest.",
+                             "files": [g["file"] for g in group],
+                             "fix": {"action": "disable", "files": [g["file"] for g in group if g is not keep], "label": "Turn off the older copy"}})
     if loader in {"fabric", "quilt"}:
         forge = [m["file"] for m in mods if m["kind"] == "forge"]
         if forge:
             warnings.append({"level": "error", "title": "Forge mods in a Fabric instance",
                              "detail": "These jars are made for Forge/NeoForge and won't load on Fabric. Get the Fabric version or remove them.",
-                             "files": forge})
+                             "files": forge, "fix": {"action": "disable", "files": forge, "label": "Turn them off"}})
     elif loader in {"forge", "neoforge"}:
         fab = [m["file"] for m in mods if m["kind"] == "fabric"]
         if fab:
@@ -200,7 +212,8 @@ def check(mods_dir: Path, game_version: str = "", loader: str = "fabric") -> dic
     broken = [m["file"] for m in mods if m["kind"] == "broken"]
     if broken:
         warnings.append({"level": "error", "title": "Damaged mod files",
-                         "detail": "These jars can't be opened (half-downloaded or corrupt). Re-download or remove them.", "files": broken})
+                         "detail": "These jars can't be opened (half-downloaded or corrupt). Re-download or remove them.", "files": broken,
+                         "fix": {"action": "disable", "files": broken, "label": "Turn them off"}})
     ids = set(by_id) | set(opti and ["optifine"])
     for left, right, why in KNOWN_CLASHES:
         a, b = ids & left, ids & right
@@ -221,9 +234,11 @@ def check(mods_dir: Path, game_version: str = "", loader: str = "fabric") -> dic
         for dep, who in sorted(missing.items()):
             who = sorted(set(who))
             nice = "Fabric API" if dep == "fabric-api" else dep
+            fix = ({"action": "install", "project": "fabric-api", "label": "Install Fabric API"} if dep == "fabric-api"
+                   else {"action": "search", "query": dep, "label": f"Find {dep} in MODS"})
             warnings.append({"level": "error", "title": f"Missing {nice}",
                              "detail": f"Needed by {', '.join(who[:4])}{' and more' if len(who) > 4 else ''}. Install it from MODS.",
-                             "files": [], "missing": dep})
+                             "files": [], "missing": dep, "fix": fix})
         for m in mods:
             for dep, spec in (m.get("depends") or {}).items():
                 if dep in BUILTIN or dep not in by_id:

@@ -703,6 +703,30 @@ class VantaApp:
         result["instance"] = str(version.get("label") or folder.name)
         return result
 
+    def fix_conflict(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Mod check quick fix: turn mod files off (renamed to .jar.disabled, undo in INSTANCES › Mods)."""
+        body = payload or {}
+        if str(body.get("action") or "") != "disable":
+            return {"ok": False, "error": "Unknown fix."}
+        files = [str(f) for f in (body.get("files") or []) if isinstance(f, str)][:40]
+        if not files:
+            return {"ok": False, "error": "Nothing to turn off."}
+        done: list[str] = []
+        failed: list[str] = []
+        first_error = ""
+        for name in files:
+            res = self.toggle_instance_mod(dict(body, file=name)) if name.endswith(".jar") else {"ok": False}
+            if res.get("ok") and not res.get("enabled"):
+                done.append(name)
+            else:
+                failed.append(name)
+                first_error = first_error or str(res.get("error") or "")
+        if done:
+            self.log.info(f"Mod check: turned off {', '.join(done)} (renamed to .jar.disabled).")
+        if failed and not done:
+            return {"ok": False, "error": first_error or "Couldn't turn those mods off."}
+        return {"ok": True, "disabled": done, "failed": failed}
+
     def play(self, payload: dict[str, Any] | None) -> dict[str, Any]:
         payload = dict(payload or {})
         try:

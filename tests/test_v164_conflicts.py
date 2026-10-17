@@ -94,3 +94,32 @@ def test_play_asks_first_then_allows(tmp_path, monkeypatch):
 def test_ui_has_conflict_dialog():
     s = open("vanta/launcher/ui/index.html", encoding="utf-8").read()
     assert 'id="conflicts"' in s and "checkConflicts: true" in s and "Launch anyway" in s
+
+
+def test_fixes_offered_and_disable_keeps_newest(tmp_path, monkeypatch):
+    import os
+    import time as _t
+    m = tmp_path / "inst" / "mods"
+    jar(m, "sodium-old.jar", {"id": "sodium", "version": "0.5.11+mc1.21.1"})
+    jar(m, "sodium-new.jar", {"id": "sodium", "version": "0.6.0+mc1.21.1"})
+    os.utime(m / "sodium-new.jar", (_t.time() - 999, _t.time() - 999))  # older file, newer version: version wins
+    jar(m, "needs.jar", {"id": "needs", "version": "1", "depends": {"fabric-rendering-v1": "*", "cloth-config": "*"}})
+    res = conflicts.check(m, "1.21.1")
+    dup = next(w for w in res["warnings"] if "installed 2 times" in w["title"])
+    assert dup["fix"] == {"action": "disable", "files": ["sodium-old.jar"], "label": "Turn off the older copy"}
+    fapi = next(w for w in res["warnings"] if w["title"] == "Missing Fabric API")
+    assert fapi["fix"]["action"] == "install" and fapi["fix"]["project"] == "fabric-api"
+    other = next(w for w in res["warnings"] if w["title"] == "Missing cloth-config")
+    assert other["fix"] == {"action": "search", "query": "cloth-config", "label": "Find cloth-config in MODS"}
+
+    from vanta.launcher.ui import app as appmod
+    a = appmod.VantaApp.__new__(appmod.VantaApp)
+    a.log = type("L", (), {"info": lambda self, msg: None})()
+    monkeypatch.setattr(a, "_instance_dir", lambda body: (tmp_path / "inst", {"loader": "fabric", "versionNumber": "1.21.1"}), raising=False)
+    monkeypatch.setattr(a, "_game_running", lambda: False, raising=False)
+    out = a.fix_conflict({"action": "disable", "files": dup["fix"]["files"]})
+    assert out["ok"] and out["disabled"] == ["sodium-old.jar"]
+    assert (m / "sodium-old.jar.disabled").is_file() and (m / "sodium-new.jar").is_file()
+    assert not any("installed 2 times" in w["title"] for w in conflicts.check(m, "1.21.1")["warnings"])
+    assert a.fix_conflict({"action": "delete", "files": ["x.jar"]})["ok"] is False
+    assert a.fix_conflict({"action": "disable", "files": ["../evil.jar"]})["ok"] is False

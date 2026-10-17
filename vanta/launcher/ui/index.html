@@ -78,7 +78,7 @@
               <p id="crash-hint"></p>
               <code id="crash-exception"></code>
               <div class="crash-suspects" id="crash-suspects" hidden></div>
-              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-copy">Copy summary</button><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
+              <div class="row"><button type="button" class="ghost" id="crash-log">Show game log</button><button type="button" class="ghost" id="crash-folder">Open crash reports</button><button type="button" class="ghost" id="crash-copy">Copy summary</button><a class="ghost btn-link" id="crash-help" target="_blank" rel="noopener" href="https://addu864.github.io/vanta/guides.html#troubleshooting">Find a fix online</a><button type="button" class="ghost" id="crash-dismiss">Dismiss</button></div>
             </div>
             <div class="first-run" id="first-run" hidden role="status" aria-live="polite">
               <strong id="first-run-title">Setting up Minecraft 1.21.11</strong>
@@ -1466,7 +1466,29 @@
       await saveInstanceFolder(result.data.path);
     });
 
-    function showConflicts(data) {
+    async function runConflictFix(w, target, li, btn, done) {
+      const fix = w.fix || {};
+      btn.disabled = true;
+      if (fix.action === "disable") {
+        const r = await post("/api/instances/conflicts/fix", Object.assign({ action: "disable", files: fix.files }, target));
+        const d = r.data || {};
+        if (!d.ok) { btn.disabled = false; toast(d.error || "Couldn't turn those mods off.", "bad"); return; }
+        li.classList.add("cf-fixed");
+        btn.textContent = "✓ Turned off " + d.disabled.length + (d.disabled.length === 1 ? " file" : " files");
+        toast("Turned off " + d.disabled.join(", ") + ". Undo in INSTANCES › Mods.", "good");
+        if (typeof loadInstanceInfo === "function" && !$("panel-instances").hidden) loadInstanceInfo();
+      } else if (fix.action === "install") {
+        const r = await post("/api/browse/install", Object.assign({ project: fix.project, title: "Fabric API" }, target));
+        const d = r.data || {};
+        if (!d.ok) { btn.disabled = false; toast(d.error || "Couldn't start the download.", "bad"); return; }
+        li.classList.add("cf-fixed");
+        btn.textContent = "✓ Downloading… (see Downloads)";
+        if (typeof dlKick === "function") dlKick();
+      } else if (fix.action === "search") {
+        done("search:" + fix.query);
+      }
+    }
+    function showConflicts(data, target) {
       return new Promise((resolve) => {
         const box = $("conflicts"), list = $("cf-list");
         $("cf-inst").textContent = "Before you play" + (data.instance ? " · " + data.instance : "");
@@ -1478,6 +1500,11 @@
           const d = document.createElement("span"); d.textContent = w.detail;
           li.append(t, d);
           if ((w.files || []).length) { const f = document.createElement("code"); f.textContent = w.files.slice(0, 6).join(", ") + (w.files.length > 6 ? " +" + (w.files.length - 6) + " more" : ""); li.appendChild(f); }
+          if (w.fix && target) {
+            const fb = document.createElement("button"); fb.type = "button"; fb.className = "ghost cf-fix"; fb.textContent = w.fix.label;
+            fb.addEventListener("click", () => runConflictFix(w, target, li, fb, done));
+            li.appendChild(fb);
+          }
           list.appendChild(li);
         });
         const done = (v) => { box.hidden = true; ["cf-cancel", "cf-mods", "cf-play"].forEach((id) => { $(id).onclick = null; }); document.removeEventListener("keydown", esc); resolve(v); };
@@ -1504,11 +1531,11 @@
       let result = await post("/api/play", body);
       let data = result.data || {};
       if (data.needsConfirm && (data.conflicts || []).length) {
-        const pick = await showConflicts(data);
+        const pick = await showConflicts(data, { versionNumber: chosen.versionNumber, loader: chosen.loader });
         if (pick !== "play") {
-          setStatus("play-status", pick === "mods" ? "Fix the mods, then press PLAY again." : "Launch cancelled. Nothing was changed.", "");
+          setStatus("play-status", pick === "cancel" ? "Launch cancelled. Press PLAY again when you're ready." : "Fix the mods, then press PLAY again.", "");
           $("play").disabled = false;
-          if (pick === "mods") { const tab = document.querySelector('[data-tab="mods"]'); if (tab) tab.click(); }
+          if (pick === "mods" || String(pick).startsWith("search:")) openModsFor(chosen, String(pick).startsWith("search:") ? pick.slice(7) : "");
           return;
         }
         result = await post("/api/play", Object.assign(body, { conflictsOk: true }));
@@ -3593,6 +3620,9 @@
         $("crash-title").textContent = "Minecraft crashed: " + (c.title || "unknown reason");
         $("crash-hint").textContent = c.hint || "";
         $("crash-exception").textContent = c.exception || "";
+        // Opens the website's troubleshooting search with this error filled in (only the error text is in the link).
+        const q = ((c.exception || "").split("\n")[0] || c.title || "").slice(0, 300);
+        $("crash-help").href = "https://addu864.github.io/vanta/guides.html" + (q ? "?q=" + encodeURIComponent(q) : "") + "#troubleshooting";
         paintCrashSuspects(c);
       }
       lastCrash = c;
@@ -4063,8 +4093,9 @@
       if (!(d.warnings || []).length) { setStatus("inst-notes-status", "No problems found in " + d.count + (d.count === 1 ? " mod." : " mods."), "good"); return; }
       setStatus("inst-notes-status", "", "");
       $("cf-play").hidden = true;
-      await showConflicts({ conflicts: d.warnings, instance: d.instance });
+      const pick = await showConflicts({ conflicts: d.warnings, instance: d.instance }, instValue());
       $("cf-play").hidden = false;
+      if (pick === "mods" || String(pick).startsWith("search:")) openModsFor(instValue(), String(pick).startsWith("search:") ? pick.slice(7) : "");
     });
     $("inst-save").addEventListener("click", async () => {
       const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value, label: $("inst-label").value }, instValue()));
@@ -4122,6 +4153,15 @@
     function mbEsc(t) { const d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
     function mbNum(n) { n = Number(n) || 0; return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "K" : String(n); }
     function mbSafeUrl(u) { return /^https:\/\/[^\s"'<>]+$/.test(u || "") ? u : ""; }
+    function openModsFor(inst, query) {
+      showTab("mods");
+      setTimeout(async () => {
+        const sel = $("mb-instance"); mbFillInstances();
+        const v = inst.versionNumber + "|" + inst.loader;
+        if ([...sel.options].some((o) => o.value === v) && sel.value !== v) { sel.value = v; sel.dispatchEvent(new Event("change")); }
+        if (query) { $("mb-query").value = query; $("mb-type").value = "mod"; await mbSearch(); }
+      }, 250);
+    }
     function mbInstanceBody() {
       const parts = ($("mb-instance").value || "").split("|");
       return { versionNumber: parts[0] || "", loader: parts[1] || "" };
