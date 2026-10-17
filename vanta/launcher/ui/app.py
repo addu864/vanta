@@ -363,7 +363,7 @@ class VantaApp:
                        "names": [f["name"] for f in fl if f.get("online")][:4]}
         except Exception:  # noqa: BLE001 - dashboard must never fail on Friends
             pass
-        news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json")
+        news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json", background=True)
         return {"ok": True, "instances": rows[:4], "friends": friends, "news": news}
 
     @staticmethod

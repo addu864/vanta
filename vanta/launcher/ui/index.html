@@ -1190,6 +1190,8 @@
       let d = {};
       try { d = (await api("/api/dashboard")).data || {}; } catch (err) { return; }
       if (!d.ok) return;
+      // Release notes refresh in the background now; pick up the fresh copy once.
+      if (d.news && d.news.refreshing && !loadDashboard.again) { loadDashboard.again = true; setTimeout(loadDashboard, 6000); }
       const list = $("dash-instances"); list.replaceChildren();
       const inst = d.instances || [];
       if (!inst.length) emptyState(list, "⛏", "No instances yet", "Download a Minecraft version with Add instance below, or install a modpack in INSTANCES.");

@@ -102,10 +102,29 @@ def _handler_for(app: VantaApp) -> type[BaseHTTPRequestHandler]:
                 detail = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
                 app.log.error(f"{message} {method} {urlparse(self.path).path}\n{detail}")
                 status, body, content_type = 500, _json_bytes({"ok": False, "error": message}), JSON
+            cache = "no-store"
+            path = urlparse(self.path).path
+            if method == "GET" and status == 200 and (path == "/" or path.startswith("/assets/") or path == "/favicon.ico"):
+                # Let the window revalidate the page, CSS, 3D skin library and icons instead of
+                # downloading them again on every start: same bytes -> 304 with no body.
+                import hashlib
+
+                etag = '"' + hashlib.sha1(body).hexdigest()[:20] + '"'
+                cache = "no-cache"
+                if self.headers.get("If-None-Match") == etag:
+                    self.send_response(304)
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", cache)
+                    self.end_headers()
+                    return
+            else:
+                etag = ""
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
+            self.send_header("Cache-Control", cache)
+            if etag:
+                self.send_header("ETag", etag)
             self.end_headers()
             self.wfile.write(body)
 

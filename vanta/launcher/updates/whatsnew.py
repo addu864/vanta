@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -94,8 +95,21 @@ def _quick_json(url: str) -> Any:
         return json.loads(resp.read(4 * 1024 * 1024).decode("utf-8"))
 
 
+_refreshing = threading.Lock()
+
+
+def _bundled_rows(current: str) -> list[dict[str, Any]]:
+    items = BUNDLED_HIGHLIGHTS.get(current)
+    if not items:
+        return []
+    return [{"tag": f"v{current}", "name": f"Vanta {current}", "date": "", "url": "", "highlights": list(items),
+             "current": True, "newer": False}]
+
+
 def whats_new(cache_file: Path, fetch: Callable[[str], Any] = _quick_json, current: str = __version__,
-              now: float | None = None) -> dict[str, Any]:
+              now: float | None = None, background: bool = False) -> dict[str, Any]:
+    """Release notes for Home. background=True never waits on GitHub: it answers from the saved
+    (or bundled) notes at once and refreshes the cache on a worker thread."""
     now = time.time() if now is None else now
     cached: dict[str, Any] = {}
     try:
@@ -105,6 +119,19 @@ def whats_new(cache_file: Path, fetch: Callable[[str], Any] = _quick_json, curre
     fresh = isinstance(cached, dict) and isinstance(cached.get("releases"), list) and now - float(cached.get("at") or 0) < CACHE_SECONDS
     if fresh and not _has_version(cached["releases"], current):
         fresh = False  # saved before this version was released (e.g. right after an update): fetch again
+    if background and not fresh:
+        if _refreshing.acquire(blocking=False):
+            def work() -> None:
+                try:
+                    whats_new(cache_file, fetch, current)
+                finally:
+                    _refreshing.release()
+            threading.Thread(target=work, name="vanta-whatsnew", daemon=True).start()
+        releases = summarize((cached or {}).get("releases") or [], current) if isinstance(cached, dict) else []
+        if not any(r.get("current") for r in releases):
+            releases = (_bundled_rows(current) + releases)[:3]
+        return {"ok": True, "current": current, "releases": releases, "offline": not releases,
+                "stale": bool(releases), "refreshing": True}
     offline = False
     if not fresh and fetch is _quick_json and now - _last_fail["at"] < RETRY_SECONDS:
         offline = True
