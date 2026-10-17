@@ -30,6 +30,10 @@ HINTS: tuple[tuple[str, str], ...] = (
     (r"JsonSyntaxException|MalformedJsonException|Failed to (?:load|read|parse) (?:the )?config|ConfigLoadingException|ParsingException", "A mod's config file is damaged. Open the game folder, move that mod's file out of the config folder, and start again; it is recreated."),
     (r"Exception (?:reading|loading) .{0,40}\.mca|RegionFile|Failed to load level|level\.dat", "A world file looks damaged. Restore a backup in INSTANCES › Worlds, or try another world."),
     (r"Ticking (?:block )?entity|Ticking entity|Ticking player", "Something in the world (a block or mob) crashes the game every tick. Back up the world, then update or remove the mod that adds it."),
+    (r"ZipException|zip END header not found|invalid LOC header|error in opening zip file", "A game or mod file is damaged (often a half-finished download). Use Check mods on the crash card; if no mod is damaged, reinstall this Minecraft version."),
+    (r"Could not find or load main class", "The Minecraft files for this version are incomplete. Reinstall this version, then press PLAY again."),
+    (r"AccessDeniedException|Access is denied|Operation not permitted", "The system blocked access to a game file. Close other launchers or games, and if antivirus quarantined something, allow the Vanta folder."),
+    (r"BindException|Address already in use", "Another program is already using that network port (often a second Minecraft or a server). Close it, or pick another port."),
     (r"StackOverflowError", "A mod got stuck in a loop (stack overflow). Disable recently added mods one by one."),
     (r"Failed to (?:bind|open) .*OpenAL|OpenAL", ""),
 )

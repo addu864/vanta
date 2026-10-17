@@ -21,6 +21,10 @@ CASES = [
     ("java.io.IOException: Exception reading r.0.0.mca", "world file looks damaged"),
     ("Description: Ticking entity\n\njava.lang.NullPointerException", "Something in the world"),
     ("java.lang.StackOverflowError", "loop"),
+    ("java.util.zip.ZipException: zip END header not found", "half-finished download"),
+    ("Error: Could not find or load main class net.minecraft.client.main.Main", "incomplete"),
+    ("java.nio.file.AccessDeniedException: C:\\Users\\a\\.minecraft\\options.txt", "antivirus"),
+    ("java.net.BindException: Address already in use", "network port"),
 ]
 
 
