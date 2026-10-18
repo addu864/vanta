@@ -66,6 +66,11 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.6.8": [
+        "Mac fix: PLAY no longer stops Minecraft right after it starts (\"exited before it stayed alive (exit None)\").",
+        "If Java really stops at start-up, the message gives the real exit code, and Show game log has the Java path, CPU and command.",
+        "Mac: Vanta's own Java download is made runnable and un-quarantined before PLAY.",
+    ],
     "1.6.7": [
         "Ctrl K finds your instances by name or by what's in their notes, like a seed, a base location or a server IP.",
     ],

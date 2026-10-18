@@ -1,3 +1,4 @@
+# Copy to .github/workflows/mac-launch.yml to enable (pushing workflow files needs a token with the "workflow" scope).
 name: macOS launch smoke test
 on:
   workflow_dispatch:

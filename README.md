@@ -2,6 +2,12 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.6.8
+
+- **Mac fix: PLAY works again.** On macOS, Vanta checked whether the game was running by reading `/proc`, which only exists on Linux. The check always failed, so Vanta stopped a healthy Minecraft 0.6 s after PLAY and showed "The Java process exited before it stayed alive (exit None)". Vanta now trusts the process it started, and uses `ps` on macOS when it reconnects to a running game.
+- When Java really stops at start-up, the message shows the real exit code (or the signal), and **Show game log** starts with the Java path, the CPU and the command (classpath shortened, no secrets).
+- Mac: the Java that Vanta downloads gets its executable bits checked and the quarantine flag removed before PLAY.
+
 ## New in 1.6.7
 
 - **Ctrl K finds instances**: type an instance name, or anything from its notes (a seed, base coordinates, a server IP), and Enter opens that instance in INSTANCES.
