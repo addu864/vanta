@@ -820,27 +820,27 @@
         panel.hidden = panel.dataset.panel !== name;
       });
       if (name === "mods") {
-        mbOpen().catch(() => {});
-        loadInstalledMods().catch(() => {});
+        mbOpen().catch(softFail);
+        loadInstalledMods().catch(softFail);
       }
       if (name === "skins") {
-        loadSkinLibrary().catch(() => {});
+        loadSkinLibrary().catch(softFail);
       }
       if (name === "instances") {
-        loadInstancesTab().catch(() => {});
-        if (!$("pack-results").children.length) packSearch().catch(() => {});
+        loadInstancesTab().catch(softFail);
+        if (!$("pack-results").children.length) packSearch().catch(softFail);
       }
       if (name === "browse") {
-        loadPopularServers().catch(() => {});
+        loadPopularServers().catch(softFail);
       }
       if (name === "servers") {
-        loadServers().catch(() => {});
+        loadServers().catch(softFail);
       }
       if (name === "hud") {
-        loadHud().catch(() => {});
+        loadHud().catch(softFail);
       }
       if (name === "friends") {
-        frLoad().catch(() => {});
+        frLoad().catch(softFail);
       }
     }
 
@@ -924,6 +924,17 @@
       node.textContent = text || "";
       node.className = "status" + (kind ? " " + kind : "");
       if (kind === "bad" && text) toast(text, "bad");
+    }
+
+    // Background errors: always logged; user-facing loads also get one short toast.
+    let lastFailAt = 0;
+    function quietFail(e) { try { console.warn("[vanta]", (e && e.message) || e); } catch (_) {} }
+    function softFail(e) {
+      quietFail(e);
+      const msg = (e && e.message) || "";
+      if (!msg || Date.now() - lastFailAt < 8000) return;
+      lastFailAt = Date.now();
+      toast("Couldn't load: " + msg, "bad");
     }
 
     function toast(text, kind, ms) {
@@ -1147,8 +1158,8 @@
       if (!$("server-ram-create").value) {
         $("server-ram-create").value = "2";
       }
-      await Promise.all([loadHome(), loadDashboard(), loadBackground(), refreshLogs()].map((p) => p.catch(() => {})));
-      Promise.all([loadInstalledMods(), loadServers(), loadHud(), loadController()].map((p) => p.catch(() => {})));
+      await Promise.all([loadHome(), loadDashboard(), loadBackground(), refreshLogs()].map((p) => p.catch(softFail)));
+      Promise.all([loadInstalledMods(), loadServers(), loadHud(), loadController()].map((p) => p.catch(softFail)));
     }
 
     function fillPlaceholderSelect(select, values, current, labelForSingle) {
@@ -1341,7 +1352,7 @@
     $("dash-friends-open").addEventListener("click", () => showTab("friends"));
     setInterval(() => {
       const panel = $("panel-play");
-      if (!document.hidden && panel && !panel.hidden) loadDashboard().catch(() => {});
+      if (!document.hidden && panel && !panel.hidden) loadDashboard().catch(quietFail);
     }, 20000);
 
     $("pick-background").addEventListener("click", async () => {
@@ -3029,7 +3040,7 @@
         if (result.data && result.data.ok) {
           hudState = result.data;
         }
-      }).catch(() => {});
+      }).catch(softFail);
     });
     $("hud-save-module").addEventListener("click", () => {
       saveHudModule().catch(() => setStatus("hud-status", "Could not save that module.", "bad"));
@@ -3335,7 +3346,7 @@
     });
     $("add-instance-panel").addEventListener("toggle", () => {
       if ($("add-instance-panel").open) {
-        if (!presetRows.length) loadPresets().catch(() => {});
+        if (!presetRows.length) loadPresets().catch(softFail);
         if (!instanceRows.length) loadInstanceVersions().catch(() => toast("Could not load the version list.", "bad"));
       }
     });
@@ -3695,8 +3706,8 @@
         setLogLines(g.log || [], "No game log yet. Press PLAY to start Minecraft.");
       }
     }
-    setInterval(() => pollGame().catch(() => {}), 2000);
-    pollGame().catch(() => {});
+    setInterval(() => pollGame().catch(quietFail), 2000);
+    pollGame().catch(quietFail);
     $("game-pill").addEventListener("click", () => { showTab("play"); setLogMode("game"); openLogs(); });
     $("stop-game").addEventListener("click", async () => {
       if (!confirm("Stop Minecraft? Unsaved progress in singleplayer may be lost.")) return;
@@ -3766,7 +3777,7 @@
       $("log-tab-game").classList.toggle("active", mode === "game");
       $("log-tab-vanta").setAttribute("aria-pressed", String(mode === "vanta"));
       $("log-tab-game").setAttribute("aria-pressed", String(mode === "game"));
-      refreshLogs().catch(() => {});
+      refreshLogs().catch(softFail);
     }
     $("log-tab-vanta").addEventListener("click", () => setLogMode("vanta"));
     $("log-tab-game").addEventListener("click", () => setLogMode("game"));
@@ -3802,7 +3813,7 @@
         }
       }, 1000);
     });
-    setTimeout(() => checkUpdates().catch(() => {}), 4000);
+    setTimeout(() => checkUpdates().catch(quietFail), 4000);
 
     // ---- Downloads panel: everything Vanta is downloading, with pause/resume/cancel for Minecraft ----
     const dlHidden = new Set(JSON.parse(sessionStorage.getItem("vanta-dl-hidden") || "[]"));
@@ -3843,7 +3854,7 @@
       });
     }
     async function dlPoll() {
-      try { const d = (await api("/api/downloads")).data || {}; dlRows = d.downloads || []; dlRender(); } catch (_) {}
+      try { const d = (await api("/api/downloads")).data || {}; dlRows = d.downloads || []; dlRender(); } catch (e) { quietFail(e); }
       const busy = dlRows.some((r) => r.state === "downloading" || r.state === "queued" || r.state === "paused");
       clearTimeout(dlTimer); dlTimer = setTimeout(dlPoll, busy || !$("dl-panel").hidden ? 1000 : 6000);
     }
@@ -3890,14 +3901,14 @@
         const count = f.total > 1 ? " (" + f.done + "/" + f.total + ")" : "";
         $("first-run-step").textContent = (FIRST_RUN_STEPS[f.step] || "Downloading") + count + ". First launch only; this can take a few minutes.";
       }
-      if (!firstRunTimer) firstRunTimer = setInterval(() => pollFirstRun().catch(() => {}), 1500);
+      if (!firstRunTimer) firstRunTimer = setInterval(() => pollFirstRun().catch(quietFail), 1500);
     }
     $("first-run-retry").addEventListener("click", async () => {
       $("first-run-retry").hidden = true;
       await post("/api/first-run/retry", {});
-      pollFirstRun().catch(() => {});
+      pollFirstRun().catch(quietFail);
     });
-    pollFirstRun().catch(() => {});
+    pollFirstRun().catch(quietFail);
 
     // ---- INSTANCES tab ----
     function instValue() {
@@ -3970,7 +3981,7 @@
         const img = document.createElement("img"); img.src = url; img.loading = "lazy"; img.alt = "Screenshot " + s.name;
         a.appendChild(img); shots.appendChild(a);
       });
-      loadWorlds().catch(() => {});
+      loadWorlds().catch(softFail);
     }
     // ---- Screenshot viewer ----
     let shotList = [], shotAt = 0, shotInst = null, shotReturn = null;
@@ -4048,7 +4059,7 @@
         }
       }, 1000);
     }
-    $("pack-search").addEventListener("click", () => packSearch().catch(() => {}));
+    $("pack-search").addEventListener("click", () => packSearch().catch(softFail));
     $("pack-query").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pack-search").click(); });
     $("pack-file").addEventListener("change", () => {
       const f = $("pack-file").files[0]; if (!f) return;
@@ -4187,7 +4198,7 @@
       const r = await post("/api/instances/settings", Object.assign({ ramGb: Number($("inst-ram").value || 0), jvmArgs: $("inst-jvm").value, label: $("inst-label").value }, instValue()));
       if (r.data && r.data.ok) {
         setStatus("inst-settings-status", "Saved.", "good"); toast("Instance settings saved.", "good");
-        try { await refresh(); await loadInstancesTab(); loadDashboard(); } catch (_) {}
+        try { await refresh(); await loadInstancesTab(); loadDashboard(); } catch (e) { softFail(e); }
       }
       else setStatus("inst-settings-status", (r.data && r.data.error) || "Could not save.", "bad");
     });
@@ -4220,6 +4231,22 @@
     });
 
     // ---- Keyboard shortcuts ----
+    // Arrow keys move between top tabs; Enter/Space opens (native button).
+    document.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (!t || !t.classList || !t.classList.contains("tab")) return;
+      const tabs = [...document.querySelectorAll(".tab")].filter((b) => !b.hidden && b.offsetParent !== null);
+      const i = tabs.indexOf(t);
+      let j = -1;
+      if (e.key === "ArrowRight") j = (i + 1) % tabs.length;
+      else if (e.key === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === "Home") j = 0;
+      else if (e.key === "End") j = tabs.length - 1;
+      if (j < 0) return;
+      e.preventDefault();
+      tabs[j].focus();
+      showTab(tabs[j].dataset.tab);
+    });
     document.addEventListener("keydown", (e) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "");
       if (e.key === "Escape") { $("kbd-help").hidden = true; document.activeElement && document.activeElement.blur && document.activeElement.blur(); return; }
@@ -4487,14 +4514,14 @@
     }
     $("mb-update-all").addEventListener("click", () => mbUpdateAll().catch(() => toast("Update failed.", "bad")));
     $("mb-go").addEventListener("click", () => mbSearch().catch(() => setStatus("mb-status", "Search failed.", "bad")));
-    $("mb-query").addEventListener("keydown", (e) => { if (e.key === "Enter") mbSearch().catch(() => {}); });
+    $("mb-query").addEventListener("keydown", (e) => { if (e.key === "Enter") mbSearch().catch(softFail); });
     $("mb-type").addEventListener("change", mbFilterCategories);
     $("mb-gamever").addEventListener("input", () => { $("mb-gamever").dataset.touched = "1"; });
     $("mb-clear").addEventListener("click", () => { $("mb-results").hidden = true; $("mb-rows").hidden = false; $("mb-clear").hidden = true; });
-    $("mb-instance").addEventListener("change", () => { delete $("mb-gamever").dataset.touched; mbOpen(true).catch(() => {}); });
+    $("mb-instance").addEventListener("change", () => { delete $("mb-gamever").dataset.touched; mbOpen(true).catch(softFail); });
     $("mb-overlay").addEventListener("click", (e) => { if (e.target === $("mb-overlay")) mbClose(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("mb-overlay").hidden) mbClose(); });
-    window.setTimeout(() => mbRefreshInstalled().catch(() => {}), 0);
+    window.setTimeout(() => mbRefreshInstalled().catch(quietFail), 0);
 
     // ---- FRIENDS (serverless: local list + LAN beacons + e4all invites) ----
     let frTimer = null, frInvite = null;
@@ -4502,7 +4529,7 @@
     function frBtn(text, cls, fn) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); return b; }
     async function frLoad() {
       await frRefresh();
-      if (!frTimer) frTimer = setInterval(() => { if (!$("panel-friends").hidden) frRefresh().catch(() => {}); }, 5000);
+      if (!frTimer) frTimer = setInterval(() => { if (!$("panel-friends").hidden) frRefresh().catch(quietFail); }, 5000);
     }
     async function frRefresh() {
       const r = await post("/api/friends/overview", selectedVersionValue());
@@ -4615,7 +4642,7 @@
       const r = await api("/api/appearance"); const d = r.data || {};
       if (!d.ok) return;
       appearance = d.appearance; applyAppearance(appearance); paintAppearance();
-      if (appearance.tour !== "done") { startTour(); post("/api/whatsnew", { mark: true }).catch(() => {}); return; }
+      if (appearance.tour !== "done") { startTour(); post("/api/whatsnew", { mark: true }).catch(quietFail); return; }
       const w = (await api("/api/whatsnew")).data || {};
       if (w.show) showWhatsNew(w);
     }
@@ -4722,7 +4749,7 @@
     function startTour() { tourReturn = document.activeElement; tourAt = 0; $("tour").hidden = false; tourPaint(); }
     function endTour() {
       $("tour").hidden = true; showTab("play");
-      if (appearance.tour !== "done") saveAppearance({ tour: "done" }).catch(() => {});
+      if (appearance.tour !== "done") saveAppearance({ tour: "done" }).catch(quietFail);
       if (tourReturn && tourReturn.focus) tourReturn.focus();
     }
     $("tour-next").addEventListener("click", () => { if (tourAt >= TOUR.length - 1) endTour(); else { tourAt += 1; tourPaint(); } });
@@ -4745,11 +4772,11 @@
       items.forEach((t) => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
       $("whatsnew").hidden = false; $("wn-ok").focus();
     }
-    function closeWhatsNew() { $("whatsnew").hidden = true; post("/api/whatsnew", { mark: true }).catch(() => {}); }
+    function closeWhatsNew() { $("whatsnew").hidden = true; post("/api/whatsnew", { mark: true }).catch(quietFail); }
     $("wn-ok").addEventListener("click", closeWhatsNew);
     $("wn-tour").addEventListener("click", () => { closeWhatsNew(); startTour(); });
     $("whatsnew").addEventListener("keydown", (e) => { if (e.key === "Escape") closeWhatsNew(); });
-    loadAppearance().catch(() => {});
+    loadAppearance().catch(softFail);
   </script>
 </body>
 </html>

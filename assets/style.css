@@ -1244,3 +1244,10 @@ input[type=checkbox] { min-height: 0; }
 .add-box > details.add-instance > summary::-webkit-details-marker { display: none; }
 .add-box > details.add-instance > summary::after { content: "+"; font-size: 20px; line-height: 1; color: var(--text); }
 .add-box > details.add-instance[open] > summary::after { content: "\2013"; }
+/* no layout jumps: reserve space for things that load in */
+#play-status { min-height: 20px; }
+#dash-instances { min-height: 132px; }
+#popular-cards { min-height: 64px; }
+#dash-friends { min-height: 40px; }
+#dash-news { min-height: 96px; }
+.tab:focus-visible { outline-offset: -2px; }
