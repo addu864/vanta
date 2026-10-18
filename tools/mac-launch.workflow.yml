@@ -1,0 +1,29 @@
+name: macOS launch smoke test
+on:
+  workflow_dispatch:
+  push:
+    paths: ["vanta/launcher/minecraft/**", "vanta/shared/java*.py", "vanta/shared/macplatform.py", "tools/ci_mac_launch.py", ".github/workflows/mac-launch.yml"]
+permissions:
+  contents: read
+jobs:
+  launch:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15-intel, macos-13]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install, download Java, PLAY (headless)
+        run: python tools/ci_mac_launch.py
+      - name: Upload game log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-log-${{ matrix.os }}
+          path: ${{ runner.temp }}/vanta-ci/client.log
+          if-no-files-found: ignore
