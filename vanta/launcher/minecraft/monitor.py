@@ -168,8 +168,10 @@ def game_status(data_dir: Path, *, lines: int = 200) -> dict[str, Any]:
             folder = Path(_state["jar"]).parent if _state["jar"] else None
             if folder is not None and _state["since"]:
                 playtime.record(data_dir, folder, _state["since"], playtime.session_end(folder, _state["since"], _state.get("seen") or 0))
-        except Exception:  # noqa: BLE001 - playtime must never break crash detection
-            pass
+        except Exception as exc:  # noqa: BLE001 - playtime must never break crash detection
+            import logging
+
+            logging.getLogger("vanta").warning("Playtime not recorded: %s", exc)
         # It was running and stopped: decide if that was a crash.
         instance = Path(_state["jar"]).parent if _state["jar"] else None
         report = newest_crash_report(instance, _state["since"]) if instance else None

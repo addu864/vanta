@@ -363,8 +363,8 @@ class VantaApp:
             friends = {"online": sum(1 for f in fl if f.get("online")), "hosting": sum(1 for f in fl if f.get("join")),
                        "total": len(fl), "nearby": len(ov.get("nearby") or []),
                        "names": [f["name"] for f in fl if f.get("online")][:4]}
-        except Exception:  # noqa: BLE001 - dashboard must never fail on Friends
-            pass
+        except Exception as exc:  # noqa: BLE001 - dashboard must never fail on Friends
+            self.log.error(f"Dashboard: friends overview failed: {exc}")
         news = whatsnew.whats_new(self.data_dir / "cache" / "releases.json", background=True)
         return {"ok": True, "instances": rows[:4], "friends": friends, "news": news,
                 "playtime": {"total": playtime.total(self.data_dir), "week": playtime.recent_total(self.data_dir),
@@ -740,8 +740,8 @@ class VantaApp:
                 ram = self._instance_settings(folder)["ramGb"]
                 if ram:
                     payload["ramGb"] = ram
-        except Exception:  # noqa: BLE001 - settings are optional
-            pass
+        except Exception as exc:  # noqa: BLE001 - settings are optional
+            self.log.error(f"Launch: instance settings ignored: {exc}")
         try:
             found = self.instance_conflicts(payload)
         except Exception as exc:  # noqa: BLE001 - a check must never stop PLAY by itself crashing
@@ -1497,11 +1497,15 @@ class VantaApp:
         self.friends.ensure_lan()
 
         def loop() -> None:
+            last = ""
             while True:
                 try:
                     self._update_friend_presence({})
-                except Exception:  # noqa: BLE001 - presence is best effort
-                    pass
+                    last = ""
+                except Exception as exc:  # noqa: BLE001 - presence is best effort
+                    if str(exc) != last:  # log each new problem once, not every 10 s
+                        last = str(exc)
+                        self.log.error(f"Friends presence: {exc}")
                 time.sleep(10)
         threading.Thread(target=loop, name="vanta-friends-presence", daemon=True).start()
 

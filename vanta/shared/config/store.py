@@ -30,8 +30,10 @@ def _default_ram_gb() -> int:
         info = macplatform.current()
         if info["mac"]:
             return macplatform.recommended_ram_gb(int(info["memGb"]), intel_mac=bool(info["intel"]))
-    except Exception:  # noqa: BLE001 - never block config loading
-        pass
+    except Exception as exc:  # noqa: BLE001 - never block config loading
+        import logging
+
+        logging.getLogger("vanta").warning("Mac RAM default unavailable: %s", exc)
     return 4
 
 
