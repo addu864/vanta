@@ -33,7 +33,7 @@ from vanta.shared.utilities.ram import parse_ram
 
 ONLINE_TARGETS = {"online", "online-mode", "online_mode", "multiplayer-online"}
 DRY_RUN_TARGETS = {"local-dry-run", "dry-run", "dry_run"}
-NO_ACCOUNT = "No local account selected. Create a LOCAL TEST ACCOUNT before play."
+NO_ACCOUNT = "Add an account first: click the name above PLAY."
 TOKEN_REJECTED = "Vanta 0.1 does not accept or store tokens."
 JAVA_MISSING = "Java 21+ was not found (PATH, JAVA_HOME, or an installed JDK). Minecraft was not started."
 CLIENT_JAR_NAME = "client.jar"

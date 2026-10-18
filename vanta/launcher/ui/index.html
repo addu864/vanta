@@ -118,7 +118,7 @@
       <section class="panel" data-panel="profiles" id="panel-profiles" hidden>
         <h1>PROFILES</h1>
         <div class="profile-create">
-          <p class="hint">Create a profile here, or add an instance folder you already have. The folder button opens the Windows folder dialog. Nothing is copied or downloaded.</p>
+          <p class="hint">Create a profile, or add an instance folder you already have. Nothing is copied.</p>
           <div class="row">
             <input id="profile-name" maxlength="32" placeholder="New profile name" autocomplete="off">
             <button type="button" class="action" id="create-profile">Create profile</button>
@@ -156,10 +156,10 @@
         </div>
         <div id="mb-rows"></div>
         <div class="mb-overlay" id="mb-overlay" hidden><div class="mb-detail glass" id="mb-detail" role="dialog" aria-modal="true"></div></div>
-        <p class="hint mb-credit">Data from the public <a href="https://modrinth.com" target="_blank" rel="noopener">Modrinth</a> API. Files are downloaded from Modrinth's CDN and hash-checked.</p>
+        <p class="hint mb-credit">From <a href="https://modrinth.com" target="_blank" rel="noopener">Modrinth</a>. Every file is hash-checked.</p>
         <details class="mb-classic"><summary>Profile mods (classic)</summary>
         <h1>MODS</h1>
-        <p class="hint">Browse Modrinth for Minecraft 1.21.11 / Fabric. Each profile keeps its own installed and enabled mods.</p>
+        <p class="hint">Mods for 1.21.11 Fabric. Each profile keeps its own set.</p>
         <div class="mods-toolbar">
           <label class="mods-profile-label">Profile
             <select id="mods-profile"></select>
@@ -186,7 +186,7 @@
 
       <section class="panel fr" data-panel="friends" id="panel-friends" hidden>
         <div class="mb-head"><h1>FRIENDS</h1><span class="hint" id="fr-me"></span></div>
-        <p class="hint">No account, no email, no server. Your friend list lives on this PC. Friends on the same Wi-Fi show up live; friends elsewhere join with a world invite.</p>
+        <p class="hint">No account needed. Friends on your Wi-Fi show up live; others join with a world invite.</p>
         <div class="status" id="fr-status"></div>
         <div class="fr-top">
           <div class="glass fr-box">
@@ -198,7 +198,7 @@
           </div>
           <div class="glass fr-box">
             <h2>Invite to your world</h2>
-            <p class="hint">In Minecraft press Esc → <b>Open to LAN</b>, Online Mode off → Start. e4all gives your world a public address; Vanta turns it into an invite code that works for 6 hours.</p>
+            <p class="hint">In Minecraft: Esc → <b>Open to LAN</b> → Online Mode off → Start. Vanta turns it into an invite code (valid 6 hours).</p>
             <div class="fr-form"><input id="fr-addr" maxlength="120" placeholder="e4all address (found automatically)"><button type="button" class="action" id="fr-invite">Copy invite</button></div>
             <p class="hint fr-inv-out" id="fr-inv-out" hidden></p>
           </div>
@@ -211,12 +211,12 @@
         <h2 class="fr-h">Friends</h2>
         <div class="fr-list" id="fr-list"></div>
         <p class="hint" id="fr-lan-note"></p>
-        <p class="hint">Online status only works on your local network. Vanta has no server, so friends outside it always show as "Not on your network" even when they're playing. Ask them for a world invite.</p>
+        <p class="hint">Online status works on your local network only.</p>
       </section>
 
       <section class="panel" data-panel="skins" id="panel-skins" hidden>
         <h1>SKINS</h1>
-        <p class="hint" id="skins-repo-note">Vanta's own skin library is stored in the app. Ely.by and NameMC are not contacted.</p>
+        <p class="hint" id="skins-repo-note">Vanta library skins, stored in the app. Ely.by and NameMC aren't contacted.</p>
         <p class="hint" id="skins-preview-note">Select a skin to see it on a rotating 3D player. Drag to spin it.</p>
         <div class="glass skin3d" id="skin3d">
           <canvas id="skin3d-canvas" width="260" height="340" aria-label="3D skin preview"></canvas>
@@ -234,7 +234,7 @@
                 <select id="cape-back"><option value="cape">Cape</option><option value="elytra">Elytra</option></select>
               </label>
               <div class="row"><label class="ghost file-btn">Your cape PNG<input type="file" id="cape-file" accept="image/png,.png" hidden></label><button type="button" class="ghost" id="skin3d-turn">Turn around</button></div>
-              <p class="hint" id="cape-note">Preview only. In Minecraft, capes come from your official account or a cape mod; Vanta doesn't change what other players see.</p>
+              <p class="hint" id="cape-note">Preview only. Other players won't see it.</p>
             </div>
           </div>
         </div>
@@ -270,14 +270,14 @@
             <button type="button" class="action" id="skin-import">Import</button>
           </div>
         </div>
-        <p class="hint" id="skins-microsoft-note">Saving a skin writes it onto the LOCAL TEST ACCOUNT. Online upload needs a Microsoft account, which is not configured. Vanta will not claim a Microsoft upload.</p>
+        <p class="hint" id="skins-microsoft-note">Saves to your local account. Uploading needs a Microsoft account.</p>
       </section>
 
       <section class="panel" data-panel="instances" id="panel-instances" hidden>
         <div class="card add-box">
           <details class="add-instance" id="add-instance-panel">
                 <summary>Add instance (Minecraft 1.18 to 26.3)</summary>
-                <p class="hint">Each version downloads into its own folder. Your 1.21.11 instance is not changed.</p>
+                <p class="hint">Each version gets its own folder.</p>
                 <label>Minecraft version
                   <select id="instance-version" aria-label="Minecraft version"><option value="">Loading versions…</option></select>
                 </label>
@@ -299,7 +299,7 @@
           <div class="popular-head"><h2>Modpacks</h2>
             <div class="row"><label class="ghost file-btn">Import .mrpack<input type="file" id="pack-file" accept=".mrpack,application/zip" hidden></label></div>
           </div>
-          <p class="hint">Fabric modpacks from Modrinth. Vanta installs the pack's Minecraft version as its own instance (or uses it if you have it), checks every file's hash, and moves that instance's current mods and config to a vanta-backup folder first. Your main 1.21.11 instance is never replaced.</p>
+          <p class="hint">Fabric modpacks from Modrinth, hash-checked. Existing mods are backed up first; your main 1.21.11 instance is never replaced.</p>
           <div class="row mods-search-row"><input type="search" id="pack-query" maxlength="80" placeholder="Search Fabric modpacks (empty = most downloaded)"><button type="button" class="action" id="pack-search">Search</button></div>
           <div class="pack-job" id="pack-job" hidden><strong id="pack-job-title"></strong><div class="progress"><div class="progress-bar" id="pack-job-bar"></div></div><p class="hint" id="pack-job-step"></p></div>
           <div class="pack-row" id="pack-results"></div>
@@ -312,7 +312,7 @@
           <div class="inst-grid">
             <div class="inst-box">
               <h3>Trailer style</h3>
-              <p class="hint">Iris + Complementary shaders, Bare Bones + Fresh Animations, EMF/ETF, Not Enough Animations, Visuality, Gamma Utils night vision on B. Downloads what exists for this version.</p>
+              <p class="hint">Shaders, Fresh Animations, Visuality and Gamma Utils night vision on B, for this version.</p>
               <label class="switch"><input type="checkbox" id="inst-trailer"><span>Trailer style</span></label>
               <div class="progress" id="inst-trailer-progress" hidden><div class="progress-bar" id="inst-trailer-bar"></div></div>
               <div class="status" id="inst-trailer-status"></div>
@@ -334,7 +334,7 @@
             </div>
             <div class="inst-box">
               <h3>Copy mods to another instance</h3>
-              <p class="hint">Adds this instance's Modrinth mods, shaders and resource packs to another Fabric instance, each one downloaded for that instance's Minecraft version and hash-checked. Mods without a build for that version are skipped and listed. Nothing is removed.</p>
+              <p class="hint">Adds these mods, shaders and packs to another Fabric instance, in its version. Nothing is removed.</p>
               <label>Copy to<select id="inst-copy-to"></select></label>
               <button type="button" class="ghost" id="inst-copy">Copy mods</button>
               <div class="status" id="inst-copy-status" aria-live="polite"></div>
@@ -345,7 +345,7 @@
           <div class="popular-head"><h3>Screenshots</h3><button type="button" class="ghost" id="inst-shots-open">Open screenshots folder</button></div>
           <div class="shots" id="inst-shots"></div>
           <div class="popular-head"><h3>Worlds</h3><div class="row"><button type="button" class="ghost" id="inst-saves-open">Open saves folder</button><button type="button" class="ghost" id="inst-backups-open">Open backups folder</button></div></div>
-          <p class="hint">Back up before big changes. Delete always keeps a backup first. Restore never overwrites: it adds the world under a new name if the old one is still there.</p>
+          <p class="hint">Delete always backs up first. Restore never overwrites.</p>
           <div class="worlds" id="inst-worlds"></div>
           <details class="glass-sub" id="inst-backups-box"><summary>Backups <span class="hint" id="inst-backups-count"></span></summary><div class="backups" id="inst-backups"></div></details>
         </div>
@@ -356,7 +356,7 @@
             <h2>Browse servers</h2>
             <button type="button" class="ghost" id="browse-refresh">Refresh</button>
           </div>
-          <p class="hint">Public servers that accept local (offline-mode) accounts. Not run by Vanta. Logos and descriptions come from each server's own status/MOTD, site or server-list entry. Live players appear only when the server answers a ping. Play picks an installed instance the server accepts, or offers to download one. Edit the list in popular-servers.json in Vanta's data folder.</p>
+          <p class="hint">Public servers that accept local accounts. Not run by Vanta. Edit the list in popular-servers.json.</p>
           <div class="row browse-tools">
             <input type="search" id="browse-filter" placeholder="Filter by name, mode or version" />
             <label class="inline-label">Sort <select id="browse-sort"><option value="fav">Favourites first</option><option value="players">Most players</option><option value="ping">Lowest ping</option><option value="name">Name</option></select></label>
@@ -372,7 +372,7 @@
           <div class="card"><h2>Where you left off</h2><div class="home-list" id="home-recent"></div></div>
           <div class="card"><h2>Saved servers</h2><div class="home-list" id="home-saved"></div><button type="button" class="ghost small-btn" id="home-open-servers" hidden>Open server tools</button></div>
         </div>
-        <p class="hint">Local servers on this machine only. Create downloads the official Paper (PaperMC) or Fabric server jar for the chosen version. Java must be installed to Start. A server crash cannot quit the launcher. An optional tunnel uses a local playit, cloudflared, or bore binary only. Vanta does not download one and does not invent a public address.</p>
+        <p class="hint">Run a Paper or Fabric server on this computer. Needs Java. A tunnel (playit, cloudflared or bore) is optional and must already be installed.</p>
         <div class="mods-columns">
           <div>
             <h2>Create</h2>
@@ -447,7 +447,7 @@
           <h2>Console</h2>
           <pre id="server-console"></pre>
           <h2>Plugins</h2>
-          <p class="hint">Paper only. Local jars can be listed, enabled, disabled, and removed. Install-from-URL is not supported. Fabric returns "not a Paper server".</p>
+          <p class="hint">Paper servers only: list, enable, disable or remove plugin jars.</p>
           <div class="row">
             <input id="server-plugin-path" placeholder="Local path to a .jar" spellcheck="false">
             <button type="button" class="action" id="server-plugin-install">Install local jar</button>
@@ -459,8 +459,8 @@
 
       <section class="panel" data-panel="hud" id="panel-hud" hidden>
         <h1>HUD</h1>
-        <p class="hint" id="hud-note">HUD layout is saved per profile and would be read by a future client mod. It was not shown in Minecraft.</p>
-        <p class="hint">Launcher preview only. Minecraft is not running, and this page does not draw a HUD inside a world.</p>
+        <p class="hint" id="hud-note">Saved per profile. Not shown in Minecraft yet.</p>
+        <p class="hint">Preview only.</p>
         <label>Profile
           <select id="hud-profile"></select>
         </label>
@@ -473,8 +473,8 @@
 
         <div data-hud-panel="PERFORMANCE" hidden>
           <h2>PERFORMANCE</h2>
-          <p class="hint" id="hud-preset-note">Stored settings bundle only. Vanta does not measure or promise a frame rate, and it does not download performance mods.</p>
-          <p class="hint">Presets: MAX FPS, BALANCED, PRETTY, CINEMATIC. Choosing one does not download Sodium or any other mod.</p>
+          <p class="hint" id="hud-preset-note">Saved settings only. No FPS promises, no downloads.</p>
+          <p class="hint">Presets don't download any mods.</p>
           <label>Preset
             <select id="hud-preset"></select>
           </label>
@@ -484,7 +484,7 @@
 
         <div data-hud-panel="VISUAL" hidden>
           <h2>VISUAL</h2>
-          <p class="hint">Fullscreen, GUI scale, brightness, and FOV are stored on this profile. They are not applied to a running game. The HUD visual shader flag stays off. Packs and shader presets below are separate and were not tested in Minecraft.</p>
+          <p class="hint">Saved on this profile; not applied to a running game. Not tested in Minecraft.</p>
           <label class="check-label">Fullscreen
             <input id="hud-fullscreen" type="checkbox">
           </label>
@@ -499,7 +499,7 @@
           </label>
           <button type="button" class="action" id="hud-save-visual">Save visual settings</button>
           <h2>Resource packs</h2>
-          <p class="hint" id="pack-note">Two original packs for this profile: Vanta Vanilla+ and Vanta Cartoon. The textures were generated for Vanta. They are not a complete Minecraft pack and were not tested in Minecraft. Selecting one copies it into this profile's resourcepacks folder only.</p>
+          <p class="hint" id="pack-note">Two partial Vanta packs. Not tested in Minecraft. Copied into this profile only.</p>
           <div class="utility-list" id="pack-toggles">
             <div class="utility" data-pack="vanta-vanilla-plus">
               <label class="check-label">Vanta Vanilla+
@@ -515,7 +515,7 @@
             </div>
           </div>
           <h2>Shader presets</h2>
-          <p class="hint" id="shader-note">Shaders are off by default. Vanta Smooth aims at a soft, even grade. Vanta Cinematic aims at deeper shadows. Both are Vanta-owned descriptions with a performance warning, not third-party shader packs. A smooth or cinematic pass can cost frames if a loader ever ran it. If Iris is not installed, the choice is stored and the status stays NOT_APPLIED. Vanta does not claim a shader is running. Not tested in Minecraft. Controller labels are on SETTINGS and were not tested in a game.</p>
+          <p class="hint" id="shader-note">Off by default. Without Iris the choice is saved and stays NOT_APPLIED. Not tested in Minecraft.</p>
           <div class="utility-list" id="shader-toggles">
             <div class="utility" data-shader-preset="vanta-smooth">
               <label class="check-label">Vanta Smooth
@@ -535,7 +535,7 @@
 
         <div data-hud-panel="HUD">
           <h2>HUD</h2>
-          <p class="hint">Modules: FPS, ping, coordinates, CPS, keystrokes, RAM, sprint, sneak, armor / status. Each can be enabled, moved, scaled, and given a text color and background.</p>
+          <p class="hint">Turn modules on, move and scale them.</p>
           <div class="hud-editor">
             <div>
               <label>Module
@@ -575,7 +575,7 @@
 
         <div data-hud-panel="QUALITY OF LIFE" hidden>
           <h2>QUALITY OF LIFE</h2>
-          <p class="hint">Toggle sprint, toggle sneak, zoom, a waypoint list (name, x, y, z), and a keybind map. Stored per profile. No freecam, killaura, reach, or x-ray.</p>
+          <p class="hint">Toggle sprint and sneak, zoom, waypoints and keybinds. No freecam, killaura, reach, or x-ray.</p>
           <label class="check-label">Toggle sprint
             <input id="hud-toggle-sprint" type="checkbox">
           </label>
@@ -605,7 +605,7 @@
           </div>
           <div class="profiles" id="hud-waypoints"></div>
           <h2>Utilities</h2>
-          <p class="hint" id="utility-note">Optional mods for this profile only: Simple Voice Chat, Xaero's Minimap, and Xaero's World Map. States are OFF, INCOMPATIBLE, or ENABLED. A toggle turns on only after a Modrinth version lists Minecraft 1.21.11 and Fabric. Search hits are not enough. No jar is vendored. These mods were not shown to work in Minecraft. Controller support is not included.</p>
+          <p class="hint" id="utility-note">Optional mods for this profile. Each turns on only when Modrinth has a 1.21.11 Fabric build.</p>
           <div class="utility-list" id="utility-toggles">
             <div class="utility" data-utility="simple-voice-chat">
               <label class="check-label">Simple Voice Chat
@@ -636,12 +636,13 @@
           <div class="card-head"><h2>What's new</h2><span class="hint" id="dash-version"></span></div>
           <div id="dash-news"><div class="skel-list" aria-busy="true" aria-label="Loading"><span class="skel"></span><span class="skel short"></span></div></div>
         </div>
-        <p class="hint">Language and theme are placeholders. JVM arguments are stored and never executed.</p>
+        <div class="card settings-game">
+        <div class="card-head"><h2>Game</h2><span class="hint">Per-instance Java arguments are in INSTANCES.</span></div>
         <div class="form-grid">
-          <label>Language
+          <label hidden>Language
             <select id="language"></select>
           </label>
-          <label>Theme
+          <label hidden>Theme
             <select id="theme"></select>
           </label>
           <label>Default version
@@ -657,8 +658,9 @@
             <input id="jvm-args" type="text" spellcheck="false" placeholder="Stored only, for example -Xmx4G">
           </label>
         </div>
-        <button type="button" class="action" id="save-settings">Save settings</button>
-        <div class="status" id="settings-status"></div>
+        <div class="row"><button type="button" class="action" id="save-settings">Save settings</button>
+        <div class="status" id="settings-status" role="status"></div></div>
+        </div>
         <div class="glass appearance" id="appearance-settings">
           <h2>Appearance</h2>
           <p class="hint">Changes apply right away and are saved on this PC.</p>
@@ -675,7 +677,7 @@
         </div>
         <div class="controller-block" id="controller-settings">
           <h2>Controller</h2>
-          <p class="hint" id="controller-note">Labels only, for the selected profile. Vanta checks pygame, /dev/input/js*, and evdev. If none of those show a pad, the status is NO_DEVICE. Vanta will not invent a controller. These labels are not sent to Minecraft. In-game controller play was not tested.</p>
+          <p class="hint" id="controller-note">Button labels for this profile. Not sent to Minecraft.</p>
           <div class="utility">
             <span>Device</span>
             <span class="utility-state" id="controller-device-state" data-status="NO_DEVICE">NO_DEVICE</span>
@@ -777,7 +779,7 @@
     <div class="tour glass conflicts-box" role="dialog" aria-modal="true" aria-labelledby="cf-title">
       <p class="eyebrow" id="cf-inst">Before you play</p>
       <h2 id="cf-title">Mod problems found</h2>
-      <p class="hint">Vanta read the mods in this instance. These usually crash the game or break it. Nothing was changed.</p>
+      <p class="hint">These usually crash the game. Nothing was changed yet.</p>
       <ul class="cf-list" id="cf-list"></ul>
       <div class="row"><button type="button" class="ghost" id="cf-cancel">Cancel</button><button type="button" class="ghost" id="cf-mods">Open MODS</button><button type="button" class="action" id="cf-play">Launch anyway</button></div>
     </div>
@@ -785,7 +787,7 @@
   <div class="dl-panel glass" id="dl-panel" role="dialog" aria-label="Downloads" hidden>
     <div class="dl-head"><strong>Downloads</strong><button type="button" class="ghost small-btn" id="dl-clear">Clear finished</button><button type="button" class="ghost small-btn" id="dl-close" aria-label="Close downloads"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button></div>
     <div id="dl-list" class="dl-list" aria-live="polite"></div>
-    <p class="hint">Minecraft downloads can be paused and resumed. Cancelled downloads keep the shared sound and asset files, so starting again is faster.</p>
+    <p class="hint">Pause, resume or cancel. Cancelling keeps shared files.</p>
   </div>
   <div class="shot-viewer" id="shot-viewer" hidden>
     <div class="sv-box glass" role="dialog" aria-modal="true" aria-label="Screenshot">
@@ -953,7 +955,7 @@
         }
         const option = document.createElement("option");
         option.value = version.versionNumber + "|" + version.loader;
-        const mark = version.supported ? "" : " (not supported in 0.1)";
+        const mark = version.supported ? "" : " (limited support)";
         option.textContent = (version.label ? version.label + " · " : "") + version.versionNumber + " / " + version.loader + mark;
         if (version.versionNumber === currentNumber && version.loader === currentLoader) {
           option.selected = true;

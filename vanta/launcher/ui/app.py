@@ -233,7 +233,7 @@ class VantaApp:
     def select_account(self, payload: dict[str, Any]) -> dict[str, Any]:
         account = self.accounts.get(str(payload.get("accountId") or ""))
         if account is None:
-            message = "No local account selected. Create a LOCAL TEST ACCOUNT before play."
+            message = "Add an account first: click the name above PLAY."
             self.log.error(message)
             return {"ok": False, "error": message}
         self.config.update({"selectedAccountId": account["id"]})
@@ -1828,7 +1828,7 @@ class VantaApp:
             return {"ok": False, "error": TOKEN_REJECTED}
         account = self._selected_local_account(body)
         if account is None:
-            message = "No local account selected. Create a LOCAL TEST ACCOUNT before saving a skin."
+            message = "Add an account first (click your name on PLAY), then save the skin."
             self.log.error(message)
             return {"ok": False, "error": message}
         skin_id = str(body.get("skinId") or body.get("id") or "")
