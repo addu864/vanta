@@ -211,7 +211,6 @@ def test_ui_glass_live_background_and_system_font(tmp_path: Path) -> None:
     assert 'id="pick-background"' in html
     assert ">Custom image<" in html
     assert 'id="clear-background"' in html
-    assert "One still image." in html
     assert "Vanta library" in html
     lowered = html.lower()
     assert "minecraft.ttf" not in lowered

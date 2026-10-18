@@ -14,7 +14,7 @@ def test_api_never_throws_and_reconnects():
 
 def test_skeletons_and_empty_states():
     assert "Loading…</p>" not in HTML.split("<script>")[0]  # static placeholders are skeletons now
-    for needle in ('class="skel-list"', 'class="skel-card"', "function emptyState(", "No screenshots yet", "Couldn't reach Modrinth"):
+    for needle in ('class="skel-list"', 'class="skel-card"', "function emptyState(", "No screenshots yet", "Can't reach Modrinth"):
         assert needle in HTML
     assert ".skel {" in CSS and ".empty-state {" in CSS and ':root[data-motion="reduce"] .skel' in CSS
 
