@@ -904,6 +904,18 @@ def _pid_alive(pid: int) -> bool:
             _reap(pid)
             return False
         return True
+    # No /proc (macOS): a finished child of ours stays a zombie and still
+    # answers kill(pid, 0). Reap it first so a stopped server is not "running".
+    flag = getattr(os, "WNOHANG", None)
+    if flag is not None:
+        try:
+            done, _status = os.waitpid(pid, flag)
+        except ChildProcessError:
+            done = 0
+        except OSError:
+            done = 0
+        if done == pid:
+            return False
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -912,7 +924,17 @@ def _pid_alive(pid: int) -> bool:
         return True
     except OSError:
         return False
-    return True
+    return not _ps_zombie(pid)
+
+
+def _ps_zombie(pid: int, runner=None) -> bool:
+    """True when `ps` reports the pid as a zombie (state Z). False if ps is missing."""
+    runner = runner or subprocess.run
+    try:
+        out = runner(["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True, timeout=5, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return (out.stdout or "").strip().upper().startswith("Z")
 
 
 def _windows_pid_alive(pid: int) -> bool:

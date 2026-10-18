@@ -123,11 +123,15 @@ def test_retired_world_choice_is_dropped_and_clear_returns_default(tmp_path: Pat
 
 
 def test_background_browse_does_not_invent_an_image(tmp_path: Path) -> None:
+    import shutil
+
     app = VantaApp(tmp_path)
+    if shutil.which("zenity") or shutil.which("kdialog"):
+        return
     result = app.browse_background()
     assert result["ok"] is False
     assert result["custom"] is False
-    assert "Windows" in result["error"]
+    assert "dialog" in result["error"]
     assert not (tmp_path / "background").exists()
 
 

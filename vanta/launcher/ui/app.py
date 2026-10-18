@@ -289,16 +289,15 @@ class VantaApp:
         return {"ok": True, "profile": profile}
 
     def browse_instance_folder(self) -> dict[str, Any]:
-        """Open the Windows folder dialog. The desktop window uses its own dialog instead."""
+        """Open the system folder dialog (Windows, macOS, Linux with zenity/kdialog)."""
         import os
         import subprocess
 
         if os.name != "nt":
-            return {
-                "ok": False,
-                "path": "",
-                "error": "The folder dialog opens from the Vanta window on Windows. No folder was added.",
-            }
+            from vanta.shared import dialogs
+
+            path, error = dialogs.pick("folder", "Select a Minecraft instance folder")
+            return {"ok": bool(path), "path": path, "error": error}
         script = (
             "Add-Type -AssemblyName System.Windows.Forms; "
             "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog; "
@@ -487,16 +486,17 @@ class VantaApp:
         return self.background_state()
 
     def browse_background(self) -> dict[str, Any]:
-        """Open the Windows file dialog, then store the chosen image under the data dir."""
+        """Open the system image dialog, then store the chosen image under the data dir."""
         import os
         import subprocess
 
         if os.name != "nt":
-            return {
-                "ok": False,
-                "custom": False,
-                "error": "The image dialog opens from the Vanta window on Windows. No background was saved.",
-            }
+            from vanta.shared import dialogs
+
+            path, error = dialogs.pick("image", "Choose a Vanta background image")
+            if not path:
+                return {"ok": False, "custom": False, "error": error}
+            return self.set_background({"path": path})
         script = (
             "Add-Type -AssemblyName System.Windows.Forms; "
             "$dialog = New-Object System.Windows.Forms.OpenFileDialog; "
