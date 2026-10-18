@@ -66,6 +66,12 @@ def _has_version(releases: list[Any], current: str) -> bool:
 
 # Shipped with the app, so the popup after an update works offline too.
 BUNDLED_HIGHLIGHTS: dict[str, list[str]] = {
+    "1.7.0": [
+        "A cleaner PLAY screen: your account, instance, PLAY and memory in one place, with Jump back in, friends and servers below.",
+        "Accounts open in their own window. Logs, version details, saved servers and What's new moved to their own tabs.",
+        "One look everywhere: new icons (no emoji), shorter text, a smaller crash card with one main button, and arrow keys for the tabs.",
+        "Mac and Linux: the folder and background pickers now open, and a stopped server no longer shows as running on a Mac.",
+    ],
     "1.6.8": [
         "Mac fix: PLAY no longer stops Minecraft right after it starts (\"exited before it stayed alive (exit None)\").",
         "If Java really stops at start-up, the message gives the real exit code, and Show game log has the Java path, CPU and command.",

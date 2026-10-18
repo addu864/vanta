@@ -2,6 +2,16 @@
 
 Vanta is a local launcher for Minecraft Java. It keeps profiles, a local play launch, mods, skins, server folders, and HUD settings on this machine. Version 1.0.0 can start a Java process for a LOCAL TEST ACCOUNT when `client.jar` is already installed. See docs/VANTA-LAUNCH.md.
 
+## New in 1.7.0
+
+- **A cleaner PLAY screen.** One hero card holds your account, instance, a big PLAY button and memory. Below it: Jump back in, and a compact friends and servers strip.
+- **Accounts window.** Click your name to switch or add a local account. Nothing about accounts sits on the PLAY screen any more.
+- **Things moved to their own tabs:** Add instance and version details are in INSTANCES, saved and recent servers are in SERVERS, What's new and the background picker are in SETTINGS, and Logs is a drawer.
+- **One design everywhere:** one card style, one button style, a single icon set (no emoji), a small type scale and shorter text.
+- **Smaller crash card** with one main button (Check mods, or Show log for vanilla). Copy, Get help and Open folder are under More.
+- **Keyboard:** arrow keys, Home and End move between tabs. Esc closes the Accounts window and returns focus.
+- **Mac and Linux fixes:** Add instance folder and Choose background now open a native picker (AppleScript on Mac, zenity or kdialog on Linux). On a Mac, a server that stopped no longer shows as running. Background errors are now logged or shown instead of hidden.
+
 ## New in 1.6.8
 
 - **Mac fix: PLAY works again.** On macOS, Vanta checked whether the game was running by reading `/proc`, which only exists on Linux. The check always failed, so Vanta stopped a healthy Minecraft 0.6 s after PLAY and showed "The Java process exited before it stayed alive (exit None)". Vanta now trusts the process it started, and uses `ps` on macOS when it reconnects to a running game.
