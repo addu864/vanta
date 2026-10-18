@@ -133,6 +133,32 @@ def _safe_extract(archive: Path, target: Path) -> None:
             t.extractall(target, members=members)
 
 
+def make_runnable(java: Path, *, mac: bool | None = None, runner: Callable[..., Any] | None = None) -> None:
+    """Executable bits for java and its helpers, and (macOS) no quarantine flag on the runtime.
+
+    Archives unpacked by Python normally keep their modes and get no quarantine flag, but a
+    runtime copied in by hand (or unpacked by Finder) can lose the x bit or carry
+    com.apple.quarantine, and then the JVM or jspawnhelper is refused.
+    """
+    import platform as _platform
+    import subprocess
+    home = java.parent.parent  # .../Contents/Home or the runtime root
+    for exe in [java, *sorted((home / "bin").glob("*")), home / "lib" / "jspawnhelper"]:
+        try:
+            if exe.is_file() and not exe.is_symlink():
+                exe.chmod(exe.stat().st_mode | 0o755)
+        except OSError:
+            pass
+    mac = (_platform.system() == "Darwin") if mac is None else mac
+    if mac:
+        root = home.parent.parent if home.name == "Home" and home.parent.name == "Contents" else home
+        try:
+            (runner or subprocess.run)(["xattr", "-dr", "com.apple.quarantine", str(root)],
+                                       capture_output=True, timeout=30, check=False)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
 def _get(url: str, timeout: int = 60):
     return urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": USER_AGENT}), timeout=timeout)
 
@@ -171,7 +197,7 @@ def download_temurin(data_dir: Path, major: int, arch: str, *, system: str | Non
         if java is None:
             raise RuntimeError("The Java archive had no java executable.")
         if os_name != "windows":
-            java.chmod(0o755)
+            make_runnable(java)
         shutil.rmtree(final, ignore_errors=True)
         unpack.rename(final)
         (final / "vanta-runtime.json").write_text(json.dumps({"major": major, "arch": arch, "os": os_name,

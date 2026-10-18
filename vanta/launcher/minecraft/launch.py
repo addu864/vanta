@@ -434,6 +434,8 @@ def _launch_local(
     handle.write(
         f"\n--- local start {datetime.now().astimezone().isoformat(timespec='seconds')} ---\n"
     )
+    handle.write(launch_header(java, command) + "\n")
+    handle.flush()
     if minecraft_client and str(version.get("loader") or "").lower() == "fabric":
         # Vanta Companion (in-game Vanta menu) for versions its jar supports; never fatal.
         try:
@@ -445,6 +447,12 @@ def _launch_local(
     if str(version.get("versionNumber")) == MAIN_VERSION and not version.get("downloaded"):
         # Profile mods target 1.21.11; never copy them into other versions' instances.
         _sync_profile_mods(str(saved_profile.get("name") or ""), jar.parent, data_dir)
+    if "/runtime/temurin-" in java.replace("\\", "/") and os.name != "nt":
+        try:
+            from vanta.shared.java_download import make_runnable
+            make_runnable(Path(java))
+        except Exception:  # noqa: BLE001 - best effort; the launch reports real errors
+            pass
     popen_kwargs: dict[str, Any] = {
         "cwd": str(jar.parent),
         "stdout": handle,
@@ -482,16 +490,17 @@ def _launch_local(
     deadline = time.time() + PID_WAIT_SECONDS
     while time.time() < deadline and process.poll() is None:
         time.sleep(0.05)
-    alive = process.poll() is None and _pid_alive(process.pid) and _cmdline_matches(process.pid, str(jar))
-    if not alive:
-        code = process.poll()
-        if code is None:
-            _signal_stop(process.pid)
+    code = process.poll()
+    if code is not None:
+        # Java really exited. (Before 1.6.8 a still-running game on macOS was treated as dead
+        # here, because macOS has no /proc to read its command line, and Vanta stopped it.)
         _clear_session(data_dir)
         tail = _log_tail(log_path)
-        detail = f"The Java process exited before it stayed alive (exit {code})."
+        detail = f"Java stopped right after starting ({exit_text(code)})."
         if tail:
             detail = f"{detail} {tail}"
+        else:
+            detail = f"{detail} Java printed nothing; see Show game log."
         log.error(detail)
         return _fail(log, data_dir, [detail])
 
@@ -671,6 +680,44 @@ _PROCESSES: dict[int, "subprocess.Popen[Any]"] = {}
 STOPPED_BY_USER: set[int] = set()
 
 
+def launch_header(java: str, command: list[str]) -> str:
+    """First lines of client.log for each start: Java, CPU and the command (classpath shortened,
+    access token hidden), so Show game log is useful even when Java prints nothing."""
+    import platform as _platform
+    from vanta.shared import macplatform
+    info = macplatform.current()
+    shown: list[str] = []
+    hide_next = False
+    for i, arg in enumerate(command):
+        if hide_next:
+            shown.append("<hidden>")
+            hide_next = False
+            continue
+        if arg in {"--accessToken", "--session"}:
+            hide_next = True
+        if i > 0 and command[i - 1] in {"-cp", "-classpath", "--class-path"}:
+            parts = arg.split(os.pathsep)
+            arg = f"<{len(parts)} jars>"
+        shown.append(arg)
+    cpu = f"{_platform.system()} {_platform.release()} · CPU {info.get('hardware')}"
+    if info.get("rosetta"):
+        cpu += " (Vanta under Rosetta)"
+    return f"Java: {java}\nSystem: {cpu}\nCommand: {' '.join(shown)}"
+
+
+def exit_text(code: int | None) -> str:
+    """Plain words for a process exit code (negative = killed by a signal on macOS/Linux)."""
+    if code is None:
+        return "still running"
+    if code < 0:
+        try:
+            name = signal.Signals(-code).name
+        except (ValueError, AttributeError):
+            name = f"signal {-code}"
+        return f"stopped by {name}"
+    return f"exit code {code}"
+
+
 def exit_code(pid: int) -> int | None:
     """Exit code of a game this Vanta started, or None if unknown/still running."""
     process = _PROCESSES.get(int(pid or 0))
@@ -773,6 +820,11 @@ def _sync_profile_mods(profile_name: str, instance: Path, data_dir: Path) -> Non
 def _pid_alive(pid: int) -> bool:
     if pid <= 1 or pid == os.getpid():
         return False
+    own = _PROCESSES.get(int(pid))
+    if own is not None:
+        # A game this Vanta started: poll() is exact on every OS and also reaps a zombie
+        # (on macOS os.kill(pid, 0) still succeeds for an exited, unreaped child).
+        return own.poll() is None
     if os.name == "nt":
         return _windows_pid_alive(pid)
     stat_path = Path(f"/proc/{pid}/stat")
@@ -900,18 +952,37 @@ def _cmdline_matches(pid: int, jar: str) -> bool:
             return jar.lower() in text.lower()
         image = _windows_image_name(pid).lower()
         return image.endswith("java.exe") or image.endswith("\\java")
-    path = Path(f"/proc/{pid}/cmdline")
-    try:
-        raw = path.read_bytes()
-    except OSError:
+    own = _PROCESSES.get(int(pid))
+    if own is not None and own.poll() is None:
+        # Vanta started this process with this exact command; no need to read it back.
+        args = own.args if isinstance(own.args, (list, tuple)) else [str(own.args)]
+        return any(jar in str(a) for a in args)
+    text = _posix_command_line(pid)
+    if not text:
         return False
-    text = raw.replace(b"\x00", b" ").decode("utf-8", errors="replace")
-    if "java" not in text.split(" ", 1)[0] and "/java" not in text.split(" ", 1)[0]:
-        # The executable path can be a symlink ending in java, or "java".
-        base = text.split(" ", 1)[0]
-        if not base.endswith("java") and "java" not in base:
-            return False
+    # The executable comes first; its path may contain spaces ("Application Support"), so look
+    # at everything before the first JVM option rather than the first space-separated word.
+    head = text.split(" -", 1)[0].lower()
+    if "java" not in head:
+        return False
     return jar in text
+
+
+def _posix_command_line(pid: int, proc: Path = Path("/proc"), runner: Any = None) -> str:
+    """Command line of a process on Linux (/proc) or macOS/BSD (no /proc: ``ps``)."""
+    path = proc / str(int(pid)) / "cmdline"
+    try:
+        return path.read_bytes().replace(b"\x00", b" ").decode("utf-8", errors="replace")
+    except OSError:
+        pass
+    if (proc / "self").exists():
+        return ""  # Linux with /proc: the process is gone
+    try:
+        out = (runner or subprocess.run)(["ps", "-ww", "-o", "command=", "-p", str(int(pid))],
+                             capture_output=True, text=True, timeout=5, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return out.stdout.strip() if out.returncode == 0 else ""
 
 
 def _signal_stop(pid: int) -> None:
