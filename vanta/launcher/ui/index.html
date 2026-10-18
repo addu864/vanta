@@ -1018,7 +1018,7 @@
       (accounts || []).forEach((account) => {
         const option = document.createElement("option");
         option.value = account.id;
-        option.textContent = account.username + " · " + account.label;
+        option.textContent = account.username + (account.label === "LOCAL TEST ACCOUNT" ? " · local" : " · " + account.label);
         if (account.id === selectedId) {
           option.selected = true;
           selected = account;
@@ -1410,7 +1410,7 @@
       const back = opener || document.activeElement;
       const focusables = () => [...panel.querySelectorAll("button, select, input, textarea, a[href], summary")].filter((el) => !el.disabled && el.offsetParent !== null);
       function onKey(e) {
-        if (e.key === "Escape") { e.preventDefault(); close(); return; }
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
         if (e.key !== "Tab") return;
         const f = focusables(); if (!f.length) return;
         if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
